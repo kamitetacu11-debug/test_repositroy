@@ -269,6 +269,9 @@ const initDatabase = () => {
     console.log('Database initialized successfully');
 };
 
+// Initialize database tables immediately
+initDatabase();
+
 // Prepared statements for common operations
 const statements = {
     // Users
