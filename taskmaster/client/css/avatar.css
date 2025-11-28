@@ -1,0 +1,617 @@
+/**
+ * TaskMaster - Avatar Styles
+ * Animated avatar system with customization
+ */
+
+/* ============================================
+   NEXUS AI ASSISTANT
+   ============================================ */
+.nexus-container {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    z-index: 100;
+}
+
+.nexus-avatar {
+    width: 60px;
+    height: 60px;
+    background: var(--gradient-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all var(--transition-normal);
+    animation: nexusFloat 3s ease-in-out infinite;
+}
+
+@keyframes nexusFloat {
+    0%, 100% {
+        transform: translateY(0);
+        box-shadow: 0 0 20px var(--glow-purple);
+    }
+    50% {
+        transform: translateY(-5px);
+        box-shadow: 0 0 30px var(--glow-pink);
+    }
+}
+
+.nexus-avatar:hover {
+    transform: scale(1.1) translateY(-5px);
+}
+
+.nexus-face {
+    font-size: 30px;
+    animation: nexusBlink 4s infinite;
+}
+
+@keyframes nexusBlink {
+    0%, 96%, 100% { opacity: 1; }
+    98% { opacity: 0.3; }
+}
+
+.nexus-glow {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    opacity: 0.3;
+    filter: blur(10px);
+    animation: nexusGlow 2s ease-in-out infinite;
+}
+
+@keyframes nexusGlow {
+    0%, 100% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(1.2); opacity: 0.5; }
+}
+
+.nexus-status {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 14px;
+    height: 14px;
+    background: var(--color-success);
+    border-radius: 50%;
+    border: 2px solid var(--bg-deep-space);
+    animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(67, 233, 123, 0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(67, 233, 123, 0); }
+}
+
+.nexus-bubble {
+    position: absolute;
+    bottom: 70px;
+    left: 0;
+    width: 280px;
+    padding: 16px;
+    background: var(--bg-nebula);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    border-radius: var(--radius-md);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-lg);
+}
+
+.nexus-container:hover .nexus-bubble {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.nexus-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 25px;
+    width: 16px;
+    height: 16px;
+    background: var(--bg-nebula);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+}
+
+.nexus-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.nexus-name {
+    font-weight: 600;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.nexus-role {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.nexus-message {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+/* ============================================
+   USER AVATAR SYSTEM
+   ============================================ */
+.avatar-display {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+}
+
+.avatar-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--gradient-primary);
+}
+
+.avatar-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+}
+
+.avatar-body {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 70%;
+    background-size: contain;
+    background-position: bottom center;
+    background-repeat: no-repeat;
+}
+
+.avatar-head {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    height: 40%;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.avatar-accessory {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    pointer-events: none;
+}
+
+.avatar-effect {
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    bottom: -20px;
+    pointer-events: none;
+}
+
+.avatar-pet {
+    position: absolute;
+    bottom: -10px;
+    right: -10px;
+    width: 60px;
+    height: 60px;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    animation: petBounce 2s ease-in-out infinite;
+}
+
+@keyframes petBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Avatar Animations */
+.avatar-idle {
+    animation: avatarIdle 4s ease-in-out infinite;
+}
+
+@keyframes avatarIdle {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-5px); }
+}
+
+.avatar-wave {
+    animation: avatarWave 1s ease-in-out;
+}
+
+@keyframes avatarWave {
+    0%, 100% { transform: translateX(-50%) rotate(0deg); }
+    25% { transform: translateX(-50%) rotate(10deg); }
+    75% { transform: translateX(-50%) rotate(-10deg); }
+}
+
+.avatar-jump {
+    animation: avatarJump 0.5s ease-out;
+}
+
+@keyframes avatarJump {
+    0% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-30px); }
+    100% { transform: translateX(-50%) translateY(0); }
+}
+
+.avatar-spin {
+    animation: avatarSpin 0.6s ease-in-out;
+}
+
+@keyframes avatarSpin {
+    0% { transform: translateX(-50%) rotate(0deg); }
+    100% { transform: translateX(-50%) rotate(360deg); }
+}
+
+/* Avatar Level Ring */
+.avatar-level-ring {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    background: linear-gradient(var(--bg-deep-space), var(--bg-deep-space)) padding-box,
+                var(--gradient-primary) border-box;
+}
+
+.avatar-level {
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 12px;
+    background: var(--gradient-gold);
+    border-radius: var(--radius-lg);
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+}
+
+/* ============================================
+   AVATAR SHOP
+   ============================================ */
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+.shop-item {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.shop-item:hover {
+    transform: translateY(-5px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: var(--shadow-lg);
+}
+
+.shop-item.owned {
+    border-color: rgba(67, 233, 123, 0.3);
+}
+
+.shop-item.owned::after {
+    content: 'OWNED';
+    position: absolute;
+    top: 10px;
+    right: -25px;
+    padding: 4px 30px;
+    background: var(--color-success);
+    color: var(--bg-deep-space);
+    font-size: 10px;
+    font-weight: 700;
+    transform: rotate(45deg);
+}
+
+.shop-item-preview {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+}
+
+.shop-item-name {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.shop-item-category {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.shop-item-rarity {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.rarity-common { background: rgba(160, 160, 192, 0.2); color: #a0a0c0; }
+.rarity-uncommon { background: rgba(67, 233, 123, 0.2); color: #43e97b; }
+.rarity-rare { background: rgba(79, 172, 254, 0.2); color: #4facfe; }
+.rarity-epic { background: rgba(240, 147, 251, 0.2); color: #f093fb; }
+.rarity-legendary { background: rgba(245, 175, 25, 0.2); color: #f5af19; }
+
+.shop-item-price {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: rgba(245, 175, 25, 0.1);
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    color: #f5af19;
+}
+
+.shop-item-price.owned {
+    background: rgba(67, 233, 123, 0.1);
+    color: #43e97b;
+}
+
+/* Shop Filters */
+.shop-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.shop-filter {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.shop-filter:hover,
+.shop-filter.active {
+    background: var(--gradient-primary);
+    color: white;
+    border-color: transparent;
+}
+
+/* ============================================
+   PROFILE AVATAR SECTION
+   ============================================ */
+.profile-avatar-section {
+    text-align: center;
+    padding: 30px;
+}
+
+.profile-avatar-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.avatar-action-btn {
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    transition: all var(--transition-fast);
+}
+
+.avatar-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+/* Equipped Items Display */
+.equipped-items {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.equipped-slot {
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    text-align: center;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.equipped-slot:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.equipped-slot.filled {
+    border-style: solid;
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.equipped-slot-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+    opacity: 0.5;
+}
+
+.equipped-slot.filled .equipped-slot-icon {
+    opacity: 1;
+}
+
+.equipped-slot-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.equipped-slot-name {
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 5px;
+}
+
+/* ============================================
+   INVENTORY
+   ============================================ */
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+}
+
+.inventory-item {
+    aspect-ratio: 1;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.inventory-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: scale(1.05);
+}
+
+.inventory-item.equipped {
+    border-color: rgba(102, 126, 234, 0.5);
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.inventory-item.equipped::before {
+    content: '✓';
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 18px;
+    height: 18px;
+    background: var(--gradient-secondary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--bg-deep-space);
+}
+
+.inventory-item-icon {
+    font-size: 36px;
+}
+
+.inventory-item-name {
+    font-size: 10px;
+    margin-top: 5px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+/* Effect Animations */
+.effect-sparkle {
+    animation: effectSparkle 2s infinite;
+}
+
+@keyframes effectSparkle {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.3); }
+}
+
+.effect-flame {
+    animation: effectFlame 0.5s infinite alternate;
+}
+
+@keyframes effectFlame {
+    0% { filter: hue-rotate(0deg) brightness(1); }
+    100% { filter: hue-rotate(15deg) brightness(1.2); }
+}
+
+.effect-electric {
+    animation: effectElectric 0.2s infinite;
+}
+
+@keyframes effectElectric {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.effect-cosmic {
+    animation: effectCosmic 4s linear infinite;
+}
+
+@keyframes effectCosmic {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
