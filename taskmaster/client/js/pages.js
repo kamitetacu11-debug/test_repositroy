@@ -195,21 +195,35 @@ const Pages = {
                 const { pointsEarned, starsEarned, newLevel } = response.data;
 
                 // Update UI
-                element.classList.add('completed');
+                element?.classList.add('completed');
 
                 // Show points animation
-                const rect = element.getBoundingClientRect();
-                Utils.showPointsAnimation(rect.right - 50, rect.top, pointsEarned);
+                if (element) {
+                    const rect = element.getBoundingClientRect();
+                    Utils.showPointsAnimation(rect.right - 50, rect.top, pointsEarned);
+                }
 
                 // Update user stats
                 Auth.currentUser.totalPoints += pointsEarned;
                 Auth.currentUser.starsBalance += starsEarned;
+                if (newLevel) {
+                    Auth.currentUser.level = newLevel;
+                }
                 App.updateUserUI();
+
+                // Update avatar if initialized
+                if (window.AvatarSystem?.isInitialized) {
+                    AvatarSystem.addExperience(pointsEarned);
+                    if (newLevel) {
+                        AvatarSystem.setLevel(newLevel, Auth.currentUser.totalPoints);
+                        AvatarSystem.playAnimation('celebrate');
+                    }
+                }
 
                 // Show toast
                 Utils.showToast('success', 'Task Completed!', `+${pointsEarned} points earned`);
 
-                // Level up notification
+                // Level up notification with special animation
                 if (newLevel) {
                     setTimeout(() => {
                         Utils.showToast('success', 'Level Up! 🎉', `You're now level ${newLevel}`);
@@ -877,6 +891,8 @@ const Pages = {
                                         <button class="avatar-action-btn" onclick="AvatarSystem.playAnimation('wave')">👋 Wave</button>
                                         <button class="avatar-action-btn" onclick="AvatarSystem.playAnimation('jump')">🦘 Jump</button>
                                         <button class="avatar-action-btn" onclick="AvatarSystem.playAnimation('spin')">🔄 Spin</button>
+                                        <button class="avatar-action-btn" onclick="AvatarSystem.playAnimation('dance')">💃 Dance</button>
+                                        <button class="avatar-action-btn" onclick="AvatarSystem.playAnimation('power')">⚡ Power</button>
                                     </div>
                                 </div>
 
@@ -961,8 +977,10 @@ const Pages = {
                 this.inventory = inventory;
                 this.bindEvents();
 
-                // Initialize avatar
-                AvatarSystem.init(user.avatarConfig);
+                // Initialize avatar with user data
+                AvatarSystem.init('profile-avatar');
+                AvatarSystem.setLevel(user.level || 1, user.totalPoints || 0);
+                AvatarSystem.setEquippedItems(inventory);
 
             } catch (error) {
                 main.innerHTML = `<div class="empty-state"><h3>Failed to load profile</h3><p>${error.message}</p></div>`;

@@ -615,3 +615,325 @@
     0% { filter: hue-rotate(0deg); }
     100% { filter: hue-rotate(360deg); }
 }
+
+/* ============================================
+   ENHANCED AVATAR PROGRESSION SYSTEM
+   ============================================ */
+
+/* Profile Avatar Canvas Container */
+#profile-avatar {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+    position: relative;
+}
+
+#profile-avatar canvas {
+    border-radius: 50%;
+    box-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
+    transition: box-shadow 0.3s ease;
+}
+
+#profile-avatar:hover canvas {
+    box-shadow: 0 0 50px rgba(102, 126, 234, 0.5);
+}
+
+/* Level Indicator Badge */
+.avatar-level-indicator {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 16px;
+    background: var(--gradient-gold);
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a2e;
+    box-shadow: 0 4px 15px rgba(245, 175, 25, 0.4);
+    z-index: 10;
+    white-space: nowrap;
+}
+
+.avatar-level-indicator.evolution-1 {
+    background: linear-gradient(135deg, #6b7280, #9ca3af);
+}
+
+.avatar-level-indicator.evolution-2 {
+    background: var(--gradient-primary);
+    color: white;
+}
+
+.avatar-level-indicator.evolution-3 {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    color: white;
+}
+
+.avatar-level-indicator.evolution-4 {
+    background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+    color: white;
+}
+
+.avatar-level-indicator.evolution-5 {
+    background: var(--gradient-gold);
+    color: #1a1a2e;
+    animation: legendaryGlow 2s ease-in-out infinite;
+}
+
+@keyframes legendaryGlow {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(245, 175, 25, 0.4);
+    }
+    50% {
+        box-shadow: 0 4px 30px rgba(245, 175, 25, 0.8), 0 0 40px rgba(255, 215, 0, 0.3);
+    }
+}
+
+/* Evolution Crown/Halo for High Level Avatars */
+.avatar-evolution-crown {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 28px;
+    animation: crownFloat 2s ease-in-out infinite;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    z-index: 5;
+}
+
+@keyframes crownFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-5px); }
+}
+
+/* Avatar Aura Effects */
+.avatar-aura {
+    position: absolute;
+    top: -15px;
+    left: -15px;
+    right: -15px;
+    bottom: -15px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.avatar-aura.aura-novice {
+    /* No aura for beginners */
+    display: none;
+}
+
+.avatar-aura.aura-apprentice {
+    background: radial-gradient(circle, rgba(108, 99, 255, 0.2) 0%, transparent 70%);
+    animation: auraPulse 3s ease-in-out infinite;
+}
+
+.avatar-aura.aura-skilled {
+    background: radial-gradient(circle, rgba(76, 175, 80, 0.25) 0%, transparent 70%);
+    animation: auraPulse 2.5s ease-in-out infinite;
+}
+
+.avatar-aura.aura-expert {
+    background: radial-gradient(circle, rgba(156, 39, 176, 0.3) 0%, transparent 70%);
+    animation: auraPulse 2s ease-in-out infinite;
+}
+
+.avatar-aura.aura-master {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.35) 0%, transparent 70%);
+    animation: auraPulseMaster 1.5s ease-in-out infinite;
+}
+
+@keyframes auraPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+@keyframes auraPulseMaster {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.15) rotate(5deg);
+        opacity: 1;
+    }
+}
+
+/* Enhanced Action Buttons */
+.avatar-action-btn.action-dance {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(244, 114, 182, 0.2));
+    border-color: rgba(236, 72, 153, 0.3);
+}
+
+.avatar-action-btn.action-dance:hover {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.4), rgba(244, 114, 182, 0.4));
+    color: #f472b6;
+}
+
+.avatar-action-btn.action-power {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.2));
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.avatar-action-btn.action-power:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.4), rgba(251, 191, 36, 0.4));
+    color: #fbbf24;
+}
+
+.avatar-action-btn.action-spin {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(96, 165, 250, 0.2));
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.avatar-action-btn.action-spin:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(96, 165, 250, 0.4));
+    color: #60a5fa;
+}
+
+/* Points Animation */
+.points-animation {
+    position: fixed;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fbbf24;
+    text-shadow: 0 2px 10px rgba(251, 191, 36, 0.5);
+    animation: floatUp 1.5s ease-out forwards;
+    pointer-events: none;
+    z-index: 10000;
+}
+
+/* Level Up Celebration Effect */
+.avatar-levelup-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.avatar-levelup-effect.active {
+    animation: levelUpBurst 1s ease-out;
+}
+
+@keyframes levelUpBurst {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.8);
+    }
+    50% {
+        box-shadow: 0 0 50px 30px rgba(255, 215, 0, 0.4);
+    }
+    100% {
+        box-shadow: 0 0 100px 60px rgba(255, 215, 0, 0);
+    }
+}
+
+/* Experience Progress Ring */
+.avatar-xp-ring {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    width: calc(100% + 10px);
+    height: calc(100% + 10px);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.avatar-xp-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.avatar-xp-ring .xp-track {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 3;
+}
+
+.avatar-xp-ring .xp-progress {
+    fill: none;
+    stroke: url(#xpGradient);
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+/* Particle Effects Container */
+.avatar-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fbbf24;
+    animation: particleFly 1s ease-out forwards;
+}
+
+@keyframes particleFly {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--tx, 50px), var(--ty, -50px)) scale(0);
+    }
+}
+
+/* Nav Avatar Level Badge */
+.nav-avatar-level {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    background: var(--gradient-gold);
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #1a1a2e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-deep-space);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #profile-avatar {
+        width: 150px;
+        height: 150px;
+    }
+
+    .profile-avatar-controls {
+        flex-wrap: wrap;
+    }
+
+    .avatar-action-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .avatar-level-indicator {
+        font-size: 12px;
+        padding: 4px 12px;
+    }
+}

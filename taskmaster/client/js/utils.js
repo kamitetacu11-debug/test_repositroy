@@ -138,6 +138,36 @@ const Utils = {
     },
 
     /**
+     * Show floating points animation
+     */
+    showPointsAnimation(x, y, points) {
+        const element = document.createElement('div');
+        element.className = 'points-animation';
+        element.innerHTML = `+${points} ⭐`;
+        element.style.cssText = `
+            position: fixed;
+            left: ${x}px;
+            top: ${y}px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #FFD700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            pointer-events: none;
+            z-index: 10000;
+            animation: floatUp 1.5s ease-out forwards;
+        `;
+        document.body.appendChild(element);
+
+        // Remove after animation
+        setTimeout(() => element.remove(), 1500);
+
+        // Trigger avatar XP animation if available
+        if (window.AvatarSystem?.isInitialized) {
+            window.AvatarSystem.addExperience(points);
+        }
+    },
+
+    /**
      * Debounce function calls
      */
     debounce(func, wait) {

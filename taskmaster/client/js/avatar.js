@@ -1,6 +1,6 @@
 /**
  * TaskMaster Avatar System
- * Animated avatar with customization and movements
+ * Animated avatar with progression, customization, and level-based evolution
  */
 
 const AvatarSystem = {
@@ -10,17 +10,31 @@ const AvatarSystem = {
     animationFrame: 0,
     frameCount: 0,
     equippedItems: {},
-    avatarConfig: {},
     particles: [],
     isInitialized: false,
+    level: 1,
+    experience: 0,
+    maxExperience: 100,
+    evolutionStage: 1, // 1-5 based on level
 
-    // Avatar base colors
-    colors: {
+    // Evolution stages based on level
+    evolutionStages: {
+        1: { name: 'Novice', minLevel: 1, auraColor: null, size: 0.8 },
+        2: { name: 'Apprentice', minLevel: 5, auraColor: 'rgba(108, 99, 255, 0.2)', size: 0.9 },
+        3: { name: 'Skilled', minLevel: 10, auraColor: 'rgba(76, 175, 80, 0.3)', size: 1.0 },
+        4: { name: 'Expert', minLevel: 20, auraColor: 'rgba(156, 39, 176, 0.3)', size: 1.05 },
+        5: { name: 'Master', minLevel: 35, auraColor: 'rgba(255, 215, 0, 0.4)', size: 1.1 }
+    },
+
+    // Avatar base colors (evolve with level)
+    baseColors: {
         skin: '#FFD5B8',
         hair: '#4A3C2A',
         eyes: '#2196F3',
         outfit: '#6C63FF'
     },
+
+    colors: {},
 
     // Animation states
     animations: {
@@ -31,13 +45,27 @@ const AvatarSystem = {
         celebrate: { frames: 60, loop: false },
         think: { frames: 120, loop: true },
         work: { frames: 80, loop: true },
-        sleep: { frames: 100, loop: true }
+        sleep: { frames: 100, loop: true },
+        spin: { frames: 40, loop: false },
+        levelUp: { frames: 80, loop: false },
+        power: { frames: 60, loop: false }
     },
 
     /**
      * Initialize the avatar system
      */
-    init(containerId = 'avatar-canvas') {
+    init(configOrContainerId = 'profile-avatar') {
+        // Handle both config object and container ID
+        let containerId = 'profile-avatar';
+        let config = {};
+
+        if (typeof configOrContainerId === 'string') {
+            containerId = configOrContainerId;
+        } else if (typeof configOrContainerId === 'object' && configOrContainerId !== null) {
+            config = configOrContainerId;
+            containerId = config.containerId || 'profile-avatar';
+        }
+
         const container = document.getElementById(containerId);
         if (!container) {
             console.warn('Avatar container not found:', containerId);
@@ -49,32 +77,107 @@ const AvatarSystem = {
         if (!this.canvas) {
             this.canvas = document.createElement('canvas');
             this.canvas.width = 200;
-            this.canvas.height = 250;
+            this.canvas.height = 280;
+            this.canvas.style.display = 'block';
+            this.canvas.style.margin = '0 auto';
             container.appendChild(this.canvas);
         }
 
         this.ctx = this.canvas.getContext('2d');
         this.isInitialized = true;
+        this.colors = { ...this.baseColors };
 
-        // Load user's avatar config
-        this.loadAvatarConfig();
+        // Load user data
+        this.loadUserData();
+
+        // Apply config colors if provided
+        if (config.colors) {
+            this.colors = { ...this.colors, ...config.colors };
+        }
 
         // Start animation loop
         this.startAnimationLoop();
     },
 
     /**
-     * Load avatar configuration from user data
+     * Load user data for progression
      */
-    loadAvatarConfig() {
-        const user = window.TaskMasterApp?.currentUser;
-        if (user?.avatarConfig) {
-            this.avatarConfig = user.avatarConfig;
-            this.colors = {
-                ...this.colors,
-                ...this.avatarConfig.colors
-            };
+    loadUserData() {
+        const user = Auth?.currentUser || window.TaskMasterApp?.currentUser;
+        if (user) {
+            this.level = user.level || 1;
+            this.experience = user.totalPoints || 0;
+            this.updateEvolutionStage();
+            this.updateColorsForLevel();
         }
+    },
+
+    /**
+     * Update evolution stage based on level
+     */
+    updateEvolutionStage() {
+        let stage = 1;
+        for (let s = 5; s >= 1; s--) {
+            if (this.level >= this.evolutionStages[s].minLevel) {
+                stage = s;
+                break;
+            }
+        }
+        this.evolutionStage = stage;
+    },
+
+    /**
+     * Update colors based on level/evolution
+     */
+    updateColorsForLevel() {
+        const stage = this.evolutionStage;
+
+        // Outfit color evolves with stage
+        const outfitColors = {
+            1: '#6C63FF',  // Purple - Novice
+            2: '#4CAF50',  // Green - Apprentice
+            3: '#2196F3',  // Blue - Skilled
+            4: '#9C27B0',  // Deep Purple - Expert
+            5: '#FFD700'   // Gold - Master
+        };
+
+        // Eye glow evolves
+        const eyeColors = {
+            1: '#2196F3',
+            2: '#4CAF50',
+            3: '#00BCD4',
+            4: '#E91E63',
+            5: '#FFD700'
+        };
+
+        this.colors.outfit = outfitColors[stage] || this.baseColors.outfit;
+        this.colors.eyes = eyeColors[stage] || this.baseColors.eyes;
+    },
+
+    /**
+     * Set user level and update avatar
+     */
+    setLevel(level, experience = 0) {
+        const oldStage = this.evolutionStage;
+        this.level = level;
+        this.experience = experience;
+        this.updateEvolutionStage();
+        this.updateColorsForLevel();
+
+        // Play level up animation if evolved
+        if (this.evolutionStage > oldStage) {
+            this.playAnimation('levelUp');
+            this.addEvolutionParticles();
+        }
+    },
+
+    /**
+     * Add experience and check for level up
+     */
+    addExperience(amount) {
+        this.experience += amount;
+        // Emit particles for XP gain
+        this.addXPParticles(amount);
     },
 
     /**
@@ -82,11 +185,13 @@ const AvatarSystem = {
      */
     setEquippedItems(items) {
         this.equippedItems = {};
-        items.forEach(item => {
-            if (item.is_equipped) {
-                this.equippedItems[item.category] = item;
-            }
-        });
+        if (Array.isArray(items)) {
+            items.forEach(item => {
+                if (item.is_equipped) {
+                    this.equippedItems[item.category] = item;
+                }
+            });
+        }
     },
 
     /**
@@ -97,9 +202,12 @@ const AvatarSystem = {
             this.currentAnimation = name;
             this.animationFrame = 0;
 
-            // Add particles for celebrate animation
-            if (name === 'celebrate') {
+            // Add particles for special animations
+            if (name === 'celebrate' || name === 'levelUp') {
                 this.addCelebrationParticles();
+            }
+            if (name === 'power') {
+                this.addPowerParticles();
             }
         }
     },
@@ -126,6 +234,8 @@ const AvatarSystem = {
      */
     update() {
         const animation = this.animations[this.currentAnimation];
+        if (!animation) return;
+
         this.animationFrame++;
 
         if (this.animationFrame >= animation.frames) {
@@ -141,9 +251,10 @@ const AvatarSystem = {
         this.particles = this.particles.filter(p => {
             p.x += p.vx;
             p.y += p.vy;
-            p.vy += 0.1; // gravity
+            p.vy += p.gravity || 0.1;
             p.life--;
             p.alpha = p.life / p.maxLife;
+            p.size *= p.decay || 1;
             return p.life > 0;
         });
     },
@@ -153,11 +264,17 @@ const AvatarSystem = {
      */
     render() {
         const ctx = this.ctx;
+        if (!ctx) return;
+
         const w = this.canvas.width;
         const h = this.canvas.height;
+        const scale = this.evolutionStages[this.evolutionStage]?.size || 1;
 
         // Clear canvas
         ctx.clearRect(0, 0, w, h);
+
+        // Draw evolution aura
+        this.drawAura();
 
         // Draw background effect if equipped
         if (this.equippedItems.background) {
@@ -171,7 +288,7 @@ const AvatarSystem = {
         ctx.save();
         ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         ctx.beginPath();
-        ctx.ellipse(w/2, h - 20, 40 - offset.shadowOffset, 10, 0, 0, Math.PI * 2);
+        ctx.ellipse(w/2, h - 30, (40 - offset.shadowOffset) * scale, 10, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
@@ -179,6 +296,12 @@ const AvatarSystem = {
         if (this.equippedItems.pet) {
             this.drawPet(offset);
         }
+
+        // Save context and apply scale
+        ctx.save();
+        ctx.translate(w/2, h - 100);
+        ctx.scale(scale, scale);
+        ctx.translate(-w/2, -(h - 100));
 
         // Draw body
         this.drawBody(offset);
@@ -189,13 +312,101 @@ const AvatarSystem = {
         // Draw equipped items
         this.drawEquippedItems(offset);
 
+        ctx.restore();
+
         // Draw effect if equipped
         if (this.equippedItems.effect) {
             this.drawEffect();
         }
 
+        // Draw level indicator
+        this.drawLevelIndicator();
+
         // Draw particles
         this.drawParticles();
+    },
+
+    /**
+     * Draw evolution aura based on stage
+     */
+    drawAura() {
+        const stage = this.evolutionStages[this.evolutionStage];
+        if (!stage?.auraColor) return;
+
+        const ctx = this.ctx;
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        const time = this.frameCount * 0.02;
+
+        // Pulsing aura
+        const pulseSize = 60 + Math.sin(time) * 10;
+
+        const gradient = ctx.createRadialGradient(
+            w/2, h - 120, 0,
+            w/2, h - 120, pulseSize * stage.size
+        );
+
+        gradient.addColorStop(0, stage.auraColor);
+        gradient.addColorStop(1, 'transparent');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+
+        // Add sparkles for higher stages
+        if (this.evolutionStage >= 4) {
+            for (let i = 0; i < 5; i++) {
+                const angle = (i / 5) * Math.PI * 2 + time;
+                const radius = 50 + Math.sin(time * 2 + i) * 10;
+                const x = w/2 + Math.cos(angle) * radius;
+                const y = h - 120 + Math.sin(angle) * radius * 0.6;
+
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + Math.sin(time * 3 + i) * 0.2})`;
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    },
+
+    /**
+     * Draw level indicator
+     */
+    drawLevelIndicator() {
+        const ctx = this.ctx;
+        const w = this.canvas.width;
+
+        // Level badge
+        ctx.save();
+
+        // Badge background
+        const gradient = ctx.createLinearGradient(w/2 - 25, 0, w/2 + 25, 0);
+        gradient.addColorStop(0, this.colors.outfit);
+        gradient.addColorStop(1, this.shadeColor(this.colors.outfit, -20));
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.roundRect(w/2 - 25, 5, 50, 22, 11);
+        ctx.fill();
+
+        // Border
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Level text
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 12px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`Lv.${this.level}`, w/2, 16);
+
+        // Evolution stage name
+        const stageName = this.evolutionStages[this.evolutionStage]?.name || '';
+        ctx.font = '9px Inter, sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fillText(stageName, w/2, 270);
+
+        ctx.restore();
     },
 
     /**
@@ -204,7 +415,7 @@ const AvatarSystem = {
     getAnimationOffset() {
         const frame = this.animationFrame;
         const anim = this.currentAnimation;
-        let offset = { x: 0, y: 0, rotation: 0, armAngle: 0, shadowOffset: 0 };
+        let offset = { x: 0, y: 0, rotation: 0, armAngle: 0, shadowOffset: 0, scaleX: 1, scaleY: 1 };
 
         switch (anim) {
             case 'idle':
@@ -218,8 +429,8 @@ const AvatarSystem = {
 
             case 'jump':
                 const jumpProgress = frame / 30;
-                offset.y = -Math.sin(jumpProgress * Math.PI) * 40;
-                offset.shadowOffset = Math.sin(jumpProgress * Math.PI) * 20;
+                offset.y = -Math.sin(jumpProgress * Math.PI) * 50;
+                offset.shadowOffset = Math.sin(jumpProgress * Math.PI) * 25;
                 break;
 
             case 'dance':
@@ -229,9 +440,12 @@ const AvatarSystem = {
                 break;
 
             case 'celebrate':
-                offset.y = Math.abs(Math.sin(frame * 0.2)) * -15;
-                offset.armAngle = Math.sin(frame * 0.3) * 45;
-                offset.rotation = Math.sin(frame * 0.15) * 3;
+            case 'levelUp':
+                offset.y = Math.abs(Math.sin(frame * 0.2)) * -20;
+                offset.armAngle = Math.sin(frame * 0.3) * 60;
+                offset.rotation = Math.sin(frame * 0.15) * 5;
+                offset.scaleX = 1 + Math.sin(frame * 0.2) * 0.05;
+                offset.scaleY = 1 + Math.sin(frame * 0.2) * 0.05;
                 break;
 
             case 'think':
@@ -247,6 +461,18 @@ const AvatarSystem = {
             case 'sleep':
                 offset.y = Math.sin(frame * 0.03) * 3;
                 offset.rotation = 5;
+                break;
+
+            case 'spin':
+                const spinProgress = frame / 40;
+                offset.rotation = spinProgress * 360;
+                offset.y = Math.sin(spinProgress * Math.PI) * -20;
+                break;
+
+            case 'power':
+                offset.y = Math.sin(frame * 0.3) * 5 - 10;
+                offset.scaleX = 1 + Math.sin(frame * 0.2) * 0.1;
+                offset.scaleY = 1 + Math.sin(frame * 0.2) * 0.1;
                 break;
         }
 
@@ -266,8 +492,15 @@ const AvatarSystem = {
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(offset.rotation * Math.PI / 180);
+        if (offset.scaleX) ctx.scale(offset.scaleX, offset.scaleY);
 
-        // Body
+        // Body glow for high levels
+        if (this.evolutionStage >= 3) {
+            ctx.shadowColor = this.colors.outfit;
+            ctx.shadowBlur = 10;
+        }
+
+        // Body/Outfit
         const bodyItem = this.equippedItems.body;
         ctx.fillStyle = bodyItem?.color || this.colors.outfit;
 
@@ -275,6 +508,19 @@ const AvatarSystem = {
         ctx.beginPath();
         ctx.roundRect(-25, -40, 50, 60, 10);
         ctx.fill();
+
+        // Outfit details for higher evolution
+        if (this.evolutionStage >= 2) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-15, -35);
+            ctx.lineTo(0, -20);
+            ctx.lineTo(15, -35);
+            ctx.stroke();
+        }
+
+        ctx.shadowBlur = 0;
 
         // Arms
         ctx.save();
@@ -322,6 +568,7 @@ const AvatarSystem = {
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(offset.rotation * Math.PI / 180);
+        if (offset.scaleX) ctx.scale(offset.scaleX, offset.scaleY);
 
         // Head shape
         ctx.fillStyle = this.colors.skin;
@@ -338,6 +585,11 @@ const AvatarSystem = {
         ctx.quadraticCurveTo(-35, -40, -35, 0);
         ctx.fill();
 
+        // Evolution crown/halo for high levels
+        if (this.evolutionStage >= 4) {
+            this.drawEvolutionCrown(0, -50);
+        }
+
         // Eyes
         const eyeOffset = this.currentAnimation === 'sleep' ? 0 : 1;
         ctx.fillStyle = '#FFFFFF';
@@ -347,12 +599,19 @@ const AvatarSystem = {
         ctx.fill();
 
         if (this.currentAnimation !== 'sleep') {
-            // Pupils
+            // Pupils with glow for higher evolution
+            if (this.evolutionStage >= 3) {
+                ctx.shadowColor = this.colors.eyes;
+                ctx.shadowBlur = 8;
+            }
+
             ctx.fillStyle = this.colors.eyes;
             ctx.beginPath();
             ctx.arc(-12, -3, 5, 0, Math.PI * 2);
             ctx.arc(12, -3, 5, 0, Math.PI * 2);
             ctx.fill();
+
+            ctx.shadowBlur = 0;
 
             // Eye highlights
             ctx.fillStyle = '#FFFFFF';
@@ -372,7 +631,7 @@ const AvatarSystem = {
             ctx.stroke();
 
             // Z's
-            ctx.fillStyle = '#6C63FF';
+            ctx.fillStyle = this.colors.outfit;
             ctx.font = 'bold 14px Arial';
             const zOffset = Math.sin(this.animationFrame * 0.05) * 5;
             ctx.fillText('z', 35, -20 - zOffset);
@@ -385,15 +644,14 @@ const AvatarSystem = {
         ctx.lineWidth = 3;
         ctx.lineCap = 'round';
         ctx.beginPath();
-        if (this.currentAnimation === 'celebrate' || this.currentAnimation === 'dance') {
-            // Happy mouth
+        if (this.currentAnimation === 'celebrate' || this.currentAnimation === 'dance' || this.currentAnimation === 'levelUp') {
             ctx.arc(0, 8, 12, 0.2, Math.PI - 0.2);
         } else if (this.currentAnimation === 'think') {
-            // Thinking mouth
             ctx.moveTo(-8, 15);
             ctx.lineTo(8, 12);
+        } else if (this.currentAnimation === 'power') {
+            ctx.arc(0, 10, 8, 0, Math.PI);
         } else {
-            // Normal smile
             ctx.arc(0, 5, 8, 0.3, Math.PI - 0.3);
         }
         ctx.stroke();
@@ -409,19 +667,48 @@ const AvatarSystem = {
     },
 
     /**
+     * Draw evolution crown for high-level avatars
+     */
+    drawEvolutionCrown(x, y) {
+        const ctx = this.ctx;
+        const time = this.frameCount * 0.03;
+
+        // Floating halo
+        ctx.save();
+        ctx.translate(x, y + Math.sin(time) * 3);
+
+        const gradient = ctx.createLinearGradient(-20, 0, 20, 0);
+        if (this.evolutionStage === 5) {
+            gradient.addColorStop(0, '#FFD700');
+            gradient.addColorStop(0.5, '#FFF8DC');
+            gradient.addColorStop(1, '#FFD700');
+        } else {
+            gradient.addColorStop(0, '#9C27B0');
+            gradient.addColorStop(0.5, '#E1BEE7');
+            gradient.addColorStop(1, '#9C27B0');
+        }
+
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 25, 8, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Glow
+        ctx.shadowColor = this.evolutionStage === 5 ? '#FFD700' : '#9C27B0';
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+
+        ctx.restore();
+    },
+
+    /**
      * Draw equipped items
      */
     drawEquippedItems(offset) {
-        const ctx = this.ctx;
-        const w = this.canvas.width;
-        const h = this.canvas.height;
-
-        // Head item
         if (this.equippedItems.head) {
             this.drawHeadItem(offset);
         }
-
-        // Accessory
         if (this.equippedItems.accessory) {
             this.drawAccessory(offset);
         }
@@ -442,7 +729,6 @@ const AvatarSystem = {
         ctx.translate(centerX, centerY - 35);
         ctx.rotate(offset.rotation * Math.PI / 180);
 
-        // Draw based on item id (simplified - would load actual sprites)
         const rarity = item.rarity;
         let color = '#FFD700';
         if (rarity === 'legendary') color = '#FF6B6B';
@@ -488,14 +774,12 @@ const AvatarSystem = {
         ctx.translate(centerX, centerY);
         ctx.rotate(offset.rotation * Math.PI / 180);
 
-        // Necklace/pendant
         ctx.strokeStyle = '#FFD700';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(0, -20, 25, 0.3, Math.PI - 0.3);
         ctx.stroke();
 
-        // Pendant
         ctx.fillStyle = item.rarity === 'legendary' ? '#FF6B6B' : '#6C63FF';
         ctx.beginPath();
         ctx.arc(0, 5, 8, 0, Math.PI * 2);
@@ -529,7 +813,6 @@ const AvatarSystem = {
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, w, h);
 
-        // Stars
         const time = this.frameCount * 0.02;
         for (let i = 0; i < 5; i++) {
             const x = w/2 + Math.cos(time + i * 1.2) * 80;
@@ -551,26 +834,22 @@ const AvatarSystem = {
         const item = this.equippedItems.pet;
 
         const petX = w - 50 + Math.sin(this.frameCount * 0.05) * 5;
-        const petY = h - 40 + Math.sin(this.frameCount * 0.08) * 3;
+        const petY = h - 50 + Math.sin(this.frameCount * 0.08) * 3;
 
         ctx.save();
         ctx.translate(petX, petY);
 
-        // Simple pet (could be cat, dog, dragon based on item)
         const color = item.rarity === 'legendary' ? '#FF6B6B' : '#6C63FF';
 
-        // Body
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.ellipse(0, 0, 15, 12, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Head
         ctx.beginPath();
         ctx.arc(-10, -8, 10, 0, Math.PI * 2);
         ctx.fill();
 
-        // Ears
         ctx.beginPath();
         ctx.moveTo(-18, -15);
         ctx.lineTo(-15, -25);
@@ -582,7 +861,6 @@ const AvatarSystem = {
         ctx.lineTo(0, -15);
         ctx.fill();
 
-        // Eyes
         ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
         ctx.arc(-13, -8, 4, 0, Math.PI * 2);
@@ -595,7 +873,6 @@ const AvatarSystem = {
         ctx.arc(-7, -7, 2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Tail
         ctx.strokeStyle = color;
         ctx.lineWidth = 4;
         ctx.lineCap = 'round';
@@ -617,12 +894,11 @@ const AvatarSystem = {
         const item = this.equippedItems.effect;
         const time = this.frameCount * 0.03;
 
-        // Sparkle effect around avatar
         for (let i = 0; i < 8; i++) {
             const angle = (i / 8) * Math.PI * 2 + time;
             const radius = 70 + Math.sin(time * 2 + i) * 10;
             const x = w/2 + Math.cos(angle) * radius;
-            const y = h/2 + Math.sin(angle) * radius * 0.8;
+            const y = h/2 - 20 + Math.sin(angle) * radius * 0.8;
             const alpha = 0.5 + Math.sin(time * 3 + i) * 0.3;
             const size = 2 + Math.sin(time * 2 + i * 0.5) * 1;
 
@@ -663,14 +939,90 @@ const AvatarSystem = {
         for (let i = 0; i < 30; i++) {
             this.particles.push({
                 x: w / 2,
-                y: this.canvas.height / 2,
-                vx: (Math.random() - 0.5) * 10,
-                vy: -Math.random() * 8 - 2,
+                y: this.canvas.height / 2 - 50,
+                vx: (Math.random() - 0.5) * 12,
+                vy: -Math.random() * 10 - 3,
                 size: Math.random() * 6 + 2,
                 color: colors[Math.floor(Math.random() * colors.length)],
+                life: 70,
+                maxLife: 70,
+                alpha: 1,
+                gravity: 0.15,
+                decay: 0.99
+            });
+        }
+    },
+
+    /**
+     * Add evolution particles
+     */
+    addEvolutionParticles() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        const color = this.colors.outfit;
+
+        for (let i = 0; i < 50; i++) {
+            const angle = (i / 50) * Math.PI * 2;
+            this.particles.push({
+                x: w / 2 + Math.cos(angle) * 30,
+                y: h - 120 + Math.sin(angle) * 30,
+                vx: Math.cos(angle) * 3,
+                vy: Math.sin(angle) * 3 - 2,
+                size: Math.random() * 4 + 2,
+                color: color,
                 life: 60,
                 maxLife: 60,
-                alpha: 1
+                alpha: 1,
+                gravity: 0,
+                decay: 0.97
+            });
+        }
+    },
+
+    /**
+     * Add XP gain particles
+     */
+    addXPParticles(amount) {
+        const w = this.canvas.width;
+        const count = Math.min(amount / 5, 20);
+
+        for (let i = 0; i < count; i++) {
+            this.particles.push({
+                x: w / 2 + (Math.random() - 0.5) * 60,
+                y: this.canvas.height - 80,
+                vx: (Math.random() - 0.5) * 2,
+                vy: -Math.random() * 3 - 1,
+                size: 3,
+                color: '#FFD700',
+                life: 40,
+                maxLife: 40,
+                alpha: 1,
+                gravity: -0.02,
+                decay: 0.98
+            });
+        }
+    },
+
+    /**
+     * Add power-up particles
+     */
+    addPowerParticles() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        for (let i = 0; i < 20; i++) {
+            this.particles.push({
+                x: w / 2,
+                y: h - 100,
+                vx: (Math.random() - 0.5) * 8,
+                vy: -Math.random() * 6,
+                size: Math.random() * 5 + 2,
+                color: this.colors.outfit,
+                life: 50,
+                maxLife: 50,
+                alpha: 1,
+                gravity: 0.1,
+                decay: 0.98
             });
         }
     },
@@ -682,11 +1034,31 @@ const AvatarSystem = {
         const ctx = this.ctx;
 
         this.particles.forEach(p => {
-            ctx.fillStyle = p.color.replace(')', `, ${p.alpha})`).replace('rgb', 'rgba');
+            ctx.globalAlpha = p.alpha;
+            ctx.fillStyle = p.color;
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
             ctx.fill();
         });
+
+        ctx.globalAlpha = 1;
+    },
+
+    /**
+     * Helper: Shade color
+     */
+    shadeColor(color, percent) {
+        const num = parseInt(color.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = (num >> 16) + amt;
+        const G = (num >> 8 & 0x00FF) + amt;
+        const B = (num & 0x0000FF) + amt;
+        return '#' + (
+            0x1000000 +
+            (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+            (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+            (B < 255 ? B < 1 ? 0 : B : 255)
+        ).toString(16).slice(1);
     },
 
     /**
@@ -702,3 +1074,6 @@ const AvatarSystem = {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = AvatarSystem;
 }
+
+// Make globally available
+window.AvatarSystem = AvatarSystem;
