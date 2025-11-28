@@ -63,6 +63,12 @@ const App = {
      * Initialize WebSocket connection
      */
     initSocket() {
+        // Check if Socket.IO is available
+        if (typeof io === 'undefined') {
+            console.warn('Socket.IO not available, real-time features disabled');
+            return;
+        }
+
         const token = API.getToken();
 
         this.socket = io({
