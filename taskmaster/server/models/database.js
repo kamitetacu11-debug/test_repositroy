@@ -161,7 +161,7 @@ const initDatabase = () => {
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             description TEXT,
-            category TEXT NOT NULL CHECK(category IN ('head', 'body', 'accessory', 'background', 'effect', 'pet')),
+            category TEXT NOT NULL CHECK(category IN ('head', 'body', 'accessory', 'background', 'effect', 'pet', 'banner')),
             image_url TEXT,
             animation_data TEXT,
             price_stars INTEGER NOT NULL DEFAULT 0,
