@@ -439,6 +439,33 @@ const Utils = {
     },
 
     /**
+     * Create animated stars background
+     */
+    createStars(containerId, count = 50) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        container.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.cssText = `
+                position: absolute;
+                width: ${Math.random() * 3 + 1}px;
+                height: ${Math.random() * 3 + 1}px;
+                background: white;
+                border-radius: 50%;
+                left: ${Math.random() * 100}%;
+                top: ${Math.random() * 100}%;
+                opacity: ${Math.random() * 0.7 + 0.3};
+                animation: twinkle ${Math.random() * 3 + 2}s ease-in-out infinite;
+                animation-delay: ${Math.random() * 2}s;
+            `;
+            container.appendChild(star);
+        }
+    },
+
+    /**
      * Smooth scroll to element
      */
     scrollToElement(element, offset = 0) {
