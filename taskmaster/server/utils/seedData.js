@@ -97,6 +97,18 @@ const seedDatabase = () => {
         { id: uuidv4(), name: 'Rocket Bot', description: 'A helpful robot companion', category: 'pet', image_url: '/assets/avatars/pet_robot.svg', price_stars: 200, rarity: 'rare', animation_data: JSON.stringify({ idle: 'hover', action: 'scan' }) },
         { id: uuidv4(), name: 'Phoenix Chick', description: 'A baby phoenix', category: 'pet', image_url: '/assets/avatars/pet_phoenix.svg', price_stars: 400, rarity: 'epic', animation_data: JSON.stringify({ idle: 'flame', action: 'chirp' }) },
         { id: uuidv4(), name: 'Galaxy Dragon', description: 'A majestic cosmic dragon', category: 'pet', image_url: '/assets/avatars/pet_dragon.svg', price_stars: 1000, rarity: 'legendary', animation_data: JSON.stringify({ idle: 'fly', action: 'roar' }) },
+
+        // Profile Banners (YouTube-style)
+        { id: uuidv4(), name: 'Cosmic Nebula', description: 'A beautiful purple-blue nebula banner', category: 'banner', image_url: '/assets/banners/cosmic_nebula.jpg', price_stars: 100, rarity: 'uncommon', animation_data: JSON.stringify({ style: 'gradient', colors: ['#0f0c29', '#302b63', '#24243e'] }) },
+        { id: uuidv4(), name: 'Sunset Dream', description: 'Warm sunset gradient banner', category: 'banner', image_url: '/assets/banners/sunset_dream.jpg', price_stars: 80, rarity: 'common', animation_data: JSON.stringify({ style: 'gradient', colors: ['#fa709a', '#fee140'] }) },
+        { id: uuidv4(), name: 'Ocean Wave', description: 'Calm ocean waves banner', category: 'banner', image_url: '/assets/banners/ocean_wave.jpg', price_stars: 120, rarity: 'uncommon', animation_data: JSON.stringify({ style: 'gradient', colors: ['#667eea', '#764ba2', '#00d2ff'] }) },
+        { id: uuidv4(), name: 'Forest Mist', description: 'Mysterious forest with mist', category: 'banner', image_url: '/assets/banners/forest_mist.jpg', price_stars: 150, rarity: 'rare', animation_data: JSON.stringify({ style: 'gradient', colors: ['#11998e', '#38ef7d'] }) },
+        { id: uuidv4(), name: 'Fire Storm', description: 'Intense fiery red-orange banner', category: 'banner', image_url: '/assets/banners/fire_storm.jpg', price_stars: 180, rarity: 'rare', animation_data: JSON.stringify({ style: 'gradient', colors: ['#f12711', '#f5af19'] }) },
+        { id: uuidv4(), name: 'Arctic Aurora', description: 'Northern lights in arctic sky', category: 'banner', image_url: '/assets/banners/arctic_aurora.jpg', price_stars: 250, rarity: 'epic', animation_data: JSON.stringify({ style: 'gradient', colors: ['#43e97b', '#38f9d7', '#4facfe'] }) },
+        { id: uuidv4(), name: 'Purple Galaxy', description: 'Deep purple cosmic galaxy', category: 'banner', image_url: '/assets/banners/purple_galaxy.jpg', price_stars: 300, rarity: 'epic', animation_data: JSON.stringify({ style: 'gradient', colors: ['#7f00ff', '#e100ff'] }) },
+        { id: uuidv4(), name: 'Golden Sunrise', description: 'Majestic golden sunrise banner', category: 'banner', image_url: '/assets/banners/golden_sunrise.jpg', price_stars: 400, rarity: 'epic', animation_data: JSON.stringify({ style: 'gradient', colors: ['#f5af19', '#f12711', '#f5af19'] }) },
+        { id: uuidv4(), name: 'Neon Lights', description: 'Vibrant neon city lights', category: 'banner', image_url: '/assets/banners/neon_lights.jpg', price_stars: 500, rarity: 'legendary', animation_data: JSON.stringify({ style: 'gradient', colors: ['#00ff87', '#60efff', '#ff00ea'] }) },
+        { id: uuidv4(), name: 'Deep Space', description: 'Endless deep space with stars', category: 'banner', image_url: '/assets/banners/deep_space.jpg', price_stars: 60, rarity: 'common', animation_data: JSON.stringify({ style: 'gradient', colors: ['#0a0a1a', '#1a1a2e', '#16213e'] }) },
     ];
 
     const insertItem = db.prepare(`
@@ -205,4 +217,45 @@ const seedDatabase = () => {
     console.log('  User:    demo@taskmaster.io / Demo123!');
 };
 
+/**
+ * Add banner items to existing database
+ * Call this to add banners without resetting the database
+ */
+const addBannersToExistingDatabase = () => {
+    // Check if banners already exist
+    const existingBanners = db.prepare('SELECT COUNT(*) as count FROM avatar_items WHERE category = ?').get('banner');
+
+    if (existingBanners.count > 0) {
+        console.log('Banners already exist, skipping...');
+        return;
+    }
+
+    console.log('Adding banner items to database...');
+
+    const banners = [
+        { id: uuidv4(), name: 'Cosmic Nebula', description: 'A beautiful purple-blue nebula banner', category: 'banner', image_url: '/assets/banners/cosmic_nebula.jpg', price_stars: 100, rarity: 'uncommon', animation_data: JSON.stringify({ style: 'gradient', colors: ['#0f0c29', '#302b63', '#24243e'] }) },
+        { id: uuidv4(), name: 'Sunset Dream', description: 'Warm sunset gradient banner', category: 'banner', image_url: '/assets/banners/sunset_dream.jpg', price_stars: 80, rarity: 'common', animation_data: JSON.stringify({ style: 'gradient', colors: ['#fa709a', '#fee140'] }) },
+        { id: uuidv4(), name: 'Ocean Wave', description: 'Calm ocean waves banner', category: 'banner', image_url: '/assets/banners/ocean_wave.jpg', price_stars: 120, rarity: 'uncommon', animation_data: JSON.stringify({ style: 'gradient', colors: ['#667eea', '#764ba2', '#00d2ff'] }) },
+        { id: uuidv4(), name: 'Forest Mist', description: 'Mysterious forest with mist', category: 'banner', image_url: '/assets/banners/forest_mist.jpg', price_stars: 150, rarity: 'rare', animation_data: JSON.stringify({ style: 'gradient', colors: ['#11998e', '#38ef7d'] }) },
+        { id: uuidv4(), name: 'Fire Storm', description: 'Intense fiery red-orange banner', category: 'banner', image_url: '/assets/banners/fire_storm.jpg', price_stars: 180, rarity: 'rare', animation_data: JSON.stringify({ style: 'gradient', colors: ['#f12711', '#f5af19'] }) },
+        { id: uuidv4(), name: 'Arctic Aurora', description: 'Northern lights in arctic sky', category: 'banner', image_url: '/assets/banners/arctic_aurora.jpg', price_stars: 250, rarity: 'epic', animation_data: JSON.stringify({ style: 'gradient', colors: ['#43e97b', '#38f9d7', '#4facfe'] }) },
+        { id: uuidv4(), name: 'Purple Galaxy', description: 'Deep purple cosmic galaxy', category: 'banner', image_url: '/assets/banners/purple_galaxy.jpg', price_stars: 300, rarity: 'epic', animation_data: JSON.stringify({ style: 'gradient', colors: ['#7f00ff', '#e100ff'] }) },
+        { id: uuidv4(), name: 'Golden Sunrise', description: 'Majestic golden sunrise banner', category: 'banner', image_url: '/assets/banners/golden_sunrise.jpg', price_stars: 400, rarity: 'epic', animation_data: JSON.stringify({ style: 'gradient', colors: ['#f5af19', '#f12711', '#f5af19'] }) },
+        { id: uuidv4(), name: 'Neon Lights', description: 'Vibrant neon city lights', category: 'banner', image_url: '/assets/banners/neon_lights.jpg', price_stars: 500, rarity: 'legendary', animation_data: JSON.stringify({ style: 'gradient', colors: ['#00ff87', '#60efff', '#ff00ea'] }) },
+        { id: uuidv4(), name: 'Deep Space', description: 'Endless deep space with stars', category: 'banner', image_url: '/assets/banners/deep_space.jpg', price_stars: 60, rarity: 'common', animation_data: JSON.stringify({ style: 'gradient', colors: ['#0a0a1a', '#1a1a2e', '#16213e'] }) },
+    ];
+
+    const insertItem = db.prepare(`
+        INSERT INTO avatar_items (id, name, description, category, image_url, price_stars, rarity, animation_data, is_available)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `);
+
+    banners.forEach(item => {
+        insertItem.run(item.id, item.name, item.description, item.category, item.image_url, item.price_stars, item.rarity, item.animation_data);
+    });
+
+    console.log('Banner items added successfully!');
+};
+
 module.exports = seedDatabase;
+module.exports.addBannersToExistingDatabase = addBannersToExistingDatabase;

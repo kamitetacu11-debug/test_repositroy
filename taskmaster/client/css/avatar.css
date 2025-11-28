@@ -937,3 +937,520 @@
         padding: 4px 12px;
     }
 }
+
+/* ============================================
+   YOUTUBE-STYLE PROFILE BANNER
+   ============================================ */
+.profile-banner {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: cover;
+    background-position: center;
+}
+
+.profile-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.3) 100%);
+}
+
+.profile-banner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, transparent 50%, rgba(10, 10, 26, 0.8) 100%);
+}
+
+.profile-banner-edit {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    z-index: 10;
+}
+
+.profile-banner-edit:hover {
+    background: rgba(102, 126, 234, 0.6);
+    transform: scale(1.05);
+}
+
+.banner-name {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    padding: 4px 12px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    color: var(--text-muted);
+    z-index: 5;
+}
+
+/* Profile Header Section */
+.profile-header-section {
+    display: flex;
+    align-items: flex-end;
+    gap: 30px;
+    padding: 0 30px 30px;
+    margin-top: -60px;
+    position: relative;
+    z-index: 10;
+}
+
+.profile-avatar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.profile-avatar-container {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 5px solid var(--bg-deep-space);
+    overflow: hidden;
+    background: var(--gradient-primary);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.profile-avatar-container canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.profile-level-badge {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--gradient-gold);
+    border-radius: var(--radius-md);
+    border: 3px solid var(--bg-deep-space);
+    box-shadow: 0 4px 15px rgba(245, 175, 25, 0.4);
+}
+
+.profile-level-badge .level-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    line-height: 1;
+}
+
+.profile-level-badge .level-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #1a1a2e;
+    text-transform: uppercase;
+}
+
+.profile-info {
+    flex: 1;
+    padding-bottom: 10px;
+}
+
+.profile-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.profile-role {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.profile-stats-row {
+    display: flex;
+    gap: 30px;
+}
+
+.profile-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-stat .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.profile-stat .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+/* Avatar Actions Bar */
+.avatar-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 15px 20px;
+    margin-bottom: 30px;
+}
+
+.actions-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.avatar-actions-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Achievements Section */
+.achievements-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.achievement-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.achievement-icon {
+    font-size: 28px;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+}
+
+.achievement-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.achievement-info span:first-child {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.achievement-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.achievement-fill {
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: 4px;
+    transition: width 1s ease;
+}
+
+.achievement-progress {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Badges Showcase */
+.badges-showcase {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.badge-showcase-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    min-width: 80px;
+    transition: all var(--transition-fast);
+}
+
+.badge-showcase-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-3px);
+}
+
+.badge-showcase-item .badge-icon {
+    font-size: 32px;
+}
+
+.badge-showcase-item .badge-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* Responsive Profile */
+@media (max-width: 768px) {
+    .profile-banner {
+        height: 150px;
+    }
+
+    .profile-header-section {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 0 15px 20px;
+        margin-top: -50px;
+    }
+
+    .profile-avatar-container {
+        width: 120px;
+        height: 120px;
+    }
+
+    .profile-name {
+        font-size: 24px;
+    }
+
+    .profile-stats-row {
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .avatar-actions-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .avatar-actions-buttons {
+        justify-content: center;
+    }
+
+    .equipped-items {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-stats-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .profile-stat {
+        align-items: center;
+    }
+}
+
+/* ============================================
+   SHOP BANNER PREVIEW STYLES
+   ============================================ */
+.shop-item.banner-item {
+    flex-direction: column;
+}
+
+.shop-item-preview.is-banner {
+    width: 100%;
+    height: 80px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    padding: 0;
+}
+
+.banner-preview {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-sm);
+    transition: transform 0.3s ease;
+}
+
+.shop-item:hover .banner-preview {
+    transform: scale(1.05);
+}
+
+.shop-item-info {
+    text-align: center;
+    padding: 10px;
+}
+
+.shop-item .category-icon {
+    opacity: 0.7;
+    margin-right: 4px;
+}
+
+.shop-item.banner-item .shop-item-category {
+    margin-top: 8px;
+}
+
+/* Shop Grid Enhancement */
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+.shop-item {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.shop-item:hover {
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.shop-item.owned {
+    opacity: 0.7;
+    cursor: default;
+}
+
+.shop-item.owned:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.shop-item-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.shop-item-preview .item-emoji {
+    font-size: 36px;
+}
+
+.shop-item-name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.shop-item-category {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: capitalize;
+}
+
+.shop-item-rarity {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin: 8px 0;
+}
+
+.shop-item-rarity.rarity-common {
+    background: rgba(156, 163, 175, 0.2);
+    color: #9ca3af;
+}
+
+.shop-item-rarity.rarity-uncommon {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.shop-item-rarity.rarity-rare {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+}
+
+.shop-item-rarity.rarity-epic {
+    background: rgba(168, 85, 247, 0.2);
+    color: #a855f7;
+}
+
+.shop-item-rarity.rarity-legendary {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+}
+
+.shop-item-price {
+    font-weight: 700;
+    font-size: 14px;
+    color: #fbbf24;
+}
+
+.shop-item-price.owned {
+    color: var(--color-success);
+}
+
+/* Shop Filters */
+.shop-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.shop-filter {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-transform: capitalize;
+}
+
+.shop-filter:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.shop-filter.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: white;
+}
+
+/* Responsive Shop */
+@media (max-width: 640px) {
+    .shop-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .shop-item-preview .item-emoji {
+        font-size: 28px;
+    }
+
+    .shop-item-preview.is-banner {
+        height: 60px;
+    }
+}

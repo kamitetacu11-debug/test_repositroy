@@ -584,21 +584,41 @@ const Pages = {
             try {
                 const response = await fetch(API.files.getUrl(filePath));
                 const code = await response.text();
+                const escapedCode = Utils.escapeHtml(code);
+                const escapedLanguage = Utils.escapeHtml(language);
+                const codeId = 'viewer-code-' + Date.now();
 
                 container.innerHTML = `
                     <div class="code-viewer">
                         <div class="code-header">
-                            <span class="code-language">${language}</span>
-                            <button class="btn btn-ghost btn-sm" onclick="Utils.copyToClipboard(\`${Utils.escapeHtml(code).replace(/`/g, '\\`')}\`)">Copy</button>
+                            <span class="code-language">${escapedLanguage}</span>
+                            <button class="btn btn-ghost btn-sm" id="copy-code-btn">Copy</button>
                         </div>
                         <div class="code-content">
-                            <pre><code class="language-${language}">${Utils.escapeHtml(code)}</code></pre>
+                            <pre><code id="${codeId}" class="language-${escapedLanguage}">${escapedCode}</code></pre>
                         </div>
                     </div>
                 `;
 
-                // Highlight code
-                hljs.highlightAll();
+                // Bind copy button
+                const copyBtn = document.getElementById('copy-code-btn');
+                const codeElement = document.getElementById(codeId);
+                copyBtn?.addEventListener('click', () => {
+                    if (codeElement) {
+                        Utils.copyToClipboard(codeElement.textContent || codeElement.innerText);
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(() => copyBtn.textContent = 'Copy', 2000);
+                    }
+                });
+
+                // Highlight code safely
+                if (typeof hljs !== 'undefined' && codeElement) {
+                    try {
+                        hljs.highlightElement(codeElement);
+                    } catch (e) {
+                        console.warn('Code highlighting failed:', e);
+                    }
+                }
             } catch (error) {
                 container.innerHTML = `<div class="empty-state"><p>Failed to load file</p></div>`;
             }
@@ -780,17 +800,59 @@ const Pages = {
                 return emojis[rarity] || '⚪';
             };
 
-            return items.map(item => `
-                <div class="shop-item ${item.owned ? 'owned' : ''}" data-id="${item.id}">
-                    <div class="shop-item-preview">${getRarityEmoji(item.rarity)}</div>
-                    <div class="shop-item-name">${item.name}</div>
-                    <div class="shop-item-category">${item.category}</div>
-                    <div class="shop-item-rarity rarity-${item.rarity}">${item.rarity}</div>
-                    <div class="shop-item-price ${item.owned ? 'owned' : ''}">
-                        ${item.owned ? '✓ Owned' : `⭐ ${item.price_stars}`}
+            const getBannerPreview = (item) => {
+                // Parse animation_data to get colors
+                let animData = {};
+                try {
+                    animData = item.animationData || (item.animation_data ? JSON.parse(item.animation_data) : {});
+                } catch (e) {
+                    animData = {};
+                }
+
+                if (animData.colors && animData.colors.length > 0) {
+                    const colors = animData.colors;
+                    const gradient = colors.length > 1
+                        ? `linear-gradient(135deg, ${colors.join(', ')})`
+                        : colors[0];
+                    return `<div class="banner-preview" style="background: ${gradient};"></div>`;
+                }
+
+                return `<div class="banner-preview" style="background: var(--gradient-primary);"></div>`;
+            };
+
+            const getCategoryIcon = (category) => {
+                const icons = {
+                    head: '🎩', body: '👕', accessory: '💎',
+                    background: '🖼️', effect: '✨', pet: '🐾', banner: '🏞️'
+                };
+                return icons[category] || '❓';
+            };
+
+            return items.map(item => {
+                const isBanner = item.category === 'banner';
+                const preview = isBanner
+                    ? getBannerPreview(item)
+                    : `<span class="item-emoji">${getRarityEmoji(item.rarity)}</span>`;
+
+                return `
+                    <div class="shop-item ${item.owned ? 'owned' : ''} ${isBanner ? 'banner-item' : ''} hover-lift" data-id="${item.id}">
+                        <div class="shop-item-preview ${isBanner ? 'is-banner' : ''}">
+                            ${preview}
+                        </div>
+                        <div class="shop-item-info">
+                            <div class="shop-item-name">${item.name}</div>
+                            <div class="shop-item-category">
+                                <span class="category-icon">${getCategoryIcon(item.category)}</span>
+                                ${item.category}
+                            </div>
+                            <div class="shop-item-rarity rarity-${item.rarity}">${item.rarity}</div>
+                            <div class="shop-item-price ${item.owned ? 'owned' : ''}">
+                                ${item.owned ? '✓ Owned' : `⭐ ${item.price_stars}`}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         },
 
         bindEvents() {
@@ -847,6 +909,8 @@ const Pages = {
     // PROFILE PAGE
     // ============================================
     profile: {
+        equippedBanner: null,
+
         async render() {
             const main = document.getElementById('main-content');
             App.showLoading(main);
@@ -863,47 +927,84 @@ const Pages = {
                 const inventory = inventoryRes.data.inventory;
                 const stats = statsRes.data;
 
+                // Find equipped banner
+                const equippedBanner = inventory.find(i => i.category === 'banner' && i.is_equipped);
+                this.equippedBanner = equippedBanner;
+
+                // Get banner style
+                const bannerStyle = this.getBannerStyle(equippedBanner);
+
                 main.innerHTML = `
                     <div class="page-section active">
-                        <div class="page-header">
-                            <h1 class="page-title">My Profile</h1>
-                            <p class="page-subtitle">Manage your account and avatar</p>
+                        <!-- YouTube-style Profile Banner -->
+                        <div class="profile-banner" style="${bannerStyle}">
+                            <div class="profile-banner-overlay"></div>
+                            <button class="profile-banner-edit" onclick="Pages.profile.changeBanner()">
+                                📷 Change Banner
+                            </button>
+                            ${equippedBanner ? `<span class="banner-name">${equippedBanner.name}</span>` : ''}
+                        </div>
+
+                        <!-- Profile Header with Avatar -->
+                        <div class="profile-header-section">
+                            <div class="profile-avatar-wrapper">
+                                <div class="profile-avatar-container" id="profile-avatar">
+                                    <!-- Canvas avatar will be rendered here -->
+                                </div>
+                                <div class="profile-level-badge">
+                                    <span class="level-number">${user.level}</span>
+                                    <span class="level-label">LVL</span>
+                                </div>
+                            </div>
+
+                            <div class="profile-info">
+                                <h1 class="profile-name animated-text">${user.fullName}</h1>
+                                <p class="profile-role">${user.department || 'No department'} • ${user.role}</p>
+                                <div class="profile-stats-row">
+                                    <div class="profile-stat">
+                                        <span class="stat-value">${Utils.formatNumber(user.totalPoints)}</span>
+                                        <span class="stat-label">Points</span>
+                                    </div>
+                                    <div class="profile-stat">
+                                        <span class="stat-value">⭐ ${Utils.formatNumber(user.starsBalance)}</span>
+                                        <span class="stat-label">Stars</span>
+                                    </div>
+                                    <div class="profile-stat">
+                                        <span class="stat-value">🔥 ${user.streakDays}</span>
+                                        <span class="stat-label">Streak</span>
+                                    </div>
+                                    <div class="profile-stat">
+                                        <span class="stat-value">${stats.taskStats?.completed || 0}</span>
+                                        <span class="stat-label">Tasks</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Avatar Action Buttons -->
+                        <div class="avatar-actions-bar glass-card">
+                            <span class="actions-label">Avatar Actions:</span>
+                            <div class="avatar-actions-buttons">
+                                <button class="avatar-action-btn ripple" onclick="AvatarSystem.playAnimation('wave')">👋 Wave</button>
+                                <button class="avatar-action-btn ripple" onclick="AvatarSystem.playAnimation('jump')">🦘 Jump</button>
+                                <button class="avatar-action-btn action-spin ripple" onclick="AvatarSystem.playAnimation('spin')">🔄 Spin</button>
+                                <button class="avatar-action-btn action-dance ripple" onclick="AvatarSystem.playAnimation('dance')">💃 Dance</button>
+                                <button class="avatar-action-btn action-power ripple" onclick="AvatarSystem.playAnimation('power')">⚡ Power</button>
+                                <button class="avatar-action-btn ripple" onclick="AvatarSystem.playAnimation('celebrate')">🎉 Celebrate</button>
+                            </div>
                         </div>
 
                         <div class="content-grid">
                             <div>
-                                <div class="glass-card profile-avatar-section" style="margin-bottom: 20px;">
-                                    <div class="avatar-display">
-                                        <div class="avatar-container" id="profile-avatar">
-                                            <div class="avatar-background"></div>
-                                            <div class="avatar-body avatar-idle"></div>
-                                            <div class="avatar-head"></div>
-                                            <div class="avatar-accessory"></div>
-                                            <div class="avatar-effect"></div>
-                                        </div>
-                                        <div class="avatar-level-ring"></div>
-                                        <div class="avatar-level">Lvl ${user.level}</div>
-                                    </div>
-                                    <h2 style="margin-top: 20px;">${user.fullName}</h2>
-                                    <p style="color: var(--text-secondary);">${user.department || 'No department'} • ${user.role}</p>
-
-                                    <div class="profile-avatar-controls">
-                                        <button class="avatar-action-btn" onclick="AvatarSystem.playAnimation('wave')">👋 Wave</button>
-                                        <button class="avatar-action-btn" onclick="AvatarSystem.playAnimation('jump')">🦘 Jump</button>
-                                        <button class="avatar-action-btn" onclick="AvatarSystem.playAnimation('spin')">🔄 Spin</button>
-                                        <button class="avatar-action-btn" onclick="AvatarSystem.playAnimation('dance')">💃 Dance</button>
-                                        <button class="avatar-action-btn" onclick="AvatarSystem.playAnimation('power')">⚡ Power</button>
-                                    </div>
-                                </div>
 
                                 <div class="glass-card">
                                     <div class="card-title" style="margin-bottom: 20px;">Your Inventory</div>
 
                                     <div class="equipped-items">
-                                        ${['head', 'body', 'accessory', 'background', 'effect', 'pet'].map(slot => {
+                                        ${['head', 'body', 'accessory', 'background', 'effect', 'pet', 'banner'].map(slot => {
                                             const equipped = inventory.find(i => i.category === slot && i.is_equipped);
                                             return `
-                                                <div class="equipped-slot ${equipped ? 'filled' : ''}" data-slot="${slot}">
+                                                <div class="equipped-slot ${equipped ? 'filled' : ''} hover-scale" data-slot="${slot}">
                                                     <div class="equipped-slot-icon">${equipped ? '✓' : this.getSlotIcon(slot)}</div>
                                                     <div class="equipped-slot-label">${slot}</div>
                                                     ${equipped ? `<div class="equipped-slot-name">${equipped.name}</div>` : ''}
@@ -915,8 +1016,11 @@ const Pages = {
                                     <h4 style="margin: 20px 0 15px;">All Items (${inventory.length})</h4>
                                     <div class="inventory-grid">
                                         ${inventory.length > 0 ? inventory.map(item => `
-                                            <div class="inventory-item ${item.is_equipped ? 'equipped' : ''}" data-id="${item.item_id}" title="${item.name}">
-                                                <div class="inventory-item-icon">${this.getRarityEmoji(item.rarity)}</div>
+                                            <div class="inventory-item ${item.is_equipped ? 'equipped' : ''} hover-scale"
+                                                 data-id="${item.item_id}"
+                                                 data-category="${item.category}"
+                                                 title="${item.name} (${item.category})">
+                                                <div class="inventory-item-icon">${this.getItemIcon(item)}</div>
                                                 <div class="inventory-item-name">${item.name}</div>
                                             </div>
                                         `).join('') : '<p style="color: var(--text-muted); grid-column: 1/-1;">No items yet. Visit the shop!</p>'}
@@ -925,49 +1029,68 @@ const Pages = {
                             </div>
 
                             <div>
-                                <div class="glass-card" style="margin-bottom: 20px;">
-                                    <div class="card-title" style="margin-bottom: 20px;">Statistics</div>
-
-                                    <div style="display: grid; gap: 15px;">
-                                        <div style="display: flex; justify-content: space-between;">
-                                            <span style="color: var(--text-secondary);">Total Points</span>
-                                            <span style="font-weight: 700;">${Utils.formatNumber(user.totalPoints)}</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between;">
-                                            <span style="color: var(--text-secondary);">Stars Balance</span>
-                                            <span style="font-weight: 700;">⭐ ${Utils.formatNumber(user.starsBalance)}</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between;">
-                                            <span style="color: var(--text-secondary);">Current Streak</span>
-                                            <span style="font-weight: 700;">🔥 ${user.streakDays} days</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between;">
-                                            <span style="color: var(--text-secondary);">Tasks Completed</span>
-                                            <span style="font-weight: 700;">${stats.taskStats?.completed || 0}</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between;">
-                                            <span style="color: var(--text-secondary);">Badges Earned</span>
-                                            <span style="font-weight: 700;">${badges.length}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="glass-card" style="margin-bottom: 20px;">
-                                    <div class="card-title" style="margin-bottom: 20px;">Badges (${badges.length})</div>
-                                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                                        ${badges.map(badge => `
-                                            <div class="badge-item" style="padding: 10px;" title="${badge.description}">
-                                                <div class="badge-icon" style="font-size: 24px;">${badge.icon}</div>
+                                <div class="glass-card hover-lift" style="margin-bottom: 20px;">
+                                    <div class="card-title" style="margin-bottom: 20px;">🏆 Achievements</div>
+                                    <div class="achievements-progress">
+                                        <div class="achievement-item">
+                                            <div class="achievement-icon">🎯</div>
+                                            <div class="achievement-info">
+                                                <span>Tasks Master</span>
+                                                <div class="achievement-bar">
+                                                    <div class="achievement-fill" style="width: ${Math.min(100, (stats.taskStats?.completed || 0) * 2)}%"></div>
+                                                </div>
+                                                <span class="achievement-progress">${stats.taskStats?.completed || 0}/50</span>
                                             </div>
-                                        `).join('') || '<p style="color: var(--text-muted);">No badges yet</p>'}
+                                        </div>
+                                        <div class="achievement-item">
+                                            <div class="achievement-icon">🔥</div>
+                                            <div class="achievement-info">
+                                                <span>Streak Champion</span>
+                                                <div class="achievement-bar">
+                                                    <div class="achievement-fill" style="width: ${Math.min(100, (user.streakDays || 0) * 3.33)}%"></div>
+                                                </div>
+                                                <span class="achievement-progress">${user.streakDays || 0}/30 days</span>
+                                            </div>
+                                        </div>
+                                        <div class="achievement-item">
+                                            <div class="achievement-icon">⭐</div>
+                                            <div class="achievement-info">
+                                                <span>Star Collector</span>
+                                                <div class="achievement-bar">
+                                                    <div class="achievement-fill" style="width: ${Math.min(100, (user.totalPoints || 0) / 100)}%"></div>
+                                                </div>
+                                                <span class="achievement-progress">${Utils.formatNumber(user.totalPoints || 0)}/10K</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div class="glass-card">
-                                    <div class="card-title" style="margin-bottom: 20px;">Account Settings</div>
-                                    <button class="btn btn-ghost btn-full" style="margin-bottom: 10px;" onclick="Pages.profile.editProfile()">Edit Profile</button>
-                                    <button class="btn btn-ghost btn-full" style="margin-bottom: 10px;" onclick="Pages.profile.changePassword()">Change Password</button>
-                                    <button class="btn btn-danger btn-full" onclick="Auth.logout()">Logout</button>
+                                <div class="glass-card hover-lift" style="margin-bottom: 20px;">
+                                    <div class="card-title" style="margin-bottom: 20px;">🏅 Badges (${badges.length})</div>
+                                    <div class="badges-showcase">
+                                        ${badges.length > 0 ? badges.map(badge => `
+                                            <div class="badge-showcase-item pulse-glow" title="${badge.description}">
+                                                <div class="badge-icon">${badge.icon}</div>
+                                                <div class="badge-name">${badge.name}</div>
+                                            </div>
+                                        `).join('') : '<p style="color: var(--text-muted);">No badges yet. Complete tasks to earn badges!</p>'}
+                                    </div>
+                                </div>
+
+                                <div class="glass-card hover-lift">
+                                    <div class="card-title" style="margin-bottom: 20px;">⚙️ Account Settings</div>
+                                    <button class="btn btn-ghost btn-full magnetic-btn" style="margin-bottom: 10px;" onclick="Pages.profile.editProfile()">
+                                        ✏️ Edit Profile
+                                    </button>
+                                    <button class="btn btn-ghost btn-full magnetic-btn" style="margin-bottom: 10px;" onclick="Pages.profile.changePassword()">
+                                        🔒 Change Password
+                                    </button>
+                                    <button class="btn btn-ghost btn-full magnetic-btn" style="margin-bottom: 10px;" onclick="App.navigateTo('shop')">
+                                        🛒 Visit Shop
+                                    </button>
+                                    <button class="btn btn-danger btn-full" onclick="Auth.logout()">
+                                        🚪 Logout
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -975,12 +1098,15 @@ const Pages = {
                 `;
 
                 this.inventory = inventory;
+                this.user = user;
                 this.bindEvents();
 
                 // Initialize avatar with user data
-                AvatarSystem.init('profile-avatar');
-                AvatarSystem.setLevel(user.level || 1, user.totalPoints || 0);
-                AvatarSystem.setEquippedItems(inventory);
+                setTimeout(() => {
+                    AvatarSystem.init('profile-avatar');
+                    AvatarSystem.setLevel(user.level || 1, user.totalPoints || 0);
+                    AvatarSystem.setEquippedItems(inventory);
+                }, 100);
 
             } catch (error) {
                 main.innerHTML = `<div class="empty-state"><h3>Failed to load profile</h3><p>${error.message}</p></div>`;
@@ -988,8 +1114,23 @@ const Pages = {
         },
 
         getSlotIcon(slot) {
-            const icons = { head: '🎩', body: '👕', accessory: '💎', background: '🖼️', effect: '✨', pet: '🐾' };
+            const icons = {
+                head: '🎩',
+                body: '👕',
+                accessory: '💎',
+                background: '🖼️',
+                effect: '✨',
+                pet: '🐾',
+                banner: '🏞️'
+            };
             return icons[slot] || '❓';
+        },
+
+        getItemIcon(item) {
+            if (item.category === 'banner') {
+                return this.getBannerPreview(item);
+            }
+            return this.getRarityEmoji(item.rarity);
         },
 
         getRarityEmoji(rarity) {
@@ -997,21 +1138,110 @@ const Pages = {
             return emojis[rarity] || '⚪';
         },
 
+        getBannerStyle(banner) {
+            if (!banner) {
+                return 'background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);';
+            }
+
+            // Banner styles based on item name/id
+            const bannerStyles = {
+                'Cosmic Nebula': 'background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);',
+                'Sunset Dream': 'background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);',
+                'Ocean Wave': 'background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #00d2ff 100%);',
+                'Forest Mist': 'background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);',
+                'Fire Storm': 'background: linear-gradient(135deg, #f12711 0%, #f5af19 100%);',
+                'Arctic Aurora': 'background: linear-gradient(135deg, #43e97b 0%, #38f9d7 50%, #4facfe 100%);',
+                'Purple Galaxy': 'background: linear-gradient(135deg, #7f00ff 0%, #e100ff 100%);',
+                'Golden Sunrise': 'background: linear-gradient(135deg, #f5af19 0%, #f12711 50%, #f5af19 100%);',
+                'Neon Lights': 'background: linear-gradient(135deg, #00ff87 0%, #60efff 50%, #ff00ea 100%);',
+                'Deep Space': 'background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);'
+            };
+
+            return bannerStyles[banner.name] || 'background: var(--gradient-primary);';
+        },
+
+        getBannerPreview(item) {
+            const colors = {
+                'Cosmic Nebula': '🌌',
+                'Sunset Dream': '🌅',
+                'Ocean Wave': '🌊',
+                'Forest Mist': '🌲',
+                'Fire Storm': '🔥',
+                'Arctic Aurora': '❄️',
+                'Purple Galaxy': '🟣',
+                'Golden Sunrise': '🌄',
+                'Neon Lights': '💡',
+                'Deep Space': '🌑'
+            };
+            return colors[item.name] || '🏞️';
+        },
+
+        changeBanner() {
+            // Show banner selection modal
+            const banners = this.inventory.filter(i => i.category === 'banner');
+
+            if (banners.length === 0) {
+                Utils.showToast('info', 'No Banners', 'Visit the shop to buy banners!');
+                return;
+            }
+
+            const currentBanner = banners.find(b => b.is_equipped);
+            const options = banners.map(b => `${b.name}${b.is_equipped ? ' (current)' : ''}`).join('\n');
+
+            const selection = prompt(`Select a banner:\n\n${options}\n\nEnter banner name:`);
+
+            if (selection) {
+                const banner = banners.find(b => b.name.toLowerCase() === selection.toLowerCase().replace(' (current)', ''));
+                if (banner) {
+                    this.equipBanner(banner.item_id);
+                }
+            }
+        },
+
+        async equipBanner(bannerId) {
+            try {
+                await API.shop.equipItem(bannerId, true);
+                Utils.showToast('success', 'Banner Changed', 'Your profile banner has been updated!');
+                this.render();
+            } catch (error) {
+                Utils.showToast('error', 'Error', error.error || 'Failed to change banner');
+            }
+        },
+
         bindEvents() {
             // Inventory items click to equip
             document.querySelectorAll('.inventory-item').forEach(item => {
                 item.addEventListener('click', async () => {
                     const itemId = item.dataset.id;
+                    const category = item.dataset.category;
                     const isEquipped = item.classList.contains('equipped');
 
                     try {
                         await API.shop.equipItem(itemId, !isEquipped);
-                        Utils.showToast('success', isEquipped ? 'Unequipped' : 'Equipped', 'Avatar updated');
+
+                        // Special feedback for banners
+                        if (category === 'banner') {
+                            Utils.showToast('success', isEquipped ? 'Banner Removed' : 'Banner Equipped', 'Profile updated!');
+                        } else {
+                            Utils.showToast('success', isEquipped ? 'Unequipped' : 'Equipped', 'Avatar updated');
+                        }
+
                         this.render();
                     } catch (error) {
                         Utils.showToast('error', 'Error', error.error || 'Failed to update');
                     }
                 });
+            });
+
+            // Add scroll reveal animations
+            this.initScrollReveal();
+        },
+
+        initScrollReveal() {
+            const reveals = document.querySelectorAll('.glass-card');
+            reveals.forEach((el, idx) => {
+                el.classList.add('reveal', `stagger-${Math.min(idx + 1, 5)}`);
+                setTimeout(() => el.classList.add('visible'), 100 + idx * 100);
             });
         },
 

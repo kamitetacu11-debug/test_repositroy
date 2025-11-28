@@ -75,6 +75,10 @@ initDatabase();
 const seedDatabase = require('./utils/seedData');
 seedDatabase();
 
+// Add banner items to existing database (if not present)
+const { addBannersToExistingDatabase } = require('./utils/seedData');
+addBannersToExistingDatabase();
+
 // ============================================
 // MIDDLEWARE
 // ============================================

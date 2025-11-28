@@ -506,10 +506,19 @@ const Chat = {
             // Scroll to bottom
             container.scrollTop = container.scrollHeight;
 
-            // Highlight code blocks
-            container.querySelectorAll('pre code').forEach(block => {
-                hljs.highlightElement(block);
-            });
+            // Highlight code blocks safely
+            if (typeof hljs !== 'undefined') {
+                container.querySelectorAll('pre code').forEach(block => {
+                    try {
+                        hljs.highlightElement(block);
+                    } catch (e) {
+                        console.warn('Code highlighting failed:', e);
+                    }
+                });
+            }
+
+            // Bind copy buttons
+            this.bindCopyButtons(container);
 
         } catch (error) {
             container.innerHTML = '<div class="empty-state"><p>Failed to load messages</p></div>';
@@ -530,37 +539,76 @@ const Chat = {
         let contentHtml = '';
 
         if (msg.message_type === 'code') {
+            // Safely escape code content for display
+            const escapedCode = Utils.escapeHtml(msg.content || '');
+            const language = Utils.escapeHtml(msg.code_language || 'plaintext');
+            const msgId = 'code-' + (msg.id || Math.random().toString(36).substr(2, 9));
+
             contentHtml = `
                 <div class="message-code">
-                    <div class="message-code-header">${msg.code_language || 'code'}</div>
-                    <pre><code class="language-${msg.code_language || 'plaintext'}">${Utils.escapeHtml(msg.content)}</code></pre>
+                    <div class="message-code-header">
+                        <span class="code-lang-label">${language}</span>
+                        <button class="btn btn-ghost btn-sm copy-code-btn" data-code-id="${msgId}">Copy</button>
+                    </div>
+                    <pre><code id="${msgId}" class="language-${language}">${escapedCode}</code></pre>
                 </div>
             `;
         } else if (msg.message_type === 'file') {
             const icon = this.getFileIcon(msg.file_name);
+            const escapedFileName = Utils.escapeHtml(msg.file_name || 'file');
+            const escapedFilePath = encodeURIComponent(msg.file_path || '');
             contentHtml = `
-                <div class="message-text">${Utils.escapeHtml(msg.content)}</div>
-                <a href="/uploads/chat/${msg.file_path}" target="_blank" class="message-file">
+                <div class="message-text">${Utils.escapeHtml(msg.content || '')}</div>
+                <a href="/uploads/chat/${escapedFilePath}" target="_blank" class="message-file">
                     <span class="message-file-icon">${icon}</span>
-                    <span class="message-file-name">${msg.file_name}</span>
+                    <span class="message-file-name">${escapedFileName}</span>
                 </a>
             `;
         } else {
-            contentHtml = `<div class="message-text">${Utils.escapeHtml(msg.content)}</div>`;
+            // Parse markdown-style formatting for regular messages
+            const text = Utils.escapeHtml(msg.content || '');
+            // Support inline code with backticks
+            const formattedText = text
+                .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+                .replace(/\n/g, '<br>');
+            contentHtml = `<div class="message-text">${formattedText}</div>`;
         }
 
         return `
-            <div class="message ${isOwn ? 'own' : ''}">
+            <div class="message ${isOwn ? 'own' : ''}" data-msg-id="${msg.id || ''}">
                 <div class="message-avatar">${initials}</div>
                 <div class="message-content">
                     <div class="message-header">
-                        <span class="message-sender">${msg.sender_name}</span>
+                        <span class="message-sender">${Utils.escapeHtml(msg.sender_name || 'Unknown')}</span>
                         <span class="message-time">${Utils.timeAgo(msg.created_at)}</span>
                     </div>
                     ${contentHtml}
                 </div>
             </div>
         `;
+    },
+
+    /**
+     * Bind copy button event handlers
+     */
+    bindCopyButtons(container) {
+        container.querySelectorAll('.copy-code-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const codeId = btn.dataset.codeId;
+                const codeElement = document.getElementById(codeId);
+                if (codeElement) {
+                    // Get text content (unformatted code)
+                    const code = codeElement.textContent || codeElement.innerText;
+                    Utils.copyToClipboard(code);
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        btn.textContent = 'Copy';
+                    }, 2000);
+                }
+            });
+        });
     },
 
     /**
@@ -754,13 +802,23 @@ const Chat = {
         App.socket?.on('chat:message', (message) => {
             if (message.channel_id === this.currentChannel) {
                 const container = document.getElementById('chat-messages');
-                container.innerHTML += this.renderMessage(message);
+                const msgHtml = this.renderMessage(message);
+                container.insertAdjacentHTML('beforeend', msgHtml);
                 container.scrollTop = container.scrollHeight;
 
-                // Highlight code
-                container.querySelectorAll('pre code:not(.hljs)').forEach(block => {
-                    hljs.highlightElement(block);
-                });
+                // Highlight code safely
+                if (typeof hljs !== 'undefined') {
+                    container.querySelectorAll('pre code:not(.hljs)').forEach(block => {
+                        try {
+                            hljs.highlightElement(block);
+                        } catch (e) {
+                            console.warn('Code highlighting failed:', e);
+                        }
+                    });
+                }
+
+                // Bind copy buttons for new message
+                this.bindCopyButtons(container);
             }
         });
 
