@@ -336,6 +336,70 @@ const API = {
         getUrl(filename) {
             return `/api/files/${filename}`;
         }
+    },
+
+    // ============================================
+    // AI ENDPOINTS
+    // ============================================
+
+    ai: {
+        async ask(question) {
+            return API.request('/ai/ask', {
+                method: 'POST',
+                body: JSON.stringify({ question })
+            });
+        },
+
+        async summarize(text) {
+            return API.request('/ai/summarize', {
+                method: 'POST',
+                body: JSON.stringify({ text })
+            });
+        },
+
+        async translate(text, targetLang = 'en') {
+            return API.request('/ai/translate', {
+                method: 'POST',
+                body: JSON.stringify({ text, targetLang })
+            });
+        }
+    },
+
+    // ============================================
+    // PROFILE ENDPOINTS
+    // ============================================
+
+    profile: {
+        async uploadAvatar(file) {
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            return API.request('/profile/avatar', {
+                method: 'POST',
+                body: formData
+            });
+        },
+
+        async uploadBanner(file) {
+            const formData = new FormData();
+            formData.append('banner', file);
+
+            return API.request('/profile/banner', {
+                method: 'POST',
+                body: formData
+            });
+        },
+
+        async updateCharacter(characterData) {
+            return API.request('/profile/character', {
+                method: 'PUT',
+                body: JSON.stringify(characterData)
+            });
+        },
+
+        async getCharacter() {
+            return API.request('/profile/character');
+        }
     }
 };
 

@@ -257,5 +257,38 @@ const addBannersToExistingDatabase = () => {
     console.log('Banner items added successfully!');
 };
 
+/**
+ * Add profile columns to users table (migration)
+ */
+const addProfileColumnsToUsers = () => {
+    const columns = [
+        { name: 'banner_url', type: 'TEXT' },
+        { name: 'skin_color', type: 'TEXT DEFAULT \'#FFD5B8\'' },
+        { name: 'hair_color', type: 'TEXT DEFAULT \'#4A3C2A\'' },
+        { name: 'eye_color', type: 'TEXT DEFAULT \'#2196F3\'' },
+        { name: 'outfit_color', type: 'TEXT DEFAULT \'#6C63FF\'' }
+    ];
+
+    columns.forEach(col => {
+        try {
+            db.exec(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
+            console.log(`Added column ${col.name} to users table`);
+        } catch (err) {
+            // Column likely already exists - this is expected
+            if (!err.message.includes('duplicate column')) {
+                console.error(`Error adding column ${col.name}:`, err.message);
+            }
+        }
+    });
+};
+
+// Run profile columns migration
+try {
+    addProfileColumnsToUsers();
+} catch (err) {
+    console.log('Profile columns migration skipped (already done)');
+}
+
 module.exports = seedDatabase;
 module.exports.addBannersToExistingDatabase = addBannersToExistingDatabase;
+module.exports.addProfileColumnsToUsers = addProfileColumnsToUsers;

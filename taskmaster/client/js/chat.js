@@ -65,12 +65,21 @@ const Chat = {
 
                             <div class="chat-input-container hidden" id="chat-input-container">
                                 <div class="chat-input-toolbar">
-                                    <button class="toolbar-btn" id="attach-file-btn" title="Attach file">📎</button>
-                                    <button class="toolbar-btn" id="code-btn" title="Send code">{ }</button>
+                                    <button class="toolbar-btn" id="attach-file-btn" title="Прикрепить файл">📎</button>
+                                    <button class="toolbar-btn" id="code-btn" title="Отправить код">{ }</button>
+                                    <button class="toolbar-btn" id="voice-btn" title="Голосовой ввод">🎤</button>
+                                    <button class="toolbar-btn" id="ai-btn" title="Спросить ИИ">🤖</button>
                                 </div>
                                 <div class="chat-input-wrapper">
-                                    <textarea id="chat-input" placeholder="Type a message..." rows="1"></textarea>
-                                    <button class="btn btn-primary" id="send-btn">Send</button>
+                                    <textarea id="chat-input" placeholder="Введите сообщение..." rows="1"></textarea>
+                                    <button class="btn btn-primary" id="send-btn">Отправить</button>
+                                </div>
+                                <div class="voice-indicator hidden" id="voice-indicator">
+                                    <div class="voice-waves">
+                                        <span></span><span></span><span></span><span></span><span></span>
+                                    </div>
+                                    <span class="voice-text">Говорите...</span>
+                                    <button class="voice-stop-btn" id="voice-stop-btn">Стоп</button>
                                 </div>
                                 <input type="file" id="chat-file-input" hidden>
                             </div>
@@ -758,12 +767,38 @@ const Chat = {
             }
         });
 
-        // Code button
-        document.getElementById('code-btn')?.addEventListener('click', () => {
-            const code = prompt('Paste your code:');
-            if (code) {
-                const language = prompt('Language (js, python, etc.):', 'javascript');
-                this.sendMessage(code, 'code', language);
+        // Code button - use custom modal
+        document.getElementById('code-btn')?.addEventListener('click', async () => {
+            if (typeof Modal !== 'undefined') {
+                const result = await Modal.codeInput('javascript');
+                if (result && result.code) {
+                    this.sendMessage(result.code, 'code', result.language);
+                }
+            } else {
+                // Fallback to prompts
+                const code = prompt('Вставьте ваш код:');
+                if (code) {
+                    const language = prompt('Язык (javascript, python, и т.д.):', 'javascript');
+                    this.sendMessage(code, 'code', language);
+                }
+            }
+        });
+
+        // Voice input button
+        this.initVoiceInput();
+
+        // AI Assistant button
+        document.getElementById('ai-btn')?.addEventListener('click', async () => {
+            if (typeof Modal !== 'undefined') {
+                const question = await Modal.prompt('Задайте вопрос ИИ-ассистенту:', '', '🤖 AI Ассистент');
+                if (question) {
+                    this.askAI(question);
+                }
+            } else {
+                const question = prompt('Задайте вопрос ИИ-ассистенту:');
+                if (question) {
+                    this.askAI(question);
+                }
             }
         });
 
@@ -793,6 +828,146 @@ const Chat = {
                 this.selectChannel(item.dataset.id);
             });
         });
+    },
+
+    /**
+     * Initialize voice input
+     */
+    initVoiceInput() {
+        const voiceBtn = document.getElementById('voice-btn');
+        const voiceIndicator = document.getElementById('voice-indicator');
+        const voiceStopBtn = document.getElementById('voice-stop-btn');
+        const chatInput = document.getElementById('chat-input');
+
+        if (!voiceBtn) return;
+
+        // Check for Speech Recognition support
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            voiceBtn.style.opacity = '0.5';
+            voiceBtn.title = 'Голосовой ввод не поддерживается в этом браузере';
+            voiceBtn.addEventListener('click', () => {
+                Utils.showToast('Голосовой ввод не поддерживается в этом браузере', 'warning');
+            });
+            return;
+        }
+
+        this.recognition = new SpeechRecognition();
+        this.recognition.lang = 'ru-RU';
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+
+        this.recognition.onstart = () => {
+            voiceIndicator?.classList.remove('hidden');
+            voiceBtn.classList.add('active');
+            voiceBtn.innerHTML = '🔴';
+        };
+
+        this.recognition.onend = () => {
+            voiceIndicator?.classList.add('hidden');
+            voiceBtn.classList.remove('active');
+            voiceBtn.innerHTML = '🎤';
+        };
+
+        this.recognition.onresult = (event) => {
+            let finalTranscript = '';
+            let interimTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+
+            if (chatInput) {
+                if (finalTranscript) {
+                    chatInput.value += finalTranscript + ' ';
+                }
+            }
+        };
+
+        this.recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            Utils.showToast('Ошибка распознавания речи: ' + event.error, 'error');
+            this.recognition.stop();
+        };
+
+        voiceBtn.addEventListener('click', () => {
+            if (voiceBtn.classList.contains('active')) {
+                this.recognition.stop();
+            } else {
+                try {
+                    this.recognition.start();
+                } catch (e) {
+                    console.error('Recognition start error:', e);
+                }
+            }
+        });
+
+        voiceStopBtn?.addEventListener('click', () => {
+            this.recognition.stop();
+        });
+    },
+
+    /**
+     * Ask AI Assistant
+     */
+    async askAI(question) {
+        if (!question || !question.trim()) return;
+
+        Utils.showToast('Отправляю запрос ИИ...', 'info');
+
+        try {
+            const response = await API.ai.ask(question);
+
+            if (response.data && response.data.answer) {
+                // Send AI response as a message
+                this.sendMessage(`🤖 **AI Ответ:**\n${response.data.answer}`, 'text');
+            } else {
+                Utils.showToast('ИИ не смог ответить на вопрос', 'warning');
+            }
+        } catch (error) {
+            console.error('AI error:', error);
+            // Show helpful response even if API fails
+            const fallbackResponse = this.getLocalAIResponse(question);
+            if (fallbackResponse) {
+                this.sendMessage(`🤖 **AI Ответ:**\n${fallbackResponse}`, 'text');
+            } else {
+                Utils.showToast('Ошибка при обращении к ИИ', 'error');
+            }
+        }
+    },
+
+    /**
+     * Local AI fallback responses
+     */
+    getLocalAIResponse(question) {
+        const q = question.toLowerCase();
+
+        if (q.includes('привет') || q.includes('здравств')) {
+            return 'Привет! Я AI-ассистент TaskMaster. Чем могу помочь?';
+        }
+        if (q.includes('помощь') || q.includes('помоги')) {
+            return 'Я могу помочь вам с:\n• Управлением задачами\n• Отслеживанием прогресса\n• Советами по продуктивности\n• Ответами на вопросы о системе';
+        }
+        if (q.includes('задач') || q.includes('task')) {
+            return 'Для создания задачи перейдите в раздел "Tasks" и нажмите кнопку "New Task". Вы можете установить приоритет, сложность и дедлайн для каждой задачи.';
+        }
+        if (q.includes('очки') || q.includes('points') || q.includes('звёзд')) {
+            return 'Очки начисляются за выполнение задач. Чем сложнее задача, тем больше очков вы получите. Звёзды можно потратить в магазине на предметы для аватара!';
+        }
+        if (q.includes('уровен') || q.includes('level')) {
+            return 'Ваш уровень повышается при накоплении очков. Каждый новый уровень открывает новые возможности и делает вашего персонажа круче!';
+        }
+        if (q.includes('магазин') || q.includes('shop')) {
+            return 'В магазине вы можете приобрести предметы для кастомизации аватара: шапки, одежду, фоны, эффекты и питомцев. Используйте заработанные звёзды!';
+        }
+
+        return 'Извините, я пока не могу ответить на этот вопрос. Попробуйте спросить о задачах, очках, уровнях или магазине.';
     },
 
     /**

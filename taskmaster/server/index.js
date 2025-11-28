@@ -38,6 +38,8 @@ const shopRoutes = require('./routes/shop');
 const chatRoutes = require('./routes/chat');
 const leaderboardRoutes = require('./routes/leaderboard');
 const notificationsRoutes = require('./routes/notifications');
+const aiRoutes = require('./routes/ai');
+const profileRoutes = require('./routes/profile');
 
 // Create Express app
 const app = express();
@@ -132,6 +134,8 @@ app.use('/api/shop', shopRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/profile', profileRoutes);
 
 // File download/preview endpoint
 app.get('/api/files/:filename', (req, res) => {
