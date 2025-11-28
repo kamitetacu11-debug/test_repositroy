@@ -297,7 +297,7 @@ const statements = {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `),
     updateTaskStatus: db.prepare('UPDATE tasks SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'),
-    completeTask: db.prepare('UPDATE tasks SET status = "completed", completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?'),
+    completeTask: db.prepare("UPDATE tasks SET status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?"),
 
     // Points
     addPointsTransaction: db.prepare(`
