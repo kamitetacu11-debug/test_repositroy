@@ -742,47 +742,29 @@ const Pages = {
     },
 
     // ============================================
-    // SHOP PAGE
+    // SAP ENTERPRISE PAGE
     // ============================================
-    shop: {
-        currentCategory: 'all',
-        items: [],
+    sap: {
+        currentModule: 'dashboard',
 
         async render() {
             const main = document.getElementById('main-content');
             App.showLoading(main);
 
             try {
-                const response = await API.shop.getItems();
-                this.items = response.data.items;
-
-                const categories = [...new Set(this.items.map(i => i.category))];
-
                 main.innerHTML = `
                     <div class="page-section active">
                         <div class="page-header">
-                            <h1 class="page-title">Avatar Shop 🛒</h1>
-                            <p class="page-subtitle">Customize your avatar with unique items</p>
+                            <h1 class="page-title">SAP Enterprise</h1>
+                            <p class="page-subtitle">Управление бизнес-процессами</p>
                         </div>
 
-                        <div class="glass-card" style="margin-bottom: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div class="shop-filters" id="shop-filters">
-                                    <button class="shop-filter active" data-category="all">All</button>
-                                    ${categories.map(cat => `
-                                        <button class="shop-filter" data-category="${cat}">${cat}</button>
-                                    `).join('')}
-                                </div>
-                                <div class="nav-stars" style="font-size: 18px;">
-                                    <span>⭐</span>
-                                    <span style="font-weight: 700;">${Utils.formatNumber(Auth.currentUser?.starsBalance || 0)}</span>
-                                    <span style="color: var(--text-muted); font-size: 14px;">Stars</span>
-                                </div>
-                            </div>
+                        <div class="sap-modules-grid">
+                            ${this.renderModuleCards()}
                         </div>
 
-                        <div class="shop-grid" id="shop-grid">
-                            ${this.renderItems(this.items)}
+                        <div id="sap-content" style="margin-top: 20px;">
+                            ${await this.renderDashboard()}
                         </div>
                     </div>
                 `;
@@ -790,116 +772,508 @@ const Pages = {
                 this.bindEvents();
 
             } catch (error) {
-                main.innerHTML = `<div class="empty-state"><h3>Failed to load shop</h3><p>${error.message}</p></div>`;
+                main.innerHTML = `<div class="empty-state"><h3>Failed to load SAP</h3><p>${error.message}</p></div>`;
             }
         },
 
-        renderItems(items) {
-            const getRarityEmoji = (rarity) => {
-                const emojis = { common: '⚪', uncommon: '🟢', rare: '🔵', epic: '🟣', legendary: '🟡' };
-                return emojis[rarity] || '⚪';
-            };
+        renderModuleCards() {
+            const modules = [
+                { id: 'finance', icon: '💰', name: 'Finance', desc: 'FI/CO, Бухгалтерия' },
+                { id: 'hr', icon: '👥', name: 'HR', desc: 'Управление персоналом' },
+                { id: 'mm', icon: '📦', name: 'Materials', desc: 'Закупки и склад' },
+                { id: 'sd', icon: '🛒', name: 'Sales', desc: 'Продажи и отгрузки' },
+                { id: 'crm', icon: '🤝', name: 'CRM', desc: 'Клиенты и лиды' },
+                { id: 'projects', icon: '📊', name: 'Projects', desc: 'Управление проектами' },
+                { id: 'approvals', icon: '✅', name: 'Approvals', desc: 'Согласования' }
+            ];
 
-            const getBannerPreview = (item) => {
-                // Parse animation_data to get colors
-                let animData = {};
-                try {
-                    animData = item.animationData || (item.animation_data ? JSON.parse(item.animation_data) : {});
-                } catch (e) {
-                    animData = {};
-                }
+            return `
+                <div class="sap-cards-row">
+                    ${modules.map(m => `
+                        <div class="glass-card sap-module-card hover-lift" data-module="${m.id}">
+                            <div class="sap-module-icon">${m.icon}</div>
+                            <div class="sap-module-name">${m.name}</div>
+                            <div class="sap-module-desc">${m.desc}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        },
 
-                if (animData.colors && animData.colors.length > 0) {
-                    const colors = animData.colors;
-                    const gradient = colors.length > 1
-                        ? `linear-gradient(135deg, ${colors.join(', ')})`
-                        : colors[0];
-                    return `<div class="banner-preview" style="background: ${gradient};"></div>`;
-                }
+        async renderDashboard() {
+            try {
+                const response = await fetch('/api/sap/dashboard', {
+                    headers: { 'Authorization': `Bearer ${API.getToken()}` }
+                });
+                const data = await response.json();
 
-                return `<div class="banner-preview" style="background: var(--gradient-primary);"></div>`;
-            };
+                if (!data.success) throw new Error('Failed to load');
 
-            const getCategoryIcon = (category) => {
-                const icons = {
-                    head: '🎩', body: '👕', accessory: '💎',
-                    background: '🖼️', effect: '✨', pet: '🐾', banner: '🏞️'
-                };
-                return icons[category] || '❓';
-            };
-
-            return items.map(item => {
-                const isBanner = item.category === 'banner';
-                const preview = isBanner
-                    ? getBannerPreview(item)
-                    : `<span class="item-emoji">${getRarityEmoji(item.rarity)}</span>`;
+                const kpis = data.data.kpis;
 
                 return `
-                    <div class="shop-item ${item.owned ? 'owned' : ''} ${isBanner ? 'banner-item' : ''} hover-lift" data-id="${item.id}">
-                        <div class="shop-item-preview ${isBanner ? 'is-banner' : ''}">
-                            ${preview}
-                        </div>
-                        <div class="shop-item-info">
-                            <div class="shop-item-name">${item.name}</div>
-                            <div class="shop-item-category">
-                                <span class="category-icon">${getCategoryIcon(item.category)}</span>
-                                ${item.category}
+                    <div class="glass-card">
+                        <div class="card-title" style="margin-bottom: 20px;">📈 KPI Overview</div>
+                        <div class="sap-kpi-grid">
+                            <div class="sap-kpi-item">
+                                <div class="sap-kpi-value">${kpis.finance?.pendingInvoices?.count || 0}</div>
+                                <div class="sap-kpi-label">Неоплаченные счета</div>
+                                <div class="sap-kpi-sub">₽${Utils.formatNumber(kpis.finance?.pendingInvoices?.total || 0)}</div>
                             </div>
-                            <div class="shop-item-rarity rarity-${item.rarity}">${item.rarity}</div>
-                            <div class="shop-item-price ${item.owned ? 'owned' : ''}">
-                                ${item.owned ? '✓ Owned' : `⭐ ${item.price_stars}`}
+                            <div class="sap-kpi-item">
+                                <div class="sap-kpi-value">${kpis.hr?.totalEmployees?.count || 0}</div>
+                                <div class="sap-kpi-label">Сотрудников</div>
+                                <div class="sap-kpi-sub">${kpis.hr?.pendingLeaves?.count || 0} заявок на отпуск</div>
+                            </div>
+                            <div class="sap-kpi-item">
+                                <div class="sap-kpi-value">${kpis.inventory?.lowStock?.count || 0}</div>
+                                <div class="sap-kpi-label">Низкий остаток</div>
+                                <div class="sap-kpi-sub">${kpis.inventory?.pendingOrders?.count || 0} заказов</div>
+                            </div>
+                            <div class="sap-kpi-item">
+                                <div class="sap-kpi-value">${kpis.sales?.pendingOrders?.count || 0}</div>
+                                <div class="sap-kpi-label">Заказы в работе</div>
+                                <div class="sap-kpi-sub">₽${Utils.formatNumber(kpis.sales?.monthlyRevenue?.total || 0)} за месяц</div>
+                            </div>
+                            <div class="sap-kpi-item">
+                                <div class="sap-kpi-value">${kpis.crm?.openLeads?.count || 0}</div>
+                                <div class="sap-kpi-label">Открытые лиды</div>
+                                <div class="sap-kpi-sub">₽${Utils.formatNumber(kpis.crm?.openOpportunities?.pipeline || 0)} воронка</div>
+                            </div>
+                            <div class="sap-kpi-item">
+                                <div class="sap-kpi-value">${kpis.projects?.activeProjects?.count || 0}</div>
+                                <div class="sap-kpi-label">Активных проектов</div>
+                                <div class="sap-kpi-sub">${kpis.approvals?.pending?.count || 0} на согласовании</div>
                             </div>
                         </div>
                     </div>
                 `;
-            }).join('');
+            } catch (error) {
+                return `<div class="glass-card"><p style="color: var(--text-muted);">Данные SAP будут доступны после создания записей</p></div>`;
+            }
+        },
+
+        async renderModule(moduleId) {
+            const moduleRenderers = {
+                finance: this.renderFinance,
+                hr: this.renderHR,
+                mm: this.renderMM,
+                sd: this.renderSD,
+                crm: this.renderCRM,
+                projects: this.renderProjects,
+                approvals: this.renderApprovals
+            };
+
+            const renderer = moduleRenderers[moduleId];
+            if (renderer) {
+                return await renderer.call(this);
+            }
+            return await this.renderDashboard();
+        },
+
+        async renderFinance() {
+            return `
+                <div class="glass-card">
+                    <div class="card-header">
+                        <div class="card-title">💰 Finance Module</div>
+                        <button class="btn btn-primary btn-sm" onclick="Pages.sap.showFinanceForm()">+ Новая проводка</button>
+                    </div>
+                    <div class="sap-section-grid">
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('finance', 'accounts')">
+                            <span>📒</span> План счетов
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('finance', 'journals')">
+                            <span>📝</span> Журнал проводок
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('finance', 'invoices')">
+                            <span>🧾</span> Счета-фактуры
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('finance', 'budgets')">
+                            <span>📊</span> Бюджеты
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('finance', 'reports')">
+                            <span>📈</span> Отчёты
+                        </div>
+                    </div>
+                </div>
+            `;
+        },
+
+        async renderHR() {
+            return `
+                <div class="glass-card">
+                    <div class="card-header">
+                        <div class="card-title">👥 HR Module</div>
+                        <button class="btn btn-primary btn-sm" onclick="Pages.sap.showHRForm()">+ Новый сотрудник</button>
+                    </div>
+                    <div class="sap-section-grid">
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('hr', 'employees')">
+                            <span>👤</span> Сотрудники
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('hr', 'departments')">
+                            <span>🏢</span> Отделы
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('hr', 'time')">
+                            <span>⏰</span> Табель
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('hr', 'leaves')">
+                            <span>🏖️</span> Отпуска
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('hr', 'payroll')">
+                            <span>💵</span> Зарплата
+                        </div>
+                    </div>
+                </div>
+            `;
+        },
+
+        async renderMM() {
+            return `
+                <div class="glass-card">
+                    <div class="card-header">
+                        <div class="card-title">📦 Materials Management</div>
+                        <button class="btn btn-primary btn-sm" onclick="Pages.sap.showMMForm()">+ Новый товар</button>
+                    </div>
+                    <div class="sap-section-grid">
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('mm', 'products')">
+                            <span>📦</span> Товары
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('mm', 'inventory')">
+                            <span>🏭</span> Склад
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('mm', 'vendors')">
+                            <span>🚚</span> Поставщики
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('mm', 'orders')">
+                            <span>📋</span> Закупки
+                        </div>
+                    </div>
+                </div>
+            `;
+        },
+
+        async renderSD() {
+            return `
+                <div class="glass-card">
+                    <div class="card-header">
+                        <div class="card-title">🛒 Sales & Distribution</div>
+                        <button class="btn btn-primary btn-sm" onclick="Pages.sap.showSDForm()">+ Новый заказ</button>
+                    </div>
+                    <div class="sap-section-grid">
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('sd', 'customers')">
+                            <span>👥</span> Клиенты
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('sd', 'quotations')">
+                            <span>📝</span> Коммерческие предложения
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('sd', 'orders')">
+                            <span>🛒</span> Заказы
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('sd', 'shipments')">
+                            <span>🚛</span> Отгрузки
+                        </div>
+                    </div>
+                </div>
+            `;
+        },
+
+        async renderCRM() {
+            return `
+                <div class="glass-card">
+                    <div class="card-header">
+                        <div class="card-title">🤝 CRM</div>
+                        <button class="btn btn-primary btn-sm" onclick="Pages.sap.showCRMForm()">+ Новый лид</button>
+                    </div>
+                    <div class="sap-section-grid">
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('crm', 'leads')">
+                            <span>🎯</span> Лиды
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('crm', 'opportunities')">
+                            <span>💎</span> Возможности
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('crm', 'activities')">
+                            <span>📅</span> Активности
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('crm', 'tickets')">
+                            <span>🎫</span> Тикеты
+                        </div>
+                    </div>
+                </div>
+            `;
+        },
+
+        async renderProjects() {
+            return `
+                <div class="glass-card">
+                    <div class="card-header">
+                        <div class="card-title">📊 Projects</div>
+                        <button class="btn btn-primary btn-sm" onclick="Pages.sap.showProjectForm()">+ Новый проект</button>
+                    </div>
+                    <div class="sap-section-grid">
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('projects', 'list')">
+                            <span>📁</span> Проекты
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('projects', 'milestones')">
+                            <span>🎯</span> Вехи
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('projects', 'resources')">
+                            <span>👥</span> Ресурсы
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('projects', 'analytics')">
+                            <span>📈</span> Аналитика
+                        </div>
+                    </div>
+                </div>
+            `;
+        },
+
+        async renderApprovals() {
+            return `
+                <div class="glass-card">
+                    <div class="card-header">
+                        <div class="card-title">✅ Approvals</div>
+                    </div>
+                    <div class="sap-section-grid">
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('approvals', 'pending')">
+                            <span>⏳</span> На согласовании
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('approvals', 'my-requests')">
+                            <span>📤</span> Мои заявки
+                        </div>
+                        <div class="sap-section-item" onclick="Pages.sap.loadSection('approvals', 'rules')">
+                            <span>⚙️</span> Правила
+                        </div>
+                    </div>
+                </div>
+            `;
+        },
+
+        async loadSection(module, section) {
+            Utils.showToast('info', 'Загрузка', `${module}/${section}`);
+            // API call to load specific section data
         },
 
         bindEvents() {
-            // Category filters
-            document.querySelectorAll('#shop-filters .shop-filter').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('#shop-filters .shop-filter').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
+            document.querySelectorAll('.sap-module-card').forEach(card => {
+                card.addEventListener('click', async () => {
+                    const moduleId = card.dataset.module;
+                    this.currentModule = moduleId;
 
-                    const category = btn.dataset.category;
-                    const filtered = category === 'all' ? this.items : this.items.filter(i => i.category === category);
-                    document.getElementById('shop-grid').innerHTML = this.renderItems(filtered);
-                    this.bindItemEvents();
+                    document.querySelectorAll('.sap-module-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+
+                    const content = document.getElementById('sap-content');
+                    content.innerHTML = '<div class="loading-spinner"></div>';
+                    content.innerHTML = await this.renderModule(moduleId);
+                });
+            });
+        }
+    },
+
+    // THEMES PAGE (Edge-style customization)
+    // ============================================
+    themes: {
+        currentTheme: null,
+
+        themes: [
+            { id: 'default', name: 'Default Purple', primary: '#667eea', secondary: '#764ba2', accent: '#f093fb', bg: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' },
+            { id: 'ocean', name: 'Ocean Blue', primary: '#0077b6', secondary: '#00b4d8', accent: '#90e0ef', bg: 'linear-gradient(135deg, #0a192f 0%, #112240 100%)' },
+            { id: 'forest', name: 'Forest Green', primary: '#2d6a4f', secondary: '#40916c', accent: '#95d5b2', bg: 'linear-gradient(135deg, #1b2e1b 0%, #1e3d1e 100%)' },
+            { id: 'sunset', name: 'Sunset Orange', primary: '#f77f00', secondary: '#fcbf49', accent: '#eae2b7', bg: 'linear-gradient(135deg, #2d1810 0%, #3d2317 100%)' },
+            { id: 'rose', name: 'Rose Pink', primary: '#e63946', secondary: '#f48c8c', accent: '#ffc6d9', bg: 'linear-gradient(135deg, #2d1a1f 0%, #3d2228 100%)' },
+            { id: 'midnight', name: 'Midnight Dark', primary: '#6366f1', secondary: '#8b5cf6', accent: '#c4b5fd', bg: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%)' },
+            { id: 'arctic', name: 'Arctic Ice', primary: '#06b6d4', secondary: '#22d3ee', accent: '#a5f3fc', bg: 'linear-gradient(135deg, #0c1929 0%, #162033 100%)' },
+            { id: 'golden', name: 'Golden Hour', primary: '#d97706', secondary: '#f59e0b', accent: '#fcd34d', bg: 'linear-gradient(135deg, #1f1a0f 0%, #2d2517 100%)' }
+        ],
+
+        async render() {
+            const main = document.getElementById('main-content');
+            this.currentTheme = localStorage.getItem('app-theme') || 'default';
+
+            main.innerHTML = `
+                <div class="page-section active">
+                    <div class="page-header">
+                        <h1 class="page-title">Appearance</h1>
+                        <p class="page-subtitle">Настройте интерфейс под себя</p>
+                    </div>
+
+                    <div class="glass-card" style="margin-bottom: 20px;">
+                        <div class="card-title" style="margin-bottom: 20px;">🎨 Color Theme</div>
+                        <div class="themes-grid" id="themes-grid">
+                            ${this.renderThemes()}
+                        </div>
+                    </div>
+
+                    <div class="glass-card" style="margin-bottom: 20px;">
+                        <div class="card-title" style="margin-bottom: 20px;">🖼️ Background</div>
+                        <div class="backgrounds-grid" id="backgrounds-grid">
+                            ${this.renderBackgrounds()}
+                        </div>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="card-title" style="margin-bottom: 20px;">⚙️ Interface Settings</div>
+                        <div class="settings-list">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <span class="setting-label">Animations</span>
+                                    <span class="setting-desc">Enable smooth animations</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="setting-animations" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <span class="setting-label">Particles Effect</span>
+                                    <span class="setting-desc">Background star particles</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="setting-particles" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <span class="setting-label">Glass Effect</span>
+                                    <span class="setting-desc">Glassmorphism cards</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="setting-glass" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <span class="setting-label">Compact Mode</span>
+                                    <span class="setting-desc">Reduce spacing for more content</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="setting-compact">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            this.bindEvents();
+            this.loadSettings();
+        },
+
+        renderThemes() {
+            return this.themes.map(theme => `
+                <div class="theme-card ${this.currentTheme === theme.id ? 'active' : ''}" data-theme="${theme.id}">
+                    <div class="theme-preview" style="background: ${theme.bg};">
+                        <div class="theme-colors">
+                            <span class="theme-color" style="background: ${theme.primary};"></span>
+                            <span class="theme-color" style="background: ${theme.secondary};"></span>
+                            <span class="theme-color" style="background: ${theme.accent};"></span>
+                        </div>
+                    </div>
+                    <div class="theme-name">${theme.name}</div>
+                    ${this.currentTheme === theme.id ? '<span class="theme-check">✓</span>' : ''}
+                </div>
+            `).join('');
+        },
+
+        renderBackgrounds() {
+            const backgrounds = [
+                { id: 'gradient', name: 'Gradient', style: 'linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%)' },
+                { id: 'solid', name: 'Solid Dark', style: '#0f0f1a' },
+                { id: 'stars', name: 'Stars', style: 'radial-gradient(ellipse at bottom, #1b2838 0%, #090a0f 100%)' },
+                { id: 'mesh', name: 'Mesh', style: 'linear-gradient(45deg, #12121a 25%, transparent 25%), linear-gradient(-45deg, #12121a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #12121a 75%), linear-gradient(-45deg, transparent 75%, #12121a 75%)' }
+            ];
+
+            const currentBg = localStorage.getItem('app-background') || 'gradient';
+
+            return backgrounds.map(bg => `
+                <div class="bg-card ${currentBg === bg.id ? 'active' : ''}" data-bg="${bg.id}">
+                    <div class="bg-preview" style="background: ${bg.style};"></div>
+                    <div class="bg-name">${bg.name}</div>
+                </div>
+            `).join('');
+        },
+
+        applyTheme(themeId) {
+            const theme = this.themes.find(t => t.id === themeId);
+            if (!theme) return;
+
+            document.documentElement.style.setProperty('--primary', theme.primary);
+            document.documentElement.style.setProperty('--secondary', theme.secondary);
+            document.documentElement.style.setProperty('--accent', theme.accent);
+            document.documentElement.style.setProperty('--gradient-primary', `linear-gradient(135deg, ${theme.primary} 0%, ${theme.secondary} 50%, ${theme.accent} 100%)`);
+
+            localStorage.setItem('app-theme', themeId);
+            this.currentTheme = themeId;
+
+            // Update UI
+            document.querySelectorAll('.theme-card').forEach(card => {
+                card.classList.toggle('active', card.dataset.theme === themeId);
+                const check = card.querySelector('.theme-check');
+                if (card.dataset.theme === themeId) {
+                    if (!check) card.innerHTML += '<span class="theme-check">✓</span>';
+                } else {
+                    check?.remove();
+                }
+            });
+        },
+
+        loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('app-settings') || '{}');
+
+            document.getElementById('setting-animations').checked = settings.animations !== false;
+            document.getElementById('setting-particles').checked = settings.particles !== false;
+            document.getElementById('setting-glass').checked = settings.glass !== false;
+            document.getElementById('setting-compact').checked = settings.compact === true;
+
+            // Apply saved theme
+            const savedTheme = localStorage.getItem('app-theme');
+            if (savedTheme) this.applyTheme(savedTheme);
+        },
+
+        saveSettings() {
+            const settings = {
+                animations: document.getElementById('setting-animations').checked,
+                particles: document.getElementById('setting-particles').checked,
+                glass: document.getElementById('setting-glass').checked,
+                compact: document.getElementById('setting-compact').checked
+            };
+
+            localStorage.setItem('app-settings', JSON.stringify(settings));
+
+            // Apply settings
+            document.body.classList.toggle('no-animations', !settings.animations);
+            document.body.classList.toggle('no-particles', !settings.particles);
+            document.body.classList.toggle('no-glass', !settings.glass);
+            document.body.classList.toggle('compact-mode', settings.compact);
+        },
+
+        bindEvents() {
+            // Theme selection
+            document.querySelectorAll('.theme-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    this.applyTheme(card.dataset.theme);
+                    Utils.showToast('success', 'Theme Applied', `${this.themes.find(t => t.id === card.dataset.theme)?.name}`);
                 });
             });
 
-            this.bindItemEvents();
-        },
+            // Background selection
+            document.querySelectorAll('.bg-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    localStorage.setItem('app-background', card.dataset.bg);
+                    document.querySelectorAll('.bg-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    Utils.showToast('success', 'Background Changed');
+                });
+            });
 
-        bindItemEvents() {
-            document.querySelectorAll('.shop-item:not(.owned)').forEach(item => {
-                item.addEventListener('click', async () => {
-                    const itemId = item.dataset.id;
-                    const shopItem = this.items.find(i => i.id === itemId);
-
-                    if (Auth.currentUser.starsBalance < shopItem.price_stars) {
-                        Utils.showToast('warning', 'Insufficient Stars', `You need ${shopItem.price_stars - Auth.currentUser.starsBalance} more stars`);
-                        return;
-                    }
-
-                    if (confirm(`Purchase "${shopItem.name}" for ${shopItem.price_stars} stars?`)) {
-                        try {
-                            const response = await API.shop.purchase(itemId);
-                            Auth.currentUser.starsBalance = response.data.newBalance;
-                            App.updateUserUI();
-
-                            Utils.showToast('success', 'Purchase Successful!', `You bought ${shopItem.name}`);
-
-                            // Update item in list
-                            shopItem.owned = true;
-                            item.classList.add('owned');
-                            item.querySelector('.shop-item-price').innerHTML = '✓ Owned';
-
-                        } catch (error) {
-                            Utils.showToast('error', 'Purchase Failed', error.error || 'Failed to purchase item');
-                        }
-                    }
+            // Settings toggles
+            ['animations', 'particles', 'glass', 'compact'].forEach(setting => {
+                document.getElementById(`setting-${setting}`)?.addEventListener('change', () => {
+                    this.saveSettings();
                 });
             });
         }
@@ -993,46 +1367,10 @@ const Pages = {
                             <span class="actions-label">Customize:</span>
                             <div class="avatar-actions-buttons">
                                 <button class="avatar-action-btn ripple" onclick="Pages.profile.changeAvatar()">📷 Photo</button>
-                                <button class="avatar-action-btn ripple" onclick="Pages.profile.changeFrame()">🖼️ Frame</button>
-                                <button class="avatar-action-btn ripple" onclick="Pages.profile.changeEffect()">✨ Effect</button>
-                                <button class="avatar-action-btn ripple" onclick="Pages.profile.changeBanner()">🎨 Banner</button>
                             </div>
                         </div>
 
                         <div class="content-grid">
-                            <div>
-
-                                <div class="glass-card">
-                                    <div class="card-title" style="margin-bottom: 20px;">Your Inventory</div>
-
-                                    <div class="equipped-items">
-                                        ${['head', 'body', 'accessory', 'background', 'effect', 'pet', 'banner'].map(slot => {
-                                            const equipped = inventory.find(i => i.category === slot && i.is_equipped);
-                                            return `
-                                                <div class="equipped-slot ${equipped ? 'filled' : ''} hover-scale" data-slot="${slot}">
-                                                    <div class="equipped-slot-icon">${equipped ? '✓' : this.getSlotIcon(slot)}</div>
-                                                    <div class="equipped-slot-label">${slot}</div>
-                                                    ${equipped ? `<div class="equipped-slot-name">${equipped.name}</div>` : ''}
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
-
-                                    <h4 style="margin: 20px 0 15px;">All Items (${inventory.length})</h4>
-                                    <div class="inventory-grid">
-                                        ${inventory.length > 0 ? inventory.map(item => `
-                                            <div class="inventory-item ${item.is_equipped ? 'equipped' : ''} hover-scale"
-                                                 data-id="${item.item_id}"
-                                                 data-category="${item.category}"
-                                                 title="${item.name} (${item.category})">
-                                                <div class="inventory-item-icon">${this.getItemIcon(item)}</div>
-                                                <div class="inventory-item-name">${item.name}</div>
-                                            </div>
-                                        `).join('') : '<p style="color: var(--text-muted); grid-column: 1/-1;">No items yet. Visit the shop!</p>'}
-                                    </div>
-                                </div>
-                            </div>
-
                             <div>
                                 <div class="glass-card hover-lift" style="margin-bottom: 20px;">
                                     <div class="card-title" style="margin-bottom: 20px;">🏆 Achievements</div>
@@ -1090,8 +1428,8 @@ const Pages = {
                                     <button class="btn btn-ghost btn-full magnetic-btn" style="margin-bottom: 10px;" onclick="Pages.profile.changePassword()">
                                         🔒 Change Password
                                     </button>
-                                    <button class="btn btn-ghost btn-full magnetic-btn" style="margin-bottom: 10px;" onclick="App.navigateTo('shop')">
-                                        🛒 Visit Shop
+                                    <button class="btn btn-ghost btn-full magnetic-btn" style="margin-bottom: 10px;" onclick="App.navigateTo('themes')">
+                                        🎨 Appearance
                                     </button>
                                     <button class="btn btn-danger btn-full" onclick="Auth.logout()">
                                         🚪 Logout
