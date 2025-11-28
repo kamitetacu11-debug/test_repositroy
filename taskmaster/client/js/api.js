@@ -374,7 +374,7 @@ const API = {
             const formData = new FormData();
             formData.append('avatar', file);
 
-            return API.request('/profile/avatar', {
+            return API.request('/images/avatar', {
                 method: 'POST',
                 body: formData
             });
@@ -384,7 +384,7 @@ const API = {
             const formData = new FormData();
             formData.append('banner', file);
 
-            return API.request('/profile/banner', {
+            return API.request('/images/banner', {
                 method: 'POST',
                 body: formData
             });
@@ -399,6 +399,129 @@ const API = {
 
         async getCharacter() {
             return API.request('/profile/character');
+        }
+    },
+
+    // ============================================
+    // IMAGES ENDPOINTS (stored in database)
+    // ============================================
+
+    images: {
+        async upload(file, imageType = 'other') {
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('imageType', imageType);
+
+            return API.request('/images/upload', {
+                method: 'POST',
+                body: formData
+            });
+        },
+
+        async uploadAvatar(file) {
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            return API.request('/images/avatar', {
+                method: 'POST',
+                body: formData
+            });
+        },
+
+        async uploadBanner(file) {
+            const formData = new FormData();
+            formData.append('banner', file);
+
+            return API.request('/images/banner', {
+                method: 'POST',
+                body: formData
+            });
+        },
+
+        async getList() {
+            return API.request('/images/user/list');
+        },
+
+        async delete(imageId) {
+            return API.request(`/images/${imageId}`, {
+                method: 'DELETE'
+            });
+        },
+
+        getUrl(filename) {
+            return `/api/images/${filename}`;
+        },
+
+        getThumbnailUrl(filename) {
+            return `/api/images/${filename}?thumb=1`;
+        }
+    },
+
+    // ============================================
+    // ANALYTICS ENDPOINTS (SAP-style KPI)
+    // ============================================
+
+    analytics: {
+        async getKPI(period = '30d') {
+            return API.request(`/analytics/kpi?period=${period}`);
+        },
+
+        async getWorkflow() {
+            return API.request('/analytics/workflow');
+        },
+
+        async getPerformance(period = '30d') {
+            return API.request(`/analytics/performance?period=${period}`);
+        },
+
+        async getOrganization() {
+            return API.request('/analytics/organization');
+        },
+
+        async exportData(type = 'tasks', format = 'csv') {
+            return API.request(`/analytics/export?type=${type}&format=${format}`);
+        }
+    },
+
+    // ============================================
+    // WORKFLOW ENDPOINTS (SAP-style approvals)
+    // ============================================
+
+    workflow: {
+        async getPendingApprovals() {
+            return API.request('/workflow/approvals');
+        },
+
+        async approveTask(taskId, comment = '', bonusPoints = 0) {
+            return API.request(`/workflow/approve/${taskId}`, {
+                method: 'POST',
+                body: JSON.stringify({ comment, bonusPoints })
+            });
+        },
+
+        async rejectTask(taskId, comment, action = 'revision') {
+            return API.request(`/workflow/reject/${taskId}`, {
+                method: 'POST',
+                body: JSON.stringify({ comment, action })
+            });
+        },
+
+        async submitForReview(taskId, content, actualHours = null) {
+            return API.request(`/workflow/submit/${taskId}`, {
+                method: 'POST',
+                body: JSON.stringify({ content, actualHours })
+            });
+        },
+
+        async getStats() {
+            return API.request('/workflow/stats');
+        },
+
+        async bulkApprove(taskIds, comment = '') {
+            return API.request('/workflow/bulk-approve', {
+                method: 'POST',
+                body: JSON.stringify({ taskIds, comment })
+            });
         }
     }
 };

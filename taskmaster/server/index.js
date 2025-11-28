@@ -40,6 +40,13 @@ const leaderboardRoutes = require('./routes/leaderboard');
 const notificationsRoutes = require('./routes/notifications');
 const aiRoutes = require('./routes/ai');
 const profileRoutes = require('./routes/profile');
+const logsRoutes = require('./routes/logs');
+const imagesRoutes = require('./routes/images');
+const analyticsRoutes = require('./routes/analytics');
+const workflowRoutes = require('./routes/workflow');
+
+// Request logger middleware
+const { requestLogger } = require('./middleware/logger');
 
 // Create Express app
 const app = express();
@@ -120,6 +127,9 @@ app.use('/api/', apiLimiter);
 // Audit logging
 app.use(auditLog);
 
+// Custom request logger (geo, fingerprint, timestamp)
+app.use(requestLogger);
+
 // Static files
 app.use(express.static(path.join(__dirname, '../client')));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -136,6 +146,10 @@ app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/logs', logsRoutes);
+app.use('/api/images', imagesRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/workflow', workflowRoutes);
 
 // File download/preview endpoint
 app.get('/api/files/:filename', (req, res) => {

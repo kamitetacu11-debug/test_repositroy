@@ -253,6 +253,24 @@ const initDatabase = () => {
         )
     `);
 
+    // Uploaded Images (stored in database)
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS uploaded_images (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            image_type TEXT NOT NULL CHECK(image_type IN ('avatar', 'banner', 'chat', 'task', 'other')),
+            filename TEXT NOT NULL,
+            original_name TEXT,
+            mime_type TEXT NOT NULL,
+            size INTEGER NOT NULL,
+            data BLOB NOT NULL,
+            thumbnail BLOB,
+            width INTEGER,
+            height INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
     // Create indexes for performance
     db.exec(`
         CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -264,6 +282,8 @@ const initDatabase = () => {
         CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);
         CREATE INDEX IF NOT EXISTS idx_points_user ON points_transactions(user_id);
         CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_log(user_id);
+        CREATE INDEX IF NOT EXISTS idx_uploaded_images_user ON uploaded_images(user_id);
+        CREATE INDEX IF NOT EXISTS idx_uploaded_images_type ON uploaded_images(image_type);
     `);
 
     console.log('Database initialized successfully');
@@ -271,6 +291,27 @@ const initDatabase = () => {
 
 // Initialize database tables immediately
 initDatabase();
+
+// Run migrations for new columns (must run before prepared statements)
+const runMigrations = () => {
+    const columns = [
+        { name: 'banner_url', type: 'TEXT' },
+        { name: 'skin_color', type: 'TEXT DEFAULT \'#FFD5B8\'' },
+        { name: 'hair_color', type: 'TEXT DEFAULT \'#4A3C2A\'' },
+        { name: 'eye_color', type: 'TEXT DEFAULT \'#2196F3\'' },
+        { name: 'outfit_color', type: 'TEXT DEFAULT \'#6C63FF\'' }
+    ];
+
+    columns.forEach(col => {
+        try {
+            db.exec(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
+        } catch (err) {
+            // Column already exists - ignore
+        }
+    });
+};
+
+runMigrations();
 
 // Prepared statements for common operations
 const statements = {
@@ -357,6 +398,18 @@ const statements = {
         WHERE ub.user_id = ?
     `),
     awardBadge: db.prepare('INSERT OR IGNORE INTO user_badges (user_id, badge_id) VALUES (?, ?)'),
+
+    // Images
+    saveImage: db.prepare(`
+        INSERT INTO uploaded_images (id, user_id, image_type, filename, original_name, mime_type, size, data, thumbnail, width, height)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `),
+    getImageById: db.prepare('SELECT * FROM uploaded_images WHERE id = ?'),
+    getImageByFilename: db.prepare('SELECT * FROM uploaded_images WHERE filename = ?'),
+    getUserImages: db.prepare('SELECT id, filename, image_type, mime_type, size, width, height, created_at FROM uploaded_images WHERE user_id = ? ORDER BY created_at DESC'),
+    deleteImage: db.prepare('DELETE FROM uploaded_images WHERE id = ? AND user_id = ?'),
+    updateUserAvatarUrl: db.prepare('UPDATE users SET avatar_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'),
+    updateUserBannerUrl: db.prepare('UPDATE users SET banner_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'),
 };
 
 module.exports = {

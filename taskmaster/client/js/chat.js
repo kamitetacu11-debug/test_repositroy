@@ -974,9 +974,20 @@ const Chat = {
      * Initialize socket listeners
      */
     initSocket() {
+        // Remove existing listeners to prevent duplicates
+        App.socket?.off('chat:message');
+        App.socket?.off('chat:typing');
+
         App.socket?.on('chat:message', (message) => {
             if (message.channel_id === this.currentChannel) {
                 const container = document.getElementById('chat-messages');
+
+                // Check if message already exists to prevent duplicates
+                if (message.id) {
+                    const existingMsg = container.querySelector(`[data-msg-id="${message.id}"]`);
+                    if (existingMsg) return;
+                }
+
                 const msgHtml = this.renderMessage(message);
                 container.insertAdjacentHTML('beforeend', msgHtml);
                 container.scrollTop = container.scrollHeight;

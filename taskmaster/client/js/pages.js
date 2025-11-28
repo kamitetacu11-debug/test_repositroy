@@ -948,8 +948,15 @@ const Pages = {
                         <!-- Profile Header with Avatar -->
                         <div class="profile-header-section">
                             <div class="profile-avatar-wrapper">
-                                <div class="profile-avatar-container" id="profile-avatar">
-                                    <!-- Canvas avatar will be rendered here -->
+                                <div class="profile-avatar-photo ${this.getAvatarFrameClass(inventory)}" id="profile-avatar">
+                                    ${user.avatarUrl ?
+                                        `<img src="${user.avatarUrl}" alt="Avatar" class="avatar-image">` :
+                                        `<div class="avatar-initials">${Utils.getInitials(user.fullName)}</div>`
+                                    }
+                                    <button class="avatar-edit-btn" onclick="Pages.profile.changeAvatar()">
+                                        📷
+                                    </button>
+                                    ${this.getAvatarEffect(inventory)}
                                 </div>
                                 <div class="profile-level-badge">
                                     <span class="level-number">${user.level}</span>
@@ -981,16 +988,14 @@ const Pages = {
                             </div>
                         </div>
 
-                        <!-- Avatar Action Buttons -->
+                        <!-- Avatar Customization Bar -->
                         <div class="avatar-actions-bar glass-card">
-                            <span class="actions-label">Avatar Actions:</span>
+                            <span class="actions-label">Customize:</span>
                             <div class="avatar-actions-buttons">
-                                <button class="avatar-action-btn ripple" onclick="AvatarSystem.playAnimation('wave')">👋 Wave</button>
-                                <button class="avatar-action-btn ripple" onclick="AvatarSystem.playAnimation('jump')">🦘 Jump</button>
-                                <button class="avatar-action-btn action-spin ripple" onclick="AvatarSystem.playAnimation('spin')">🔄 Spin</button>
-                                <button class="avatar-action-btn action-dance ripple" onclick="AvatarSystem.playAnimation('dance')">💃 Dance</button>
-                                <button class="avatar-action-btn action-power ripple" onclick="AvatarSystem.playAnimation('power')">⚡ Power</button>
-                                <button class="avatar-action-btn ripple" onclick="AvatarSystem.playAnimation('celebrate')">🎉 Celebrate</button>
+                                <button class="avatar-action-btn ripple" onclick="Pages.profile.changeAvatar()">📷 Photo</button>
+                                <button class="avatar-action-btn ripple" onclick="Pages.profile.changeFrame()">🖼️ Frame</button>
+                                <button class="avatar-action-btn ripple" onclick="Pages.profile.changeEffect()">✨ Effect</button>
+                                <button class="avatar-action-btn ripple" onclick="Pages.profile.changeBanner()">🎨 Banner</button>
                             </div>
                         </div>
 
@@ -1174,6 +1179,141 @@ const Pages = {
                 'Deep Space': '🌑'
             };
             return colors[item.name] || '🏞️';
+        },
+
+        // Get avatar frame class based on equipped items
+        getAvatarFrameClass(inventory) {
+            const frame = inventory.find(i => i.category === 'accessory' && i.is_equipped);
+            if (!frame) return 'frame-default';
+
+            const frameClasses = {
+                legendary: 'frame-legendary',
+                epic: 'frame-epic',
+                rare: 'frame-rare',
+                uncommon: 'frame-uncommon',
+                common: 'frame-common'
+            };
+            return frameClasses[frame.rarity] || 'frame-default';
+        },
+
+        // Get avatar effect HTML based on equipped items
+        getAvatarEffect(inventory) {
+            const effect = inventory.find(i => i.category === 'effect' && i.is_equipped);
+            if (!effect) return '';
+
+            const effectClasses = {
+                legendary: 'effect-legendary',
+                epic: 'effect-epic',
+                rare: 'effect-sparkle',
+                uncommon: 'effect-glow',
+                common: ''
+            };
+            const effectClass = effectClasses[effect.rarity] || '';
+            return effectClass ? `<div class="avatar-effect ${effectClass}"></div>` : '';
+        },
+
+        // Change avatar photo
+        async changeAvatar() {
+            if (typeof Modal !== 'undefined') {
+                const file = await Modal.imageUpload('Загрузить аватар', Auth.currentUser?.avatarUrl);
+                if (file && file !== 'keep') {
+                    try {
+                        Utils.showToast('Загружаю...', 'info');
+                        const response = await API.profile.uploadAvatar(file);
+                        if (response.success) {
+                            Auth.currentUser.avatarUrl = response.data.avatarUrl;
+                            Utils.showToast('Аватар обновлён!', 'success');
+                            this.render();
+                        }
+                    } catch (error) {
+                        Utils.showToast('Ошибка загрузки', 'error');
+                    }
+                }
+            } else {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        try {
+                            const response = await API.profile.uploadAvatar(file);
+                            if (response.success) {
+                                Auth.currentUser.avatarUrl = response.data.avatarUrl;
+                                Utils.showToast('Аватар обновлён!', 'success');
+                                this.render();
+                            }
+                        } catch (error) {
+                            Utils.showToast('Ошибка загрузки', 'error');
+                        }
+                    }
+                };
+                input.click();
+            }
+        },
+
+        // Change avatar frame
+        async changeFrame() {
+            const frames = this.inventory.filter(i => i.category === 'accessory');
+
+            if (frames.length === 0) {
+                Utils.showToast('Нет рамок! Посетите магазин.', 'info');
+                return;
+            }
+
+            if (typeof Modal !== 'undefined') {
+                const options = frames.map(f => ({
+                    value: f.item_id,
+                    label: `${f.name} (${f.rarity})`,
+                    icon: this.getRarityEmoji(f.rarity)
+                }));
+
+                const selected = await Modal.select('Выберите рамку для аватара:', options, '🖼️ Рамки');
+                if (selected) {
+                    await this.equipItem(selected, 'accessory');
+                }
+            }
+        },
+
+        // Change avatar effect
+        async changeEffect() {
+            const effects = this.inventory.filter(i => i.category === 'effect');
+
+            if (effects.length === 0) {
+                Utils.showToast('Нет эффектов! Посетите магазин.', 'info');
+                return;
+            }
+
+            if (typeof Modal !== 'undefined') {
+                const options = effects.map(e => ({
+                    value: e.item_id,
+                    label: `${e.name} (${e.rarity})`,
+                    icon: '✨'
+                }));
+
+                const selected = await Modal.select('Выберите эффект для аватара:', options, '✨ Эффекты');
+                if (selected) {
+                    await this.equipItem(selected, 'effect');
+                }
+            }
+        },
+
+        // Equip item helper
+        async equipItem(itemId, category) {
+            try {
+                // Unequip current item in category
+                const currentEquipped = this.inventory.find(i => i.category === category && i.is_equipped);
+                if (currentEquipped && currentEquipped.item_id !== itemId) {
+                    await API.shop.equipItem(currentEquipped.item_id, false);
+                }
+
+                // Equip new item
+                await API.shop.equipItem(itemId, true);
+                Utils.showToast('Предмет экипирован!', 'success');
+                this.render();
+            } catch (error) {
+                Utils.showToast('Ошибка экипировки', 'error');
+            }
         },
 
         changeBanner() {

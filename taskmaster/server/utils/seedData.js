@@ -289,6 +289,81 @@ try {
     console.log('Profile columns migration skipped (already done)');
 }
 
+/**
+ * Add avatar frames and effects to shop
+ */
+const addFramesAndEffectsToShop = () => {
+    // Check if frames already exist
+    const existingFrames = db.prepare("SELECT COUNT(*) as count FROM avatar_items WHERE name LIKE '%Frame%'").get();
+
+    if (existingFrames.count > 0) {
+        console.log('Frames and effects already exist, skipping...');
+        return;
+    }
+
+    console.log('Adding avatar frames and effects...');
+
+    const newItems = [
+        // Avatar Frames (рамки для аватара)
+        { id: uuidv4(), name: 'Simple Frame', description: 'Clean simple border for your avatar', category: 'effect', image_url: '/assets/frames/simple.svg', price_stars: 20, rarity: 'common', animation_data: JSON.stringify({ type: 'frame', style: 'simple', border: 'solid', color: '#ffffff' }) },
+        { id: uuidv4(), name: 'Gradient Frame', description: 'Beautiful gradient border', category: 'effect', image_url: '/assets/frames/gradient.svg', price_stars: 50, rarity: 'common', animation_data: JSON.stringify({ type: 'frame', style: 'gradient', colors: ['#667eea', '#764ba2'] }) },
+        { id: uuidv4(), name: 'Neon Blue Frame', description: 'Glowing neon blue border', category: 'effect', image_url: '/assets/frames/neon_blue.svg', price_stars: 80, rarity: 'uncommon', animation_data: JSON.stringify({ type: 'frame', style: 'neon', color: '#00d4ff', glow: true }) },
+        { id: uuidv4(), name: 'Neon Pink Frame', description: 'Glowing neon pink border', category: 'effect', image_url: '/assets/frames/neon_pink.svg', price_stars: 80, rarity: 'uncommon', animation_data: JSON.stringify({ type: 'frame', style: 'neon', color: '#ff00ff', glow: true }) },
+        { id: uuidv4(), name: 'Rainbow Frame', description: 'Animated rainbow border', category: 'effect', image_url: '/assets/frames/rainbow.svg', price_stars: 150, rarity: 'rare', animation_data: JSON.stringify({ type: 'frame', style: 'rainbow', animated: true }) },
+        { id: uuidv4(), name: 'Gold Frame', description: 'Prestigious golden border', category: 'effect', image_url: '/assets/frames/gold.svg', price_stars: 200, rarity: 'rare', animation_data: JSON.stringify({ type: 'frame', style: 'metallic', color: '#ffd700', shine: true }) },
+        { id: uuidv4(), name: 'Crystal Frame', description: 'Sparkling crystal border', category: 'effect', image_url: '/assets/frames/crystal.svg', price_stars: 300, rarity: 'epic', animation_data: JSON.stringify({ type: 'frame', style: 'crystal', sparkle: true }) },
+        { id: uuidv4(), name: 'Fire Frame', description: 'Burning flame border', category: 'effect', image_url: '/assets/frames/fire.svg', price_stars: 350, rarity: 'epic', animation_data: JSON.stringify({ type: 'frame', style: 'fire', animated: true }) },
+        { id: uuidv4(), name: 'Cosmic Frame', description: 'Swirling galaxy border', category: 'effect', image_url: '/assets/frames/cosmic.svg', price_stars: 450, rarity: 'epic', animation_data: JSON.stringify({ type: 'frame', style: 'cosmic', stars: true, animated: true }) },
+        { id: uuidv4(), name: 'Divine Frame', description: 'Legendary divine golden aura', category: 'effect', image_url: '/assets/frames/divine.svg', price_stars: 800, rarity: 'legendary', animation_data: JSON.stringify({ type: 'frame', style: 'divine', rays: true, particles: true }) },
+
+        // Avatar Effects (эффекты аватара)
+        { id: uuidv4(), name: 'Soft Glow', description: 'Gentle glowing effect around avatar', category: 'effect', image_url: '/assets/effects/glow_soft.svg', price_stars: 30, rarity: 'common', animation_data: JSON.stringify({ type: 'aura', style: 'glow', color: '#ffffff', opacity: 0.5 }) },
+        { id: uuidv4(), name: 'Blue Aura', description: 'Cool blue aura effect', category: 'effect', image_url: '/assets/effects/aura_blue.svg', price_stars: 60, rarity: 'common', animation_data: JSON.stringify({ type: 'aura', style: 'radial', color: '#4facfe', pulse: true }) },
+        { id: uuidv4(), name: 'Purple Aura', description: 'Mystical purple aura', category: 'effect', image_url: '/assets/effects/aura_purple.svg', price_stars: 60, rarity: 'common', animation_data: JSON.stringify({ type: 'aura', style: 'radial', color: '#a855f7', pulse: true }) },
+        { id: uuidv4(), name: 'Hearts Float', description: 'Floating hearts around avatar', category: 'effect', image_url: '/assets/effects/hearts.svg', price_stars: 100, rarity: 'uncommon', animation_data: JSON.stringify({ type: 'particles', shape: 'heart', color: '#ff6b9d', count: 5 }) },
+        { id: uuidv4(), name: 'Stars Float', description: 'Twinkling stars around avatar', category: 'effect', image_url: '/assets/effects/stars_float.svg', price_stars: 100, rarity: 'uncommon', animation_data: JSON.stringify({ type: 'particles', shape: 'star', color: '#ffd700', count: 8 }) },
+        { id: uuidv4(), name: 'Sakura Petals', description: 'Falling cherry blossom petals', category: 'effect', image_url: '/assets/effects/sakura.svg', price_stars: 180, rarity: 'rare', animation_data: JSON.stringify({ type: 'particles', shape: 'petal', color: '#ffb7c5', falling: true }) },
+        { id: uuidv4(), name: 'Lightning Aura', description: 'Crackling lightning effect', category: 'effect', image_url: '/assets/effects/lightning.svg', price_stars: 250, rarity: 'rare', animation_data: JSON.stringify({ type: 'aura', style: 'electric', color: '#00ffff', bolts: true }) },
+        { id: uuidv4(), name: 'Frozen Aura', description: 'Ice crystals floating effect', category: 'effect', image_url: '/assets/effects/frozen.svg', price_stars: 280, rarity: 'rare', animation_data: JSON.stringify({ type: 'particles', shape: 'crystal', color: '#87ceeb', frost: true }) },
+        { id: uuidv4(), name: 'Shadow Essence', description: 'Dark shadow tendrils effect', category: 'effect', image_url: '/assets/effects/shadow.svg', price_stars: 350, rarity: 'epic', animation_data: JSON.stringify({ type: 'aura', style: 'shadow', color: '#1a1a2e', tendrils: true }) },
+        { id: uuidv4(), name: 'Phoenix Aura', description: 'Majestic phoenix fire wings', category: 'effect', image_url: '/assets/effects/phoenix.svg', price_stars: 500, rarity: 'epic', animation_data: JSON.stringify({ type: 'wings', style: 'fire', color: '#ff4500', animated: true }) },
+        { id: uuidv4(), name: 'Angel Wings', description: 'Ethereal glowing wings', category: 'effect', image_url: '/assets/effects/angel_wings.svg', price_stars: 600, rarity: 'epic', animation_data: JSON.stringify({ type: 'wings', style: 'feather', color: '#ffffff', glow: true }) },
+        { id: uuidv4(), name: 'Void Rift Aura', description: 'Reality-bending void effect', category: 'effect', image_url: '/assets/effects/void_rift.svg', price_stars: 750, rarity: 'legendary', animation_data: JSON.stringify({ type: 'aura', style: 'void', distortion: true, particles: true }) },
+        { id: uuidv4(), name: 'Cosmic Deity', description: 'Ultimate cosmic power aura', category: 'effect', image_url: '/assets/effects/cosmic_deity.svg', price_stars: 1000, rarity: 'legendary', animation_data: JSON.stringify({ type: 'combined', frame: 'cosmic', aura: 'divine', wings: 'galaxy', full: true }) },
+
+        // Banner Effects (эффекты для баннера)
+        { id: uuidv4(), name: 'Animated Stars', description: 'Twinkling stars on your banner', category: 'banner', image_url: '/assets/banners/fx_stars.jpg', price_stars: 70, rarity: 'common', animation_data: JSON.stringify({ type: 'banner_effect', style: 'stars', animated: true }) },
+        { id: uuidv4(), name: 'Particle Flow', description: 'Flowing particles across banner', category: 'banner', image_url: '/assets/banners/fx_particles.jpg', price_stars: 120, rarity: 'uncommon', animation_data: JSON.stringify({ type: 'banner_effect', style: 'particles', direction: 'horizontal' }) },
+        { id: uuidv4(), name: 'Lightning Banner', description: 'Electric lightning strikes', category: 'banner', image_url: '/assets/banners/fx_lightning.jpg', price_stars: 200, rarity: 'rare', animation_data: JSON.stringify({ type: 'banner_effect', style: 'lightning', random: true }) },
+        { id: uuidv4(), name: 'Aurora Waves', description: 'Northern lights wave effect', category: 'banner', image_url: '/assets/banners/fx_aurora.jpg', price_stars: 280, rarity: 'epic', animation_data: JSON.stringify({ type: 'banner_effect', style: 'aurora', colors: ['#43e97b', '#38f9d7', '#4facfe'] }) },
+        { id: uuidv4(), name: 'Holographic Banner', description: 'Shifting holographic effect', category: 'banner', image_url: '/assets/banners/fx_holographic.jpg', price_stars: 400, rarity: 'epic', animation_data: JSON.stringify({ type: 'banner_effect', style: 'holographic', shimmer: true }) },
+        { id: uuidv4(), name: 'Cosmic Warp', description: 'Space-time warping effect', category: 'banner', image_url: '/assets/banners/fx_cosmic_warp.jpg', price_stars: 600, rarity: 'legendary', animation_data: JSON.stringify({ type: 'banner_effect', style: 'warp', distortion: true }) },
+    ];
+
+    const insertItem = db.prepare(`
+        INSERT INTO avatar_items (id, name, description, category, image_url, price_stars, rarity, animation_data, is_available)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `);
+
+    newItems.forEach(item => {
+        try {
+            insertItem.run(item.id, item.name, item.description, item.category, item.image_url, item.price_stars, item.rarity, item.animation_data);
+        } catch (err) {
+            console.error(`Error adding item ${item.name}:`, err.message);
+        }
+    });
+
+    console.log('Avatar frames and effects added successfully!');
+};
+
+// Run frames and effects migration
+try {
+    addFramesAndEffectsToShop();
+} catch (err) {
+    console.log('Frames and effects migration error:', err.message);
+}
+
 module.exports = seedDatabase;
 module.exports.addBannersToExistingDatabase = addBannersToExistingDatabase;
 module.exports.addProfileColumnsToUsers = addProfileColumnsToUsers;
+module.exports.addFramesAndEffectsToShop = addFramesAndEffectsToShop;
