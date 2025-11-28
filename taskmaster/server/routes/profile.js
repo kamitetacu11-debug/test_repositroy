@@ -9,7 +9,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { db, statements } = require('../models/database');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -45,7 +45,7 @@ const upload = multer({
 });
 
 // Apply auth middleware to all routes
-router.use(authenticateToken);
+router.use(authenticate);
 
 /**
  * Upload avatar image
