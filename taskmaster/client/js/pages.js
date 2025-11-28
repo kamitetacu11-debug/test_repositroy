@@ -1106,12 +1106,7 @@ const Pages = {
                 this.user = user;
                 this.bindEvents();
 
-                // Initialize avatar with user data
-                setTimeout(() => {
-                    AvatarSystem.init('profile-avatar');
-                    AvatarSystem.setLevel(user.level || 1, user.totalPoints || 0);
-                    AvatarSystem.setEquippedItems(inventory);
-                }, 100);
+                // Photo-based avatar - no character overlay needed
 
             } catch (error) {
                 main.innerHTML = `<div class="empty-state"><h3>Failed to load profile</h3><p>${error.message}</p></div>`;

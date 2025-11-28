@@ -19,6 +19,7 @@ const config = require('./config/config');
 
 // Initialize database
 const { db, initDatabase, statements } = require('./models/database');
+const { initSAPSchema } = require('./models/sap-schema');
 
 // Security middleware
 const {
@@ -44,6 +45,7 @@ const logsRoutes = require('./routes/logs');
 const imagesRoutes = require('./routes/images');
 const analyticsRoutes = require('./routes/analytics');
 const workflowRoutes = require('./routes/workflow');
+const sapRoutes = require('./routes/sap');
 
 // Request logger middleware
 const { requestLogger } = require('./middleware/logger');
@@ -79,6 +81,7 @@ ensureDirs();
 
 // Initialize database
 initDatabase();
+initSAPSchema();
 
 // Seed initial data
 const seedDatabase = require('./utils/seedData');
@@ -150,6 +153,7 @@ app.use('/api/logs', logsRoutes);
 app.use('/api/images', imagesRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/workflow', workflowRoutes);
+app.use('/api/sap', sapRoutes);
 
 // File download/preview endpoint
 app.get('/api/files/:filename', (req, res) => {
