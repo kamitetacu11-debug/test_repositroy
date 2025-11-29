@@ -21,58 +21,70 @@ import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Modal, ModalFooter } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
-
-const recommendations = [
-  {
-    title: 'Focus on High-Priority Tasks',
-    description: 'You have 3 critical tasks due this week. Consider prioritizing these first.',
-    icon: Target,
-    color: 'text-status-error',
-    bgColor: 'bg-status-error/20',
-  },
-  {
-    title: 'Optimal Work Hours',
-    description: 'Your productivity peaks between 9 AM - 12 PM. Schedule complex tasks during this window.',
-    icon: Clock,
-    color: 'text-cosmic-cyan',
-    bgColor: 'bg-cosmic-cyan/20',
-  },
-  {
-    title: 'Streak at Risk',
-    description: 'Complete at least one task today to maintain your 15-day streak!',
-    icon: Zap,
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-500/20',
-  },
-];
-
-const initialInsights = [
-  { label: 'Productivity Score', value: 87, trend: '+5%', status: 'good' },
-  { label: 'Task Completion Rate', value: 94, trend: '+2%', status: 'excellent' },
-  { label: 'Average Response Time', value: 2.3, unit: 'hours', trend: '-15%', status: 'good' },
-  { label: 'Collaboration Index', value: 78, trend: '+8%', status: 'improving' },
-];
-
-const anomalies = [
-  { type: 'warning', message: 'Task "Database optimization" has been in progress for 5 days', time: '2 hours ago', taskId: '6' },
-  { type: 'info', message: 'Your productivity dropped 20% on Wednesdays. Consider reviewing your schedule.', time: '1 day ago' },
-];
-
-const suggestedActions = [
-  { id: '1', task: 'Complete API documentation', reason: 'Highest priority, due tomorrow', points: 50, priority: 'CRITICAL' },
-  { id: '2', task: 'Review Jane\'s PR #423', reason: 'Blocking team progress', points: 20, priority: 'HIGH' },
-  { id: '3', task: 'Update unit tests', reason: 'Coverage dropped below 80%', points: 30, priority: 'MEDIUM' },
-];
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AIInsightsPage() {
   const { addToast } = useToast();
+  const t = useTranslation();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [insights, setInsights] = useState(initialInsights);
   const [startedTasks, setStartedTasks] = useState<string[]>([]);
   const [showStartModal, setShowStartModal] = useState(false);
-  const [selectedAction, setSelectedAction] = useState<typeof suggestedActions[0] | null>(null);
+  const [selectedAction, setSelectedAction] = useState<{
+    id: string;
+    task: string;
+    reason: string;
+    points: number;
+    priority: string;
+  } | null>(null);
   const [showAnomalyModal, setShowAnomalyModal] = useState(false);
-  const [selectedAnomaly, setSelectedAnomaly] = useState<typeof anomalies[0] | null>(null);
+  const [selectedAnomaly, setSelectedAnomaly] = useState<{
+    type: string;
+    message: string;
+    time: string;
+    taskId?: string;
+  } | null>(null);
+
+  const recommendations = [
+    {
+      title: t.ai.focusHighPriority,
+      description: t.ai.focusHighPriorityDesc,
+      icon: Target,
+      color: 'text-status-error',
+      bgColor: 'bg-status-error/20',
+    },
+    {
+      title: t.ai.optimalWorkHours,
+      description: t.ai.optimalWorkHoursDesc,
+      icon: Clock,
+      color: 'text-cosmic-cyan',
+      bgColor: 'bg-cosmic-cyan/20',
+    },
+    {
+      title: t.ai.streakAtRisk,
+      description: t.ai.streakAtRiskDesc,
+      icon: Zap,
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-500/20',
+    },
+  ];
+
+  const [insights, setInsights] = useState([
+    { label: t.ai.productivityScore, value: 87, trend: '+5%', status: 'good' },
+    { label: t.ai.taskCompletionRate, value: 94, trend: '+2%', status: 'excellent' },
+    { label: t.ai.avgResponseTime, value: 2.3, unit: t.ai.hours, trend: '-15%', status: 'good' },
+    { label: t.ai.collaborationIndex, value: 78, trend: '+8%', status: 'improving' },
+  ]);
+
+  const anomalies = [
+    { type: 'warning', message: 'Task "Database optimization" has been in progress for 5 days', time: '2 hours ago', taskId: '6' },
+    { type: 'info', message: 'Your productivity dropped 20% on Wednesdays. Consider reviewing your schedule.', time: '1 day ago' },
+  ];
+
+  const suggestedActions = [
+    { id: '1', task: 'Complete API documentation', reason: 'Highest priority, due tomorrow', points: 50, priority: 'CRITICAL' },
+    { id: '2', task: "Review Jane's PR #423", reason: 'Blocking team progress', points: 20, priority: 'HIGH' },
+    { id: '3', task: 'Update unit tests', reason: 'Coverage dropped below 80%', points: 30, priority: 'MEDIUM' },
+  ];
 
   const handleRefreshAnalysis = async () => {
     setIsRefreshing(true);
@@ -91,8 +103,8 @@ export default function AIInsightsPage() {
     setIsRefreshing(false);
     addToast({
       type: 'success',
-      title: 'Analysis Updated',
-      message: 'AI insights have been refreshed with latest data.',
+      title: t.ai.analysisUpdated,
+      message: t.ai.aiInsightsRefreshed,
     });
   };
 
@@ -107,8 +119,8 @@ export default function AIInsightsPage() {
       setShowStartModal(false);
       addToast({
         type: 'success',
-        title: 'Task Started',
-        message: `"${selectedAction.task}" has been added to your active tasks.`,
+        title: t.ai.taskStarted,
+        message: `"${selectedAction.task}" ${t.ai.hasBeenAddedToActive}`,
       });
     }
   };
@@ -130,9 +142,9 @@ export default function AIInsightsPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Sparkles className="w-8 h-8 text-cosmic-purple" />
-              AI Insights
+              {t.ai.title}
             </h1>
-            <p className="text-gray-400 mt-1">Personalized recommendations powered by AI</p>
+            <p className="text-gray-400 mt-1">{t.ai.subtitle}</p>
           </div>
           <Button
             className="bg-cosmic-purple hover:bg-cosmic-purple/80"
@@ -144,7 +156,7 @@ export default function AIInsightsPage() {
             ) : (
               <Brain className="mr-2 w-4 h-4" />
             )}
-            {isRefreshing ? 'Analyzing...' : 'Refresh Analysis'}
+            {isRefreshing ? t.ai.analyzing : t.ai.refreshAnalysis}
           </Button>
         </motion.div>
 
@@ -158,8 +170,8 @@ export default function AIInsightsPage() {
             <CardContent className="p-0">
               <div className="flex flex-col md:flex-row items-center">
                 <div className="flex-1 p-6">
-                  <h2 className="text-xl font-semibold mb-2">Your Productivity Score</h2>
-                  <p className="text-gray-400 mb-4">Based on your activity over the last 30 days</p>
+                  <h2 className="text-xl font-semibold mb-2">{t.ai.yourProductivityScore}</h2>
+                  <p className="text-gray-400 mb-4">{t.ai.basedOnActivity}</p>
                   <div className="flex items-center gap-4">
                     <div className="relative w-32 h-32">
                       <svg className="w-full h-full transform -rotate-90">
@@ -198,9 +210,9 @@ export default function AIInsightsPage() {
                     <div>
                       <p className="text-status-success font-medium flex items-center gap-1">
                         <TrendingUp className="w-4 h-4" />
-                        +5% from last month
+                        +5% {t.ai.fromLastMonth}
                       </p>
-                      <p className="text-gray-400 text-sm mt-1">Top 15% in your team</p>
+                      <p className="text-gray-400 text-sm mt-1">{t.ai.topInTeam}</p>
                     </div>
                   </div>
                 </div>
@@ -234,7 +246,7 @@ export default function AIInsightsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Lightbulb className="w-5 h-5 text-yellow-500" />
-                  Recommendations
+                  {t.ai.recommendations}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -269,7 +281,7 @@ export default function AIInsightsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-orange-500" />
-                  Anomaly Detection
+                  {t.ai.anomalyDetection}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -295,8 +307,8 @@ export default function AIInsightsPage() {
                 ))}
 
                 <div className="p-4 rounded-xl bg-status-success/10 border border-status-success/30">
-                  <p className="text-status-success text-sm font-medium">No critical anomalies detected</p>
-                  <p className="text-xs text-gray-400 mt-1">Your workflow is running smoothly</p>
+                  <p className="text-status-success text-sm font-medium">{t.ai.noCriticalAnomalies}</p>
+                  <p className="text-xs text-gray-400 mt-1">{t.ai.workflowSmooth}</p>
                 </div>
               </CardContent>
             </Card>
@@ -311,7 +323,7 @@ export default function AIInsightsPage() {
         >
           <Card className="glass">
             <CardHeader>
-              <CardTitle>Suggested Next Actions</CardTitle>
+              <CardTitle>{t.ai.suggestedNextActions}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -333,7 +345,7 @@ export default function AIInsightsPage() {
                         {isStarted ? (
                           <span className="flex items-center gap-1 text-status-success text-sm">
                             <CheckCircle2 className="w-4 h-4" />
-                            Started
+                            {t.ai.started}
                           </span>
                         ) : (
                           <Button
@@ -342,7 +354,7 @@ export default function AIInsightsPage() {
                             onClick={() => handleStartTask(action)}
                           >
                             <Play className="w-3 h-3 mr-1" />
-                            Start
+                            {t.ai.start}
                           </Button>
                         )}
                       </div>
@@ -359,7 +371,7 @@ export default function AIInsightsPage() {
       <Modal
         isOpen={showStartModal}
         onClose={() => setShowStartModal(false)}
-        title="Start Task"
+        title={t.ai.startTask}
         size="sm"
       >
         {selectedAction && (
@@ -379,17 +391,17 @@ export default function AIInsightsPage() {
               </div>
             </div>
             <p className="text-sm text-gray-400">
-              This task will be added to your active tasks list. You can track your progress from the Tasks page.
+              {t.ai.taskAddedToActive}
             </p>
           </div>
         )}
         <ModalFooter>
           <Button variant="ghost" onClick={() => setShowStartModal(false)}>
-            Cancel
+            {t.ai.cancel}
           </Button>
           <Button onClick={confirmStartTask}>
             <Play className="w-4 h-4 mr-2" />
-            Start Working
+            {t.ai.startWorking}
           </Button>
         </ModalFooter>
       </Modal>
@@ -398,7 +410,7 @@ export default function AIInsightsPage() {
       <Modal
         isOpen={showAnomalyModal}
         onClose={() => setShowAnomalyModal(false)}
-        title="Anomaly Details"
+        title={t.ai.anomalyDetails}
         size="md"
       >
         {selectedAnomaly && (
@@ -409,40 +421,40 @@ export default function AIInsightsPage() {
                 : 'border-l-cosmic-blue bg-cosmic-blue/10'
             }`}>
               <p className="font-medium">{selectedAnomaly.message}</p>
-              <p className="text-xs text-gray-400 mt-2">Detected: {selectedAnomaly.time}</p>
+              <p className="text-xs text-gray-400 mt-2">{t.ai.detected}: {selectedAnomaly.time}</p>
             </div>
 
             <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-300">AI Recommendations:</p>
+              <p className="text-sm font-medium text-gray-300">{t.ai.aiRecommendations}</p>
               <ul className="space-y-2 text-sm text-gray-400">
                 {selectedAnomaly.type === 'warning' ? (
                   <>
                     <li className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-cosmic-purple" />
-                      Review the task and check for blockers
+                      {t.ai.reviewTask}
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-cosmic-purple" />
-                      Consider breaking it into smaller subtasks
+                      {t.ai.breakIntoSubtasks}
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-cosmic-purple" />
-                      Reassign if needed to meet deadlines
+                      {t.ai.reassignIfNeeded}
                     </li>
                   </>
                 ) : (
                   <>
                     <li className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-cosmic-purple" />
-                      Review your Wednesday schedule
+                      {t.ai.reviewSchedule}
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-cosmic-purple" />
-                      Consider scheduling lighter tasks for that day
+                      {t.ai.scheduleLighterTasks}
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-cosmic-purple" />
-                      Check for recurring meetings that may be disrupting focus
+                      {t.ai.checkMeetings}
                     </li>
                   </>
                 )}
@@ -452,18 +464,18 @@ export default function AIInsightsPage() {
         )}
         <ModalFooter>
           <Button variant="ghost" onClick={() => setShowAnomalyModal(false)}>
-            Close
+            {t.ai.close}
           </Button>
           {selectedAnomaly?.taskId && (
             <Button onClick={() => {
               setShowAnomalyModal(false);
               addToast({
                 type: 'info',
-                title: 'Opening Task',
-                message: 'Redirecting to task details...',
+                title: t.ai.openingTask,
+                message: t.ai.redirectingToTask,
               });
             }}>
-              View Task
+              {t.ai.viewTask}
             </Button>
           )}
         </ModalFooter>

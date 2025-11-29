@@ -26,6 +26,7 @@ import {
   Clock,
   Check,
   Building2,
+  CalendarDays,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth.store';
@@ -99,6 +100,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigation = [
     { name: t.nav.dashboard, href: '/dashboard', icon: LayoutDashboard },
     { name: t.nav.tasks, href: '/dashboard/tasks', icon: Target },
+    { name: t.calendar.title, href: '/dashboard/calendar', icon: CalendarDays },
     { name: t.nav.teams, href: '/dashboard/teams', icon: Users },
     { name: 'CRM', href: '/dashboard/crm', icon: Building2 },
     { name: t.nav.leaderboard, href: '/dashboard/leaderboard', icon: Trophy },
