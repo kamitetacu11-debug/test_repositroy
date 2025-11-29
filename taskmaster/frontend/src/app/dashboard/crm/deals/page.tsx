@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useCRMStore, useCRMHydration } from '@/stores/crm.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   Plus,
@@ -46,6 +47,9 @@ import {
   ArrowLeft,
   TrendingUp,
   Loader2,
+  ChevronUp,
+  ChevronDown,
+  CalendarDays,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -53,6 +57,126 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
+// Custom styled number input with increment/decrement buttons
+interface StyledNumberInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  min?: number;
+  max?: number;
+  placeholder?: string;
+  suffix?: string;
+}
+
+function StyledNumberInput({ value, onChange, min, max, placeholder, suffix }: StyledNumberInputProps) {
+  const { getCurrentTheme } = useSettingsStore();
+  const theme = getCurrentTheme();
+
+  const handleIncrement = () => {
+    const currentValue = parseFloat(value) || 0;
+    const newValue = max !== undefined ? Math.min(currentValue + 1, max) : currentValue + 1;
+    onChange(newValue.toString());
+  };
+
+  const handleDecrement = () => {
+    const currentValue = parseFloat(value) || 0;
+    const newValue = min !== undefined ? Math.max(currentValue - 1, min) : currentValue - 1;
+    onChange(newValue.toString());
+  };
+
+  return (
+    <div className="relative flex items-center">
+      <Input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        min={min}
+        max={max}
+        placeholder={placeholder}
+        className="pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+      />
+      {suffix && (
+        <span className="absolute right-14 text-gray-400 text-sm">{suffix}</span>
+      )}
+      <div className="absolute right-1 flex flex-col gap-0.5">
+        <button
+          type="button"
+          onClick={handleIncrement}
+          className="w-6 h-5 flex items-center justify-center rounded-t-md transition-all hover:scale-110"
+          style={{
+            background: `linear-gradient(135deg, ${theme.colors.primary}40, ${theme.colors.secondary}40)`,
+            border: `1px solid ${theme.colors.primary}50`
+          }}
+        >
+          <ChevronUp className="w-3 h-3 text-white" />
+        </button>
+        <button
+          type="button"
+          onClick={handleDecrement}
+          className="w-6 h-5 flex items-center justify-center rounded-b-md transition-all hover:scale-110"
+          style={{
+            background: `linear-gradient(135deg, ${theme.colors.primary}40, ${theme.colors.secondary}40)`,
+            border: `1px solid ${theme.colors.primary}50`
+          }}
+        >
+          <ChevronDown className="w-3 h-3 text-white" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Custom styled date input
+interface StyledDateInputProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function StyledDateInput({ value, onChange }: StyledDateInputProps) {
+  const { getCurrentTheme } = useSettingsStore();
+  const theme = getCurrentTheme();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const formatDisplayDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  const handleIconClick = () => {
+    inputRef.current?.showPicker();
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        ref={inputRef}
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="pr-12 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+        style={{
+          colorScheme: 'dark'
+        }}
+      />
+      <button
+        type="button"
+        onClick={handleIconClick}
+        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:scale-110"
+        style={{
+          background: `linear-gradient(135deg, ${theme.colors.primary}40, ${theme.colors.secondary}40)`,
+          border: `1px solid ${theme.colors.primary}50`
+        }}
+      >
+        <CalendarDays className="w-4 h-4 text-white" />
+      </button>
+    </div>
+  );
+}
 
 interface DealFormData {
   title: string;
@@ -80,6 +204,8 @@ export default function DealsPage() {
   const router = useRouter();
   const t = useTranslation();
   const hasHydrated = useCRMHydration();
+  const { getCurrentTheme } = useSettingsStore();
+  const theme = getCurrentTheme();
 
   // Get data from CRM store
   const { deals, pipelines, customers, addDeal, updateDeal, deleteDeal } = useCRMStore();
@@ -190,9 +316,15 @@ export default function DealsPage() {
 
   const openNewDialog = () => {
     setEditingDealId(null);
+    const defaultPipeline = pipelines[0];
+    const defaultStages = defaultPipeline?.stages || [];
+    const sortedStages = [...defaultStages].sort((a, b) => a.sortOrder - b.sortOrder);
+    const defaultStage = sortedStages[0];
+
     setFormData({
       ...initialFormData,
-      pipelineId: pipelines[0]?.id || '',
+      pipelineId: defaultPipeline?.id || '',
+      stageId: defaultStage?.id || '',
     });
     setIsDialogOpen(true);
   };
@@ -263,9 +395,19 @@ export default function DealsPage() {
                 {t.crm.addDeal}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent
+              className="max-w-2xl glass"
+              style={{
+                background: `linear-gradient(135deg, ${theme.colors.background}f0 0%, ${theme.colors.background}e0 100%)`,
+                borderColor: `${theme.colors.primary}40`,
+                boxShadow: `0 0 40px ${theme.colors.glow1}, 0 0 80px ${theme.colors.glow2}`
+              }}
+            >
               <DialogHeader>
-                <DialogTitle>
+                <DialogTitle
+                  className="text-xl"
+                  style={{ color: theme.colors.primary }}
+                >
                   {editingDeal ? t.crm.editDeal : t.crm.addNewDeal}
                 </DialogTitle>
                 <DialogDescription>
@@ -297,7 +439,13 @@ export default function DealsPage() {
                       <SelectTrigger>
                         <SelectValue placeholder={t.crm.selectCustomer} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent
+                        className="glass"
+                        style={{
+                          background: `${theme.colors.background}f5`,
+                          borderColor: `${theme.colors.primary}40`
+                        }}
+                      >
                         {customers.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id}>
                             {customer.name}
@@ -308,12 +456,12 @@ export default function DealsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>{t.crm.amount}</Label>
-                    <Input
-                      type="number"
+                    <StyledNumberInput
                       value={formData.amount}
-                      onChange={(e) =>
-                        setFormData({ ...formData, amount: e.target.value })
+                      onChange={(value) =>
+                        setFormData({ ...formData, amount: value })
                       }
+                      min={0}
                       placeholder="0"
                     />
                   </div>
@@ -323,14 +471,28 @@ export default function DealsPage() {
                     <Label>{t.crm.pipeline} *</Label>
                     <Select
                       value={formData.pipelineId}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, pipelineId: value, stageId: '' })
-                      }
+                      onValueChange={(value) => {
+                        const selectedPipeline = pipelines.find(p => p.id === value);
+                        const stages = selectedPipeline?.stages || [];
+                        const sortedStages = [...stages].sort((a, b) => a.sortOrder - b.sortOrder);
+                        const firstStage = sortedStages[0];
+                        setFormData({
+                          ...formData,
+                          pipelineId: value,
+                          stageId: firstStage?.id || ''
+                        });
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder={t.crm.selectPipeline} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent
+                        className="glass"
+                        style={{
+                          background: `${theme.colors.background}f5`,
+                          borderColor: `${theme.colors.primary}40`
+                        }}
+                      >
                         {pipelines.map((pipeline) => (
                           <SelectItem key={pipeline.id} value={pipeline.id}>
                             {pipeline.name}
@@ -351,7 +513,13 @@ export default function DealsPage() {
                       <SelectTrigger>
                         <SelectValue placeholder={t.crm.selectStage} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent
+                        className="glass"
+                        style={{
+                          background: `${theme.colors.background}f5`,
+                          borderColor: `${theme.colors.primary}40`
+                        }}
+                      >
                         {selectedPipelineStages
                           .sort((a, b) => a.sortOrder - b.sortOrder)
                           .map((stage) => (
@@ -372,24 +540,23 @@ export default function DealsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t.crm.probability} (%)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
+                    <StyledNumberInput
                       value={formData.probability}
-                      onChange={(e) =>
-                        setFormData({ ...formData, probability: e.target.value })
+                      onChange={(value) =>
+                        setFormData({ ...formData, probability: value })
                       }
+                      min={0}
+                      max={100}
                       placeholder="50"
+                      suffix="%"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>{t.crm.expectedCloseDate}</Label>
-                    <Input
-                      type="date"
+                    <StyledDateInput
                       value={formData.expectedCloseDate}
-                      onChange={(e) =>
-                        setFormData({ ...formData, expectedCloseDate: e.target.value })
+                      onChange={(value) =>
+                        setFormData({ ...formData, expectedCloseDate: value })
                       }
                     />
                   </div>
@@ -413,7 +580,14 @@ export default function DealsPage() {
                 >
                   {t.crm.cancel}
                 </Button>
-                <Button onClick={handleSubmit} disabled={submitting}>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  style={{
+                    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                    border: 'none'
+                  }}
+                >
                   {submitting
                     ? t.crm.saving
                     : editingDeal
