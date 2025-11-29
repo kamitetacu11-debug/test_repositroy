@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSettingsStore, themes } from '@/stores/settings.store';
 import { cn } from '@/lib/utils';
 
@@ -44,44 +44,6 @@ function TwinklingStars({ animations, brightness }: { animations: boolean; brigh
           }}
         />
       ))}
-    </div>
-  );
-}
-
-// Star brightness control component
-function StarBrightnessControl() {
-  const { starBrightness, setStarBrightness } = useSettingsStore();
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 p-2 rounded-xl bg-glass-light/80 backdrop-blur-sm border border-glass-border">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={cn(
-          "p-2 rounded-lg transition-all",
-          isExpanded ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"
-        )}
-        title="Star brightness"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      </button>
-      {isExpanded && (
-        <div className="flex items-center gap-2">
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            value={starBrightness}
-            onChange={(e) => setStarBrightness(parseInt(e.target.value))}
-            className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-            title="Star brightness"
-          />
-          <span className="text-xs text-gray-400 w-8">{starBrightness}%</span>
-        </div>
-      )}
     </div>
   );
 }
@@ -171,9 +133,6 @@ export function ThemeWrapper({ children }: ThemeWrapperProps) {
       </div>
 
       {children}
-
-      {/* Star Brightness Control */}
-      <StarBrightnessControl />
     </div>
   );
 }

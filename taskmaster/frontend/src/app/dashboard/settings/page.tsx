@@ -11,26 +11,32 @@ import {
   Save,
   Camera,
   Check,
+  Star,
+  Globe,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
-import { useSettingsStore, themes, Theme } from '@/stores/settings.store';
+import { useSettingsStore, themes, Theme, languages, Language } from '@/stores/settings.store';
 import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
   const {
     theme,
+    language,
     compactMode,
     animations,
     glassOpacity,
+    starBrightness,
     setTheme,
+    setLanguage,
     setCompactMode,
     setAnimations,
     setGlassOpacity,
+    setStarBrightness,
   } = useSettingsStore();
 
   const [activeTab, setActiveTab] = useState('profile');
@@ -281,6 +287,71 @@ export default function SettingsPage() {
                     <div className="flex justify-between text-xs text-gray-500">
                       <span>Transparent</span>
                       <span>Opaque</span>
+                    </div>
+                  </div>
+
+                  {/* Star Brightness Slider */}
+                  <div className="p-4 rounded-xl bg-glass-light space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Star className="w-5 h-5 text-yellow-400" />
+                        <div>
+                          <p className="font-medium">Star Brightness</p>
+                          <p className="text-sm text-gray-400">Adjust the twinkling stars visibility</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-medium text-cosmic-purple">{starBrightness}%</span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={starBrightness}
+                        onChange={(e) => setStarBrightness(parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider-thumb"
+                        style={{
+                          background: `linear-gradient(to right, #eab308 ${starBrightness}%, #4b5563 ${starBrightness}%)`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Hidden</span>
+                      <span>Bright</span>
+                    </div>
+                  </div>
+
+                  {/* Language Selection */}
+                  <div className="p-4 rounded-xl bg-glass-light space-y-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Globe className="w-5 h-5 text-cosmic-cyan" />
+                      <div>
+                        <p className="font-medium">Language</p>
+                        <p className="text-sm text-gray-400">Select your preferred language</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {languages.map((lang) => (
+                        <button
+                          key={lang.id}
+                          onClick={() => setLanguage(lang.id as Language)}
+                          className={cn(
+                            'relative p-3 rounded-xl border-2 transition-all text-center',
+                            language === lang.id
+                              ? 'border-cosmic-purple bg-cosmic-purple/10'
+                              : 'border-glass-border hover:border-glass-medium bg-glass-medium/50'
+                          )}
+                        >
+                          <span className="text-2xl mb-1 block">{lang.flag}</span>
+                          <p className="text-sm font-medium">{lang.nativeName}</p>
+                          {language === lang.id && (
+                            <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-cosmic-purple flex items-center justify-center">
+                              <Check className="w-2.5 h-2.5 text-white" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
                     </div>
                   </div>
 

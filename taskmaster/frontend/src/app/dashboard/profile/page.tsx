@@ -133,10 +133,13 @@ export default function ProfilePage() {
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="absolute inset-0 rounded-full flex items-center justify-center cursor-pointer"
+                      className="absolute rounded-full flex items-center justify-center cursor-pointer overflow-hidden"
                       style={{
                         backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                        marginTop: '-5rem'
+                        width: '128px',
+                        height: '128px',
+                        top: '0',
+                        left: '0',
                       }}
                       onClick={triggerFileUpload}
                     >

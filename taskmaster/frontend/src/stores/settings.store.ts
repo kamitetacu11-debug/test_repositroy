@@ -3,6 +3,21 @@ import { persist } from 'zustand/middleware';
 
 export type Theme = 'cosmic-dark' | 'ocean-blue' | 'forest-green' | 'sunset-orange' | 'aurora-purple' | 'midnight-black' | 'soft-slate' | 'warm-sepia' | 'minimal-gray' | 'gentle-lavender';
 
+export type Language = 'en' | 'ru' | 'zh';
+
+export interface LanguageConfig {
+  id: Language;
+  name: string;
+  nativeName: string;
+  flag: string;
+}
+
+export const languages: LanguageConfig[] = [
+  { id: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
+  { id: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺' },
+  { id: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
+];
+
 export interface ThemeConfig {
   id: Theme;
   name: string;
@@ -164,29 +179,34 @@ export const themes: ThemeConfig[] = [
 
 interface SettingsState {
   theme: Theme;
+  language: Language;
   compactMode: boolean;
   animations: boolean;
   glassOpacity: number; // 0-100
   starBrightness: number; // 0-100
 
   setTheme: (theme: Theme) => void;
+  setLanguage: (language: Language) => void;
   setCompactMode: (enabled: boolean) => void;
   setAnimations: (enabled: boolean) => void;
   setGlassOpacity: (opacity: number) => void;
   setStarBrightness: (brightness: number) => void;
   getCurrentTheme: () => ThemeConfig;
+  getCurrentLanguage: () => LanguageConfig;
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
       theme: 'cosmic-dark',
+      language: 'en',
       compactMode: false,
       animations: true,
       glassOpacity: 50,
       starBrightness: 50,
 
       setTheme: (theme) => set({ theme }),
+      setLanguage: (language) => set({ language }),
       setCompactMode: (enabled) => set({ compactMode: enabled }),
       setAnimations: (enabled) => set({ animations: enabled }),
       setGlassOpacity: (opacity) => set({ glassOpacity: opacity }),
@@ -195,6 +215,11 @@ export const useSettingsStore = create<SettingsState>()(
       getCurrentTheme: () => {
         const currentTheme = get().theme;
         return themes.find(t => t.id === currentTheme) || themes[0];
+      },
+
+      getCurrentLanguage: () => {
+        const currentLang = get().language;
+        return languages.find(l => l.id === currentLang) || languages[0];
       },
     }),
     {
