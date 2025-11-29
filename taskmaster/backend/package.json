@@ -1,0 +1,47 @@
+{
+  "name": "taskmaster-backend",
+  "version": "1.0.0",
+  "description": "TaskMaster AI-Powered Business Task Management API",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "test": "vitest",
+    "test:e2e": "vitest --config vitest.e2e.config.ts",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/jwt": "^8.0.0",
+    "@fastify/multipart": "^8.1.0",
+    "@fastify/rate-limit": "^9.1.0",
+    "@fastify/swagger": "^8.14.0",
+    "@fastify/swagger-ui": "^3.0.0",
+    "@fastify/websocket": "^10.0.1",
+    "@prisma/client": "^5.7.0",
+    "bcryptjs": "^2.4.3",
+    "bullmq": "^5.1.0",
+    "dayjs": "^1.11.10",
+    "fastify": "^4.25.0",
+    "ioredis": "^5.3.2",
+    "openai": "^4.24.0",
+    "pino": "^8.17.0",
+    "pino-pretty": "^10.3.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.10.0",
+    "prisma": "^5.7.0",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.1.0"
+  }
+}
