@@ -20,6 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Input } from '@/components/ui/input';
+import { useSettingsStore } from '@/stores/settings.store';
 import { cn } from '@/lib/utils';
 
 interface Notification {
@@ -128,6 +129,8 @@ const mockNotifications: Notification[] = [
 type FilterType = 'all' | 'unread' | 'task' | 'team' | 'achievement' | 'mention' | 'points';
 
 export default function NotificationsPage() {
+  const { getCurrentTheme } = useSettingsStore();
+  const currentTheme = getCurrentTheme();
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [filter, setFilter] = useState<FilterType>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,13 +140,13 @@ export default function NotificationsPage() {
       case 'task':
         return <CheckCircle2 className="w-5 h-5 text-status-success" />;
       case 'mention':
-        return <MessageSquare className="w-5 h-5 text-cosmic-blue" />;
+        return <MessageSquare className="w-5 h-5" style={{ color: currentTheme.colors.secondary }} />;
       case 'achievement':
         return <Award className="w-5 h-5 text-yellow-500" />;
       case 'points':
-        return <Zap className="w-5 h-5 text-cosmic-purple" />;
+        return <Zap className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />;
       case 'team':
-        return <UserPlus className="w-5 h-5 text-cosmic-cyan" />;
+        return <UserPlus className="w-5 h-5" style={{ color: currentTheme.colors.accent }} />;
       default:
         return <Bell className="w-5 h-5" />;
     }
@@ -205,8 +208,11 @@ export default function NotificationsPage() {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-cosmic-purple/20 flex items-center justify-center">
-              <Bell className="w-6 h-6 text-cosmic-purple" />
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${currentTheme.colors.primary}20` }}
+            >
+              <Bell className="w-6 h-6" style={{ color: currentTheme.colors.primary }} />
             </div>
             <div>
               <h1 className="text-3xl font-bold">Notifications</h1>
@@ -311,10 +317,10 @@ export default function NotificationsPage() {
                             transition: { duration: 0.3, ease: 'easeOut' }
                           }}
                           transition={{ delay: index * 0.05 }}
-                          className={cn(
-                            'flex items-start gap-4 p-4 border-b border-glass-border/50 last:border-0 hover:bg-glass-light/50 transition cursor-pointer',
-                            !notification.read && 'bg-cosmic-purple/5'
-                          )}
+                          className="flex items-start gap-4 p-4 border-b border-glass-border/50 last:border-0 hover:bg-glass-light/50 transition cursor-pointer"
+                          style={{
+                            backgroundColor: !notification.read ? `${currentTheme.colors.primary}08` : undefined
+                          }}
                           onClick={() => markAsRead(notification.id)}
                         >
                           <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-glass-light flex items-center justify-center">
@@ -324,7 +330,10 @@ export default function NotificationsPage() {
                             <div className="flex items-center gap-2 mb-1">
                               <p className="font-medium">{notification.title}</p>
                               {!notification.read && (
-                                <span className="w-2 h-2 rounded-full bg-cosmic-purple flex-shrink-0" />
+                                <span
+                                  className="w-2 h-2 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: currentTheme.colors.primary }}
+                                />
                               )}
                             </div>
                             <p className="text-sm text-gray-400 mb-2">{notification.message}</p>

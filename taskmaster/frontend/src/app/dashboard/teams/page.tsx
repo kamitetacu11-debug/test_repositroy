@@ -729,8 +729,8 @@ export default function TeamsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl bg-glass-light text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
-                      <Zap className="w-5 h-5 text-cosmic-purple" />
-                      <span className="text-2xl font-bold text-cosmic-purple">{formatNumber(selectedMember.points)}</span>
+                      <Zap className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
+                      <span className="text-2xl font-bold" style={{ color: currentTheme.colors.primary }}>{formatNumber(selectedMember.points)}</span>
                     </div>
                     <p className="text-sm text-gray-400">Total Points</p>
                   </div>

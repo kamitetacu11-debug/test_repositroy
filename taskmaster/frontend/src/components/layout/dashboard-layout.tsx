@@ -130,13 +130,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       case 'task':
         return <CheckCircle2 className="w-5 h-5 text-status-success" />;
       case 'mention':
-        return <MessageSquare className="w-5 h-5 text-cosmic-blue" />;
+        return <MessageSquare className="w-5 h-5" style={{ color: currentTheme.colors.secondary }} />;
       case 'achievement':
         return <Award className="w-5 h-5 text-yellow-500" />;
       case 'points':
-        return <Zap className="w-5 h-5 text-cosmic-purple" />;
+        return <Zap className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />;
       case 'team':
-        return <UserPlus className="w-5 h-5 text-cosmic-cyan" />;
+        return <UserPlus className="w-5 h-5" style={{ color: currentTheme.colors.accent }} />;
       default:
         return <Bell className="w-5 h-5" />;
     }
@@ -333,10 +333,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                           notifications.map((notification) => (
                             <div
                               key={notification.id}
-                              className={cn(
-                                'flex items-start gap-3 p-4 border-b border-glass-border/50 hover:bg-glass-light/50 transition cursor-pointer',
-                                !notification.read && 'bg-cosmic-purple/5'
-                              )}
+                              className="flex items-start gap-3 p-4 border-b border-glass-border/50 hover:bg-glass-light/50 transition cursor-pointer"
+                              style={{
+                                backgroundColor: !notification.read ? `${currentTheme.colors.primary}08` : undefined
+                              }}
                               onClick={() => markAsRead(notification.id)}
                             >
                               <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-glass-light flex items-center justify-center">
@@ -346,7 +346,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                                 <div className="flex items-center gap-2">
                                   <p className="font-medium text-sm">{notification.title}</p>
                                   {!notification.read && (
-                                    <span className="w-2 h-2 rounded-full bg-cosmic-purple" />
+                                    <span
+                                      className="w-2 h-2 rounded-full"
+                                      style={{ backgroundColor: currentTheme.colors.primary }}
+                                    />
                                   )}
                                 </div>
                                 <p className="text-sm text-gray-400 truncate">{notification.message}</p>
