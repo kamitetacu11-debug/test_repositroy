@@ -1,6 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3,
   TrendingUp,
@@ -8,11 +9,71 @@ import {
   Target,
   Clock,
   CheckCircle2,
-  Users,
+  X,
+  Calendar,
+  Zap,
+  ArrowRight,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { formatNumber } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+
+// Mock tasks data for each day
+const tasksData: Record<string, { id: string; title: string; points: number; completedAt: string; category: string }[]> = {
+  Mon: [
+    { id: 'T-101', title: 'Fix authentication bug', points: 30, completedAt: '09:45', category: 'Development' },
+    { id: 'T-102', title: 'Update user documentation', points: 15, completedAt: '11:20', category: 'Documentation' },
+    { id: 'T-103', title: 'Review PR #234', points: 25, completedAt: '14:30', category: 'Development' },
+    { id: 'T-104', title: 'Design login modal', points: 20, completedAt: '16:00', category: 'Design' },
+    { id: 'T-105', title: 'Unit tests for auth', points: 30, completedAt: '17:30', category: 'Testing' },
+  ],
+  Tue: [
+    { id: 'T-106', title: 'Implement dashboard API', points: 35, completedAt: '08:30', category: 'Development' },
+    { id: 'T-107', title: 'Create chart components', points: 25, completedAt: '10:15', category: 'Development' },
+    { id: 'T-108', title: 'User onboarding flow', points: 20, completedAt: '11:45', category: 'Design' },
+    { id: 'T-109', title: 'Database optimization', points: 40, completedAt: '14:00', category: 'Development' },
+    { id: 'T-110', title: 'Write API docs', points: 20, completedAt: '15:30', category: 'Documentation' },
+    { id: 'T-111', title: 'Integration tests', points: 25, completedAt: '16:45', category: 'Testing' },
+    { id: 'T-112', title: 'Review team tasks', points: 15, completedAt: '17:30', category: 'Development' },
+    { id: 'T-113', title: 'Fix mobile layout', points: 20, completedAt: '18:00', category: 'Design' },
+  ],
+  Wed: [
+    { id: 'T-114', title: 'Team standup notes', points: 10, completedAt: '10:00', category: 'Documentation' },
+    { id: 'T-115', title: 'Bug fix: sidebar', points: 35, completedAt: '14:30', category: 'Development' },
+    { id: 'T-116', title: 'Code review session', points: 35, completedAt: '16:00', category: 'Development' },
+  ],
+  Thu: [
+    { id: 'T-117', title: 'Implement notifications', points: 30, completedAt: '08:45', category: 'Development' },
+    { id: 'T-118', title: 'Design system updates', points: 25, completedAt: '09:30', category: 'Design' },
+    { id: 'T-119', title: 'Performance audit', points: 35, completedAt: '10:45', category: 'Testing' },
+    { id: 'T-120', title: 'Refactor auth module', points: 40, completedAt: '12:00', category: 'Development' },
+    { id: 'T-121', title: 'Update README', points: 15, completedAt: '13:30', category: 'Documentation' },
+    { id: 'T-122', title: 'API endpoint tests', points: 30, completedAt: '14:45', category: 'Testing' },
+    { id: 'T-123', title: 'Mobile responsive fix', points: 25, completedAt: '15:30', category: 'Development' },
+    { id: 'T-124', title: 'Icon library update', points: 20, completedAt: '16:15', category: 'Design' },
+    { id: 'T-125', title: 'Database migration', points: 35, completedAt: '17:00', category: 'Development' },
+    { id: 'T-126', title: 'Security review', points: 25, completedAt: '18:00', category: 'Testing' },
+  ],
+  Fri: [
+    { id: 'T-127', title: 'Sprint planning', points: 15, completedAt: '09:00', category: 'Documentation' },
+    { id: 'T-128', title: 'Feature: dark mode', points: 35, completedAt: '11:30', category: 'Development' },
+    { id: 'T-129', title: 'UI polish pass', points: 25, completedAt: '13:00', category: 'Design' },
+    { id: 'T-130', title: 'Load testing', points: 30, completedAt: '14:30', category: 'Testing' },
+    { id: 'T-131', title: 'Bugfix: dropdown', points: 25, completedAt: '15:45', category: 'Development' },
+    { id: 'T-132', title: 'Deploy to staging', points: 25, completedAt: '16:30', category: 'Development' },
+    { id: 'T-133', title: 'E2E test suite', points: 25, completedAt: '17:30', category: 'Testing' },
+  ],
+  Sat: [
+    { id: 'T-134', title: 'Hotfix: login issue', points: 30, completedAt: '11:00', category: 'Development' },
+    { id: 'T-135', title: 'Monitoring setup', points: 20, completedAt: '14:00', category: 'Development' },
+  ],
+  Sun: [
+    { id: 'T-136', title: 'Code cleanup', points: 20, completedAt: '10:30', category: 'Development' },
+    { id: 'T-137', title: 'Week review notes', points: 15, completedAt: '12:00', category: 'Documentation' },
+    { id: 'T-138', title: 'Plan next sprint', points: 25, completedAt: '14:30', category: 'Documentation' },
+    { id: 'T-139', title: 'Update dependencies', points: 40, completedAt: '16:00', category: 'Development' },
+  ],
+};
 
 const weeklyData = [
   { day: 'Mon', tasks: 5, points: 120 },
@@ -26,7 +87,20 @@ const weeklyData = [
 
 const maxTasks = Math.max(...weeklyData.map(d => d.tasks));
 
+const categoryColors: Record<string, string> = {
+  Development: 'bg-cosmic-purple',
+  Design: 'bg-cosmic-cyan',
+  Documentation: 'bg-yellow-500',
+  Testing: 'bg-status-success',
+};
+
 export default function AnalyticsPage() {
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+
+  const selectedDayData = selectedDay ? weeklyData.find(d => d.day === selectedDay) : null;
+  const selectedDayTasks = selectedDay ? tasksData[selectedDay] || [] : [];
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -92,7 +166,12 @@ export default function AnalyticsPage() {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>Weekly Activity</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Weekly Activity</span>
+                  <span className="text-sm font-normal text-gray-400">
+                    Click on a bar to view tasks
+                  </span>
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-end justify-between h-64 gap-2">
@@ -104,12 +183,23 @@ export default function AnalyticsPage() {
                         </span>
                         <motion.div
                           initial={{ height: 0 }}
-                          animate={{ height: `${(day.tasks / maxTasks) * 180}px` }}
+                          animate={{
+                            height: `${(day.tasks / maxTasks) * 180}px`,
+                            scale: hoveredDay === day.day ? 1.05 : 1,
+                          }}
                           transition={{ delay: 0.3 + i * 0.1, duration: 0.5 }}
-                          className="w-full max-w-[40px] bg-gradient-to-t from-cosmic-purple to-cosmic-blue rounded-t-lg"
+                          onClick={() => setSelectedDay(day.day)}
+                          onMouseEnter={() => setHoveredDay(day.day)}
+                          onMouseLeave={() => setHoveredDay(null)}
+                          className={`w-full max-w-[40px] bg-gradient-to-t from-cosmic-purple to-cosmic-blue rounded-t-lg cursor-pointer transition-all
+                            ${hoveredDay === day.day ? 'shadow-lg shadow-cosmic-purple/30' : ''}
+                            ${selectedDay === day.day ? 'ring-2 ring-white ring-offset-2 ring-offset-cosmic-dark' : ''}
+                          `}
                         />
                       </div>
-                      <span className="text-sm text-gray-400">{day.day}</span>
+                      <span className={`text-sm ${selectedDay === day.day ? 'text-white font-medium' : 'text-gray-400'}`}>
+                        {day.day}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -172,7 +262,7 @@ export default function AnalyticsPage() {
                   { label: 'Documentation', count: 8, percentage: 15, color: 'bg-yellow-500' },
                   { label: 'Testing', count: 10, percentage: 18, color: 'bg-status-success' },
                 ].map((category, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-glass-light">
+                  <div key={i} className="p-4 rounded-xl bg-glass-light hover:bg-glass-medium transition-colors cursor-pointer">
                     <div className="flex items-center gap-2 mb-2">
                       <div className={`w-3 h-3 rounded-full ${category.color}`} />
                       <span className="text-sm text-gray-400">{category.label}</span>
@@ -186,6 +276,123 @@ export default function AnalyticsPage() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Day Details Modal */}
+      <AnimatePresence>
+        {selectedDay && selectedDayData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setSelectedDay(null)}
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-glass-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cosmic-purple to-cosmic-blue flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">
+                      {selectedDay === 'Mon' && 'Monday'}
+                      {selectedDay === 'Tue' && 'Tuesday'}
+                      {selectedDay === 'Wed' && 'Wednesday'}
+                      {selectedDay === 'Thu' && 'Thursday'}
+                      {selectedDay === 'Fri' && 'Friday'}
+                      {selectedDay === 'Sat' && 'Saturday'}
+                      {selectedDay === 'Sun' && 'Sunday'}
+                    </h2>
+                    <p className="text-sm text-gray-400">
+                      {selectedDayData.tasks} tasks completed · {selectedDayData.points} points earned
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedDay(null)}
+                  className="p-2 rounded-lg hover:bg-glass-light transition"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              {/* Tasks List */}
+              <div className="p-6 overflow-y-auto max-h-[calc(80vh-180px)]">
+                <div className="space-y-3">
+                  {selectedDayTasks.map((task, index) => (
+                    <motion.div
+                      key={task.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="flex items-center gap-4 p-4 rounded-xl bg-glass-light hover:bg-glass-medium transition-colors"
+                    >
+                      <div className={`w-1 h-12 rounded-full ${categoryColors[task.category]}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-status-success flex-shrink-0" />
+                          <p className="font-medium truncate">{task.title}</p>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-sm text-gray-400">
+                          <span>#{task.id}</span>
+                          <span>·</span>
+                          <span>{task.category}</span>
+                          <span>·</span>
+                          <span>Completed at {task.completedAt}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cosmic-purple/20 text-cosmic-purple">
+                        <Zap className="w-4 h-4" />
+                        <span className="font-medium">+{task.points}</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between p-6 border-t border-glass-border bg-glass-light/30">
+                <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-cosmic-purple" />
+                    <span>Development</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-cosmic-cyan" />
+                    <span>Design</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                    <span>Docs</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-status-success" />
+                    <span>Testing</span>
+                  </div>
+                </div>
+                <Button variant="ghost" onClick={() => setSelectedDay(null)}>
+                  Close
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }

@@ -18,6 +18,13 @@ import {
   X,
   Sparkles,
   User,
+  CheckCircle2,
+  MessageSquare,
+  UserPlus,
+  Award,
+  Zap,
+  Clock,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth.store';
@@ -26,6 +33,58 @@ import { cn, getRankColor, getInitials } from '@/lib/utils';
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
+
+interface Notification {
+  id: string;
+  type: 'task' | 'team' | 'achievement' | 'mention' | 'points';
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+}
+
+const mockNotifications: Notification[] = [
+  {
+    id: '1',
+    type: 'task',
+    title: 'Task Completed',
+    message: 'John Doe completed "Design dashboard UI"',
+    time: '5 min ago',
+    read: false,
+  },
+  {
+    id: '2',
+    type: 'mention',
+    title: 'New Comment',
+    message: 'Jane mentioned you in "API implementation"',
+    time: '15 min ago',
+    read: false,
+  },
+  {
+    id: '3',
+    type: 'achievement',
+    title: 'Achievement Unlocked!',
+    message: 'You earned "Task Master" badge',
+    time: '1 hour ago',
+    read: false,
+  },
+  {
+    id: '4',
+    type: 'points',
+    title: 'Points Earned',
+    message: 'You earned +50 points for completing tasks',
+    time: '2 hours ago',
+    read: true,
+  },
+  {
+    id: '5',
+    type: 'team',
+    title: 'Team Update',
+    message: 'You were added to "Mobile Team"',
+    time: '1 day ago',
+    read: true,
+  },
+];
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -40,6 +99,41 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const getNotificationIcon = (type: Notification['type']) => {
+    switch (type) {
+      case 'task':
+        return <CheckCircle2 className="w-5 h-5 text-status-success" />;
+      case 'mention':
+        return <MessageSquare className="w-5 h-5 text-cosmic-blue" />;
+      case 'achievement':
+        return <Award className="w-5 h-5 text-yellow-500" />;
+      case 'points':
+        return <Zap className="w-5 h-5 text-cosmic-purple" />;
+      case 'team':
+        return <UserPlus className="w-5 h-5 text-cosmic-cyan" />;
+      default:
+        return <Bell className="w-5 h-5" />;
+    }
+  };
+
+  const markAsRead = (id: string) => {
+    setNotifications(notifications.map(n =>
+      n.id === id ? { ...n, read: true } : n
+    ));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  };
+
+  const clearNotification = (id: string) => {
+    setNotifications(notifications.filter(n => n.id !== id));
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -160,10 +254,122 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <div className="flex items-center gap-4">
             {/* Notifications */}
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-status-error rounded-full" />
-            </Button>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-status-error rounded-full" />
+                )}
+              </Button>
+
+              {/* Notifications Dropdown */}
+              <AnimatePresence>
+                {notificationsOpen && (
+                  <>
+                    {/* Backdrop */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setNotificationsOpen(false)}
+                    />
+
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl backdrop-blur-sm z-50 overflow-hidden"
+                    >
+                      {/* Header */}
+                      <div className="flex items-center justify-between p-4 border-b border-glass-border">
+                        <div className="flex items-center gap-2">
+                          <Bell className="w-5 h-5 text-cosmic-purple" />
+                          <h3 className="font-semibold">Notifications</h3>
+                          {unreadCount > 0 && (
+                            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-status-error text-white">
+                              {unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllAsRead}
+                            className="text-sm text-cosmic-purple hover:text-cosmic-purple/80 transition"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Notifications List */}
+                      <div className="max-h-96 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="p-8 text-center">
+                            <Bell className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                            <p className="text-gray-400">No notifications</p>
+                            <p className="text-sm text-gray-500 mt-1">You're all caught up!</p>
+                          </div>
+                        ) : (
+                          notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              className={cn(
+                                'flex items-start gap-3 p-4 border-b border-glass-border/50 hover:bg-glass-light/50 transition cursor-pointer',
+                                !notification.read && 'bg-cosmic-purple/5'
+                              )}
+                              onClick={() => markAsRead(notification.id)}
+                            >
+                              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-glass-light flex items-center justify-center">
+                                {getNotificationIcon(notification.type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium text-sm">{notification.title}</p>
+                                  {!notification.read && (
+                                    <span className="w-2 h-2 rounded-full bg-cosmic-purple" />
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-400 truncate">{notification.message}</p>
+                                <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                                  <Clock className="w-3 h-3" />
+                                  {notification.time}
+                                </div>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  clearNotification(notification.id);
+                                }}
+                                className="p-1 rounded hover:bg-glass-light text-gray-500 hover:text-white transition"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      {notifications.length > 0 && (
+                        <div className="p-3 border-t border-glass-border bg-glass-light/30">
+                          <Link
+                            href="/dashboard/notifications"
+                            className="block text-center text-sm text-cosmic-purple hover:text-cosmic-purple/80 transition"
+                            onClick={() => setNotificationsOpen(false)}
+                          >
+                            View all notifications
+                          </Link>
+                        </div>
+                      )}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Profile */}
             <Link href="/dashboard/profile">
