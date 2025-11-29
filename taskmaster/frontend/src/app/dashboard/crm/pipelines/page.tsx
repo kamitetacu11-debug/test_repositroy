@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import DashboardLayout from '@/components/layout/dashboard-layout';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   Plus,

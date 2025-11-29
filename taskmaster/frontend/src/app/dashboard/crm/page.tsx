@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import DashboardLayout from '@/components/layout/dashboard-layout';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   Users,
