@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   Plus,
   Search,
@@ -102,6 +103,7 @@ const initialFormData: CustomerFormData = {
 export default function CustomersPage() {
   const router = useRouter();
   const { token } = useAuthStore();
+  const t = useTranslation();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -190,7 +192,7 @@ export default function CustomersPage() {
   };
 
   const handleDelete = async (customerId: string) => {
-    if (!confirm('Are you sure you want to delete this customer?')) return;
+    if (!confirm(t.crm.confirmDelete)) return;
 
     try {
       const response = await fetch(`/api/v1/crm/customers/${customerId}`, {
@@ -228,9 +230,9 @@ export default function CustomersPage() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold">Customers</h1>
+              <h1 className="text-3xl font-bold">{t.crm.customersTitle}</h1>
               <p className="text-muted-foreground">
-                Manage your customer accounts
+                {t.crm.customersSubtitle}
               </p>
             </div>
           </div>
@@ -238,24 +240,24 @@ export default function CustomersPage() {
             <DialogTrigger asChild>
               <Button onClick={openNewDialog}>
                 <Plus className="mr-2 h-4 w-4" />
-                Add Customer
+                {t.crm.addCustomer}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
-                  {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+                  {editingCustomer ? t.crm.editCustomer : t.crm.addNewCustomer}
                 </DialogTitle>
                 <DialogDescription>
                   {editingCustomer
-                    ? 'Update customer information'
-                    : 'Add a new customer to your CRM'}
+                    ? t.crm.updateCustomerInfo
+                    : t.crm.addCustomerToCRM}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Type</Label>
+                    <Label>{t.crm.type}</Label>
                     <Select
                       value={formData.type}
                       onValueChange={(value: 'COMPANY' | 'INDIVIDUAL') =>
@@ -266,25 +268,25 @@ export default function CustomersPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="COMPANY">Company</SelectItem>
-                        <SelectItem value="INDIVIDUAL">Individual</SelectItem>
+                        <SelectItem value="COMPANY">{t.crm.company}</SelectItem>
+                        <SelectItem value="INDIVIDUAL">{t.crm.individual}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Name *</Label>
+                    <Label>{t.crm.name} *</Label>
                     <Input
                       value={formData.name}
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      placeholder="Customer name"
+                      placeholder={t.crm.customerName}
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Email</Label>
+                    <Label>{t.crm.email}</Label>
                     <Input
                       type="email"
                       value={formData.email}
@@ -295,7 +297,7 @@ export default function CustomersPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Phone</Label>
+                    <Label>{t.crm.phone}</Label>
                     <Input
                       value={formData.phone}
                       onChange={(e) =>
@@ -307,7 +309,7 @@ export default function CustomersPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Website</Label>
+                    <Label>{t.crm.website}</Label>
                     <Input
                       value={formData.website}
                       onChange={(e) =>
@@ -317,7 +319,7 @@ export default function CustomersPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Industry</Label>
+                    <Label>{t.crm.industry}</Label>
                     <Input
                       value={formData.industry}
                       onChange={(e) =>
@@ -328,18 +330,18 @@ export default function CustomersPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Address</Label>
+                  <Label>{t.crm.address}</Label>
                   <Input
                     value={formData.address}
                     onChange={(e) =>
                       setFormData({ ...formData, address: e.target.value })
                     }
-                    placeholder="Street address"
+                    placeholder={t.crm.streetAddress}
                   />
                 </div>
                 <div className="grid grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label>City</Label>
+                    <Label>{t.crm.city}</Label>
                     <Input
                       value={formData.city}
                       onChange={(e) =>
@@ -348,7 +350,7 @@ export default function CustomersPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>State</Label>
+                    <Label>{t.crm.state}</Label>
                     <Input
                       value={formData.state}
                       onChange={(e) =>
@@ -357,7 +359,7 @@ export default function CustomersPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Country</Label>
+                    <Label>{t.crm.country}</Label>
                     <Input
                       value={formData.country}
                       onChange={(e) =>
@@ -366,7 +368,7 @@ export default function CustomersPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Postal Code</Label>
+                    <Label>{t.crm.postalCode}</Label>
                     <Input
                       value={formData.postalCode}
                       onChange={(e) =>
@@ -376,13 +378,13 @@ export default function CustomersPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Notes</Label>
+                  <Label>{t.crm.notes}</Label>
                   <Textarea
                     value={formData.notes}
                     onChange={(e) =>
                       setFormData({ ...formData, notes: e.target.value })
                     }
-                    placeholder="Additional notes..."
+                    placeholder={t.crm.additionalNotes}
                     rows={3}
                   />
                 </div>
@@ -392,14 +394,14 @@ export default function CustomersPage() {
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
                 >
-                  Cancel
+                  {t.crm.cancel}
                 </Button>
                 <Button onClick={handleSubmit} disabled={submitting}>
                   {submitting
-                    ? 'Saving...'
+                    ? t.crm.saving
                     : editingCustomer
-                    ? 'Update'
-                    : 'Create'}
+                    ? t.crm.update
+                    : t.crm.create}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -413,7 +415,7 @@ export default function CustomersPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search customers..."
+                  placeholder={t.crm.searchCustomers}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -421,12 +423,12 @@ export default function CustomersPage() {
               </div>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by type" />
+                  <SelectValue placeholder={t.crm.filterByType} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="COMPANY">Companies</SelectItem>
-                  <SelectItem value="INDIVIDUAL">Individuals</SelectItem>
+                  <SelectItem value="all">{t.crm.allTypes}</SelectItem>
+                  <SelectItem value="COMPANY">{t.crm.companies}</SelectItem>
+                  <SelectItem value="INDIVIDUAL">{t.crm.individuals}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -439,12 +441,12 @@ export default function CustomersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Industry</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Deals</TableHead>
-                  <TableHead>Assigned To</TableHead>
+                  <TableHead>{t.crm.customer}</TableHead>
+                  <TableHead>{t.crm.contact}</TableHead>
+                  <TableHead>{t.crm.industry}</TableHead>
+                  <TableHead>{t.crm.location}</TableHead>
+                  <TableHead>{t.crm.deals}</TableHead>
+                  <TableHead>{t.crm.assignedTo}</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -452,7 +454,7 @@ export default function CustomersPage() {
                 {loading ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8">
-                      Loading...
+                      {t.crm.loading}
                     </TableCell>
                   </TableRow>
                 ) : customers.length === 0 ? (
@@ -461,8 +463,7 @@ export default function CustomersPage() {
                       colSpan={7}
                       className="text-center py-8 text-muted-foreground"
                     >
-                      No customers found. Add your first customer to get
-                      started.
+                      {t.crm.noCustomersFound}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -541,7 +542,7 @@ export default function CustomersPage() {
                               }}
                             >
                               <Pencil className="mr-2 h-4 w-4" />
-                              Edit
+                              {t.crm.edit}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive"
@@ -551,7 +552,7 @@ export default function CustomersPage() {
                               }}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              {t.crm.delete}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   Users,
   Building2,
@@ -43,6 +44,7 @@ interface StageStats {
 export default function CRMDashboardPage() {
   const router = useRouter();
   const { token } = useAuthStore();
+  const t = useTranslation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentDeals, setRecentDeals] = useState<RecentDeal[]>([]);
   const [dealsByStage, setDealsByStage] = useState<StageStats[]>([]);
@@ -88,19 +90,19 @@ export default function CRMDashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">CRM</h1>
+            <h1 className="text-3xl font-bold">{t.crm.title}</h1>
             <p className="text-muted-foreground">
-              Manage customers, deals, and sales pipeline
+              {t.crm.subtitle}
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => router.push('/dashboard/crm/customers')}>
               <Users className="mr-2 h-4 w-4" />
-              Customers
+              {t.crm.customers}
             </Button>
             <Button onClick={() => router.push('/dashboard/crm/deals')}>
               <Plus className="mr-2 h-4 w-4" />
-              New Deal
+              {t.crm.newDeal}
             </Button>
           </div>
         </div>
@@ -109,7 +111,7 @@ export default function CRMDashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+              <CardTitle className="text-sm font-medium">{t.crm.totalCustomers}</CardTitle>
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -117,14 +119,14 @@ export default function CRMDashboardPage() {
                 {loading ? '...' : stats?.totalCustomers || 0}
               </div>
               <p className="text-xs text-muted-foreground">
-                Active accounts
+                {t.crm.activeAccounts}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Open Deals</CardTitle>
+              <CardTitle className="text-sm font-medium">{t.crm.openDeals}</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -132,14 +134,14 @@ export default function CRMDashboardPage() {
                 {loading ? '...' : stats?.openDeals || 0}
               </div>
               <p className="text-xs text-muted-foreground">
-                In pipeline
+                {t.crm.inPipeline}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pipeline Value</CardTitle>
+              <CardTitle className="text-sm font-medium">{t.crm.pipelineValue}</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -147,14 +149,14 @@ export default function CRMDashboardPage() {
                 {loading ? '...' : formatCurrency(stats?.pipelineValue || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Total potential revenue
+                {t.crm.totalPotentialRevenue}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Upcoming Activities</CardTitle>
+              <CardTitle className="text-sm font-medium">{t.crm.upcomingActivities}</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -162,7 +164,7 @@ export default function CRMDashboardPage() {
                 {loading ? '...' : stats?.upcomingActivities || 0}
               </div>
               <p className="text-xs text-muted-foreground">
-                Next 7 days
+                {t.crm.next7Days}
               </p>
             </CardContent>
           </Card>
@@ -172,9 +174,9 @@ export default function CRMDashboardPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Pipeline Overview</CardTitle>
+              <CardTitle>{t.crm.pipelineOverview}</CardTitle>
               <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/crm/pipelines')}>
-                View Pipeline
+                {t.crm.viewPipeline}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -189,12 +191,12 @@ export default function CRMDashboardPage() {
                 >
                   <div className="text-sm font-medium">{stage.stageName}</div>
                   <div className="text-2xl font-bold">{stage.count}</div>
-                  <div className="text-xs text-muted-foreground">deals</div>
+                  <div className="text-xs text-muted-foreground">{t.crm.deals.toLowerCase()}</div>
                 </div>
               ))}
               {dealsByStage.length === 0 && !loading && (
                 <div className="text-center text-muted-foreground py-8 w-full">
-                  No pipeline data. Create a pipeline to get started.
+                  {t.crm.noPipelineData}
                 </div>
               )}
             </div>
@@ -205,9 +207,9 @@ export default function CRMDashboardPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Recent Deals</CardTitle>
+              <CardTitle>{t.crm.recentDeals}</CardTitle>
               <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/crm/deals')}>
-                View All
+                {t.crm.viewAll}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -247,7 +249,7 @@ export default function CRMDashboardPage() {
               ))}
               {recentDeals.length === 0 && !loading && (
                 <div className="text-center text-muted-foreground py-8">
-                  No deals yet. Create your first deal to get started.
+                  {t.crm.noDealsYet}
                 </div>
               )}
             </div>
@@ -265,9 +267,9 @@ export default function CRMDashboardPage() {
                 <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <div className="font-semibold">Customers</div>
+                <div className="font-semibold">{t.crm.customers}</div>
                 <div className="text-sm text-muted-foreground">
-                  Manage customer accounts
+                  {t.crm.manageCustomerAccounts}
                 </div>
               </div>
             </CardContent>
@@ -282,9 +284,9 @@ export default function CRMDashboardPage() {
                 <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <div className="font-semibold">Deals</div>
+                <div className="font-semibold">{t.crm.deals}</div>
                 <div className="text-sm text-muted-foreground">
-                  Track sales opportunities
+                  {t.crm.trackSalesOpportunities}
                 </div>
               </div>
             </CardContent>
@@ -299,9 +301,9 @@ export default function CRMDashboardPage() {
                 <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <div className="font-semibold">Pipelines</div>
+                <div className="font-semibold">{t.crm.pipelines}</div>
                 <div className="text-sm text-muted-foreground">
-                  Manage sales pipelines
+                  {t.crm.manageSalesPipelines}
                 </div>
               </div>
             </CardContent>

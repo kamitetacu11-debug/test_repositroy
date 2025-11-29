@@ -392,6 +392,147 @@ export const translations = {
       levelUp: 'Level up',
       reachedLevel: 'Reached level',
     },
+
+    // CRM
+    crm: {
+      title: 'CRM',
+      subtitle: 'Manage customers, deals, and sales pipeline',
+
+      // Navigation & Actions
+      customers: 'Customers',
+      deals: 'Deals',
+      pipelines: 'Pipelines',
+      newDeal: 'New Deal',
+      addCustomer: 'Add Customer',
+      createPipeline: 'Create Pipeline',
+      viewPipeline: 'View Pipeline',
+      viewAll: 'View All',
+
+      // Stats
+      totalCustomers: 'Total Customers',
+      openDeals: 'Open Deals',
+      pipelineValue: 'Pipeline Value',
+      upcomingActivities: 'Upcoming Activities',
+      activeAccounts: 'Active accounts',
+      inPipeline: 'In pipeline',
+      totalPotentialRevenue: 'Total potential revenue',
+      next7Days: 'Next 7 days',
+
+      // Pipeline
+      pipelineOverview: 'Pipeline Overview',
+      recentDeals: 'Recent Deals',
+      noPipelineData: 'No pipeline data. Create a pipeline to get started.',
+      noDealsYet: 'No deals yet. Create your first deal to get started.',
+
+      // Quick Actions
+      manageCustomerAccounts: 'Manage customer accounts',
+      trackSalesOpportunities: 'Track sales opportunities',
+      manageSalesPipelines: 'Manage sales pipelines',
+
+      // Customers Page
+      customersTitle: 'Customers',
+      customersSubtitle: 'Manage your customer accounts',
+      searchCustomers: 'Search customers...',
+      filterByType: 'Filter by type',
+      allTypes: 'All Types',
+      companies: 'Companies',
+      individuals: 'Individuals',
+      company: 'Company',
+      individual: 'Individual',
+      noCustomersFound: 'No customers found. Add your first customer to get started.',
+
+      // Customer Form
+      editCustomer: 'Edit Customer',
+      addNewCustomer: 'Add New Customer',
+      updateCustomerInfo: 'Update customer information',
+      addCustomerToCRM: 'Add a new customer to your CRM',
+      type: 'Type',
+      name: 'Name',
+      email: 'Email',
+      phone: 'Phone',
+      website: 'Website',
+      industry: 'Industry',
+      address: 'Address',
+      city: 'City',
+      state: 'State',
+      country: 'Country',
+      postalCode: 'Postal Code',
+      notes: 'Notes',
+      customerName: 'Customer name',
+      streetAddress: 'Street address',
+      additionalNotes: 'Additional notes...',
+
+      // Table Headers
+      customer: 'Customer',
+      contact: 'Contact',
+      location: 'Location',
+      assignedTo: 'Assigned To',
+
+      // Actions
+      edit: 'Edit',
+      delete: 'Delete',
+      cancel: 'Cancel',
+      create: 'Create',
+      update: 'Update',
+      saving: 'Saving...',
+      loading: 'Loading...',
+      confirmDelete: 'Are you sure you want to delete this customer?',
+
+      // Deals Page
+      dealsTitle: 'Deals',
+      dealsSubtitle: 'Manage your sales pipeline',
+      searchDeals: 'Search deals...',
+      allStatuses: 'All Statuses',
+      allPipelines: 'All Pipelines',
+      open: 'Open',
+      won: 'Won',
+      lost: 'Lost',
+      noDealsFound: 'No deals found. Create your first deal to get started.',
+
+      // Deal Form
+      editDeal: 'Edit Deal',
+      createNewDeal: 'Create New Deal',
+      updateDealInfo: 'Update deal information',
+      addDealToPipeline: 'Add a new deal to your pipeline',
+      dealTitle: 'Title',
+      amount: 'Amount',
+      probability: 'Probability',
+      expectedCloseDate: 'Expected Close Date',
+      description: 'Description',
+      selectCustomer: 'Select customer',
+      selectPipeline: 'Select pipeline',
+      selectStage: 'Select stage',
+      dealTitlePlaceholder: 'Deal title',
+      descriptionPlaceholder: 'Deal description...',
+
+      // Pipelines Page
+      pipelinesTitle: 'Pipelines',
+      pipelinesSubtitle: 'Manage your sales pipelines',
+      defaultPipeline: 'Default',
+      stages: 'stages',
+      stage: 'Stage',
+      noPipelinesFound: 'No pipelines found. Create your first pipeline to get started.',
+
+      // Pipeline Form
+      editPipeline: 'Edit Pipeline',
+      createNewPipeline: 'Create New Pipeline',
+      pipelineName: 'Pipeline Name',
+      pipelineNamePlaceholder: 'e.g., Sales Pipeline',
+      pipelineDescription: 'Description',
+      pipelineDescriptionPlaceholder: 'Pipeline description...',
+      pipelineStages: 'Pipeline Stages',
+      addStage: 'Add Stage',
+      stageName: 'Stage name',
+      winProbability: 'Win %',
+      removeStage: 'Remove',
+
+      // Activity Types
+      call: 'Call',
+      emailActivity: 'Email',
+      meeting: 'Meeting',
+      note: 'Note',
+      task: 'Task',
+    },
   },
 
   ru: {
@@ -785,6 +926,147 @@ export const translations = {
       levelUp: 'Новый уровень',
       reachedLevel: 'Достигнут уровень',
     },
+
+    // CRM
+    crm: {
+      title: 'CRM',
+      subtitle: 'Управление клиентами, сделками и воронкой продаж',
+
+      // Navigation & Actions
+      customers: 'Клиенты',
+      deals: 'Сделки',
+      pipelines: 'Воронки',
+      newDeal: 'Новая сделка',
+      addCustomer: 'Добавить клиента',
+      createPipeline: 'Создать воронку',
+      viewPipeline: 'Смотреть воронку',
+      viewAll: 'Смотреть все',
+
+      // Stats
+      totalCustomers: 'Всего клиентов',
+      openDeals: 'Открытые сделки',
+      pipelineValue: 'Сумма воронки',
+      upcomingActivities: 'Предстоящие события',
+      activeAccounts: 'Активных аккаунтов',
+      inPipeline: 'В воронке',
+      totalPotentialRevenue: 'Общий потенциальный доход',
+      next7Days: 'Следующие 7 дней',
+
+      // Pipeline
+      pipelineOverview: 'Обзор воронки',
+      recentDeals: 'Недавние сделки',
+      noPipelineData: 'Нет данных воронки. Создайте воронку для начала работы.',
+      noDealsYet: 'Сделок пока нет. Создайте первую сделку.',
+
+      // Quick Actions
+      manageCustomerAccounts: 'Управление клиентскими аккаунтами',
+      trackSalesOpportunities: 'Отслеживание возможностей продаж',
+      manageSalesPipelines: 'Управление воронками продаж',
+
+      // Customers Page
+      customersTitle: 'Клиенты',
+      customersSubtitle: 'Управление клиентскими аккаунтами',
+      searchCustomers: 'Поиск клиентов...',
+      filterByType: 'Фильтр по типу',
+      allTypes: 'Все типы',
+      companies: 'Компании',
+      individuals: 'Физ. лица',
+      company: 'Компания',
+      individual: 'Физ. лицо',
+      noCustomersFound: 'Клиенты не найдены. Добавьте первого клиента.',
+
+      // Customer Form
+      editCustomer: 'Редактировать клиента',
+      addNewCustomer: 'Добавить нового клиента',
+      updateCustomerInfo: 'Обновить информацию о клиенте',
+      addCustomerToCRM: 'Добавить нового клиента в CRM',
+      type: 'Тип',
+      name: 'Название',
+      email: 'Email',
+      phone: 'Телефон',
+      website: 'Сайт',
+      industry: 'Отрасль',
+      address: 'Адрес',
+      city: 'Город',
+      state: 'Регион',
+      country: 'Страна',
+      postalCode: 'Индекс',
+      notes: 'Заметки',
+      customerName: 'Название клиента',
+      streetAddress: 'Улица, дом',
+      additionalNotes: 'Дополнительные заметки...',
+
+      // Table Headers
+      customer: 'Клиент',
+      contact: 'Контакт',
+      location: 'Местоположение',
+      assignedTo: 'Ответственный',
+
+      // Actions
+      edit: 'Редактировать',
+      delete: 'Удалить',
+      cancel: 'Отмена',
+      create: 'Создать',
+      update: 'Обновить',
+      saving: 'Сохранение...',
+      loading: 'Загрузка...',
+      confirmDelete: 'Вы уверены, что хотите удалить этого клиента?',
+
+      // Deals Page
+      dealsTitle: 'Сделки',
+      dealsSubtitle: 'Управление воронкой продаж',
+      searchDeals: 'Поиск сделок...',
+      allStatuses: 'Все статусы',
+      allPipelines: 'Все воронки',
+      open: 'Открытые',
+      won: 'Выигранные',
+      lost: 'Проигранные',
+      noDealsFound: 'Сделки не найдены. Создайте первую сделку.',
+
+      // Deal Form
+      editDeal: 'Редактировать сделку',
+      createNewDeal: 'Создать новую сделку',
+      updateDealInfo: 'Обновить информацию о сделке',
+      addDealToPipeline: 'Добавить новую сделку в воронку',
+      dealTitle: 'Название',
+      amount: 'Сумма',
+      probability: 'Вероятность',
+      expectedCloseDate: 'Ожидаемая дата закрытия',
+      description: 'Описание',
+      selectCustomer: 'Выберите клиента',
+      selectPipeline: 'Выберите воронку',
+      selectStage: 'Выберите этап',
+      dealTitlePlaceholder: 'Название сделки',
+      descriptionPlaceholder: 'Описание сделки...',
+
+      // Pipelines Page
+      pipelinesTitle: 'Воронки',
+      pipelinesSubtitle: 'Управление воронками продаж',
+      defaultPipeline: 'По умолчанию',
+      stages: 'этапов',
+      stage: 'Этап',
+      noPipelinesFound: 'Воронки не найдены. Создайте первую воронку.',
+
+      // Pipeline Form
+      editPipeline: 'Редактировать воронку',
+      createNewPipeline: 'Создать новую воронку',
+      pipelineName: 'Название воронки',
+      pipelineNamePlaceholder: 'напр., Воронка продаж',
+      pipelineDescription: 'Описание',
+      pipelineDescriptionPlaceholder: 'Описание воронки...',
+      pipelineStages: 'Этапы воронки',
+      addStage: 'Добавить этап',
+      stageName: 'Название этапа',
+      winProbability: '% победы',
+      removeStage: 'Удалить',
+
+      // Activity Types
+      call: 'Звонок',
+      emailActivity: 'Email',
+      meeting: 'Встреча',
+      note: 'Заметка',
+      task: 'Задача',
+    },
   },
 
   zh: {
@@ -1177,6 +1459,147 @@ export const translations = {
       achievementUnlocked: '成就解锁',
       levelUp: '升级',
       reachedLevel: '达到等级',
+    },
+
+    // CRM
+    crm: {
+      title: 'CRM',
+      subtitle: '管理客户、交易和销售渠道',
+
+      // Navigation & Actions
+      customers: '客户',
+      deals: '交易',
+      pipelines: '销售渠道',
+      newDeal: '新交易',
+      addCustomer: '添加客户',
+      createPipeline: '创建渠道',
+      viewPipeline: '查看渠道',
+      viewAll: '查看全部',
+
+      // Stats
+      totalCustomers: '客户总数',
+      openDeals: '进行中的交易',
+      pipelineValue: '渠道价值',
+      upcomingActivities: '即将进行的活动',
+      activeAccounts: '活跃账户',
+      inPipeline: '在渠道中',
+      totalPotentialRevenue: '总潜在收入',
+      next7Days: '未来7天',
+
+      // Pipeline
+      pipelineOverview: '渠道概览',
+      recentDeals: '最近交易',
+      noPipelineData: '没有渠道数据。创建渠道开始。',
+      noDealsYet: '还没有交易。创建您的第一笔交易。',
+
+      // Quick Actions
+      manageCustomerAccounts: '管理客户账户',
+      trackSalesOpportunities: '跟踪销售机会',
+      manageSalesPipelines: '管理销售渠道',
+
+      // Customers Page
+      customersTitle: '客户',
+      customersSubtitle: '管理您的客户账户',
+      searchCustomers: '搜索客户...',
+      filterByType: '按类型筛选',
+      allTypes: '所有类型',
+      companies: '公司',
+      individuals: '个人',
+      company: '公司',
+      individual: '个人',
+      noCustomersFound: '未找到客户。添加您的第一个客户。',
+
+      // Customer Form
+      editCustomer: '编辑客户',
+      addNewCustomer: '添加新客户',
+      updateCustomerInfo: '更新客户信息',
+      addCustomerToCRM: '添加新客户到CRM',
+      type: '类型',
+      name: '名称',
+      email: '邮箱',
+      phone: '电话',
+      website: '网站',
+      industry: '行业',
+      address: '地址',
+      city: '城市',
+      state: '省份',
+      country: '国家',
+      postalCode: '邮编',
+      notes: '备注',
+      customerName: '客户名称',
+      streetAddress: '街道地址',
+      additionalNotes: '附加备注...',
+
+      // Table Headers
+      customer: '客户',
+      contact: '联系方式',
+      location: '位置',
+      assignedTo: '负责人',
+
+      // Actions
+      edit: '编辑',
+      delete: '删除',
+      cancel: '取消',
+      create: '创建',
+      update: '更新',
+      saving: '保存中...',
+      loading: '加载中...',
+      confirmDelete: '确定要删除此客户吗？',
+
+      // Deals Page
+      dealsTitle: '交易',
+      dealsSubtitle: '管理您的销售渠道',
+      searchDeals: '搜索交易...',
+      allStatuses: '所有状态',
+      allPipelines: '所有渠道',
+      open: '进行中',
+      won: '已成交',
+      lost: '已失败',
+      noDealsFound: '未找到交易。创建您的第一笔交易。',
+
+      // Deal Form
+      editDeal: '编辑交易',
+      createNewDeal: '创建新交易',
+      updateDealInfo: '更新交易信息',
+      addDealToPipeline: '添加新交易到渠道',
+      dealTitle: '标题',
+      amount: '金额',
+      probability: '成功率',
+      expectedCloseDate: '预计成交日期',
+      description: '描述',
+      selectCustomer: '选择客户',
+      selectPipeline: '选择渠道',
+      selectStage: '选择阶段',
+      dealTitlePlaceholder: '交易标题',
+      descriptionPlaceholder: '交易描述...',
+
+      // Pipelines Page
+      pipelinesTitle: '销售渠道',
+      pipelinesSubtitle: '管理您的销售渠道',
+      defaultPipeline: '默认',
+      stages: '阶段',
+      stage: '阶段',
+      noPipelinesFound: '未找到渠道。创建您的第一个渠道。',
+
+      // Pipeline Form
+      editPipeline: '编辑渠道',
+      createNewPipeline: '创建新渠道',
+      pipelineName: '渠道名称',
+      pipelineNamePlaceholder: '例如：销售渠道',
+      pipelineDescription: '描述',
+      pipelineDescriptionPlaceholder: '渠道描述...',
+      pipelineStages: '渠道阶段',
+      addStage: '添加阶段',
+      stageName: '阶段名称',
+      winProbability: '成功率%',
+      removeStage: '删除',
+
+      // Activity Types
+      call: '电话',
+      emailActivity: '邮件',
+      meeting: '会议',
+      note: '备注',
+      task: '任务',
     },
   },
 };
