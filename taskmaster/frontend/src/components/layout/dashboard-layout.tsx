@@ -228,10 +228,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <Link href="/dashboard/profile">
               <div className="flex items-center gap-3 p-3 rounded-xl bg-glass-light hover:bg-glass-medium transition cursor-pointer">
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center font-medium"
+                  className="w-10 h-10 rounded-full flex items-center justify-center font-medium overflow-hidden"
                   style={{ backgroundColor: `${currentTheme.colors.primary}30` }}
                 >
-                  {user ? getInitials(user.firstName, user.lastName) : 'U'}
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    user ? getInitials(user.firstName, user.lastName) : 'U'
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">

@@ -39,20 +39,23 @@ const activityHistory = [
 ];
 
 export default function ProfilePage() {
-  const { user } = useAuthStore();
+  const { user, updateAvatar } = useAuthStore();
   const { getCurrentTheme } = useSettingsStore();
   const currentTheme = getCurrentTheme();
   const t = useTranslation();
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [isHoveringPhoto, setIsHoveringPhoto] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setIsUploading(true);
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfilePhoto(e.target?.result as string);
+      reader.onload = async (e) => {
+        const avatarData = e.target?.result as string;
+        await updateAvatar(avatarData);
+        setIsUploading(false);
       };
       reader.readAsDataURL(file);
     }
@@ -118,9 +121,11 @@ export default function ProfilePage() {
                     }}
                     onClick={triggerFileUpload}
                   >
-                    {profilePhoto ? (
+                    {isUploading ? (
+                      <div className="animate-spin w-8 h-8 border-4 border-t-transparent rounded-full" style={{ borderColor: currentTheme.colors.primary, borderTopColor: 'transparent' }} />
+                    ) : user?.avatar ? (
                       <img
-                        src={profilePhoto}
+                        src={user.avatar}
                         alt="Profile"
                         className="w-full h-full object-cover"
                       />

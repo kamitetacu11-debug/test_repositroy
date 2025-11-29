@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings,
@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SettingsPage() {
-  const { user } = useAuthStore();
+  const { user, updateAvatar } = useAuthStore();
   const {
     theme,
     language,
@@ -42,6 +42,26 @@ export default function SettingsPage() {
   const t = useTranslation();
 
   const [activeTab, setActiveTab] = useState('profile');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const avatarData = e.target?.result as string;
+        await updateAvatar(avatarData);
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
 
   const tabs = [
     { id: 'profile', label: t.settings.tabs.profile, icon: User },
@@ -108,16 +128,45 @@ export default function SettingsPage() {
                   {/* Avatar */}
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <div className="w-20 h-20 rounded-full bg-cosmic-purple/30 flex items-center justify-center text-2xl font-bold">
-                        {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                      <div
+                        className="w-20 h-20 rounded-full bg-cosmic-purple/30 flex items-center justify-center text-2xl font-bold overflow-hidden cursor-pointer"
+                        onClick={triggerFileUpload}
+                      >
+                        {isUploading ? (
+                          <div className="animate-spin w-6 h-6 border-3 border-t-transparent rounded-full border-white" />
+                        ) : user?.avatar ? (
+                          <img
+                            src={user.avatar}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>{user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}</span>
+                        )}
                       </div>
-                      <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-cosmic-purple flex items-center justify-center">
+                      <button
+                        className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-cosmic-purple flex items-center justify-center hover:bg-cosmic-purple/80 transition"
+                        onClick={triggerFileUpload}
+                      >
                         <Camera className="w-4 h-4" />
                       </button>
                     </div>
                     <div>
                       <p className="font-medium">{user?.firstName} {user?.lastName}</p>
                       <p className="text-sm text-gray-400">{user?.email}</p>
+                      <button
+                        className="text-sm text-cosmic-purple hover:text-cosmic-purple/80 mt-1"
+                        onClick={triggerFileUpload}
+                      >
+                        {t.profilePage.change || 'Change photo'}
+                      </button>
                     </div>
                   </div>
 

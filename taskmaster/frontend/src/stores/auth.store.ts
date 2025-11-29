@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authApi } from '@/lib/api';
+import { authApi, usersApi } from '@/lib/api';
 
 interface User {
   id: string;
@@ -26,6 +26,7 @@ interface AuthState {
   logout: () => void;
   fetchUser: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
+  updateAvatar: (avatarData: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -92,8 +93,17 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const response = await authApi.me();
+          const serverUser = response.data.data;
+          const currentUser = get().user;
+
+          // Preserve local avatar if server doesn't have one
+          const mergedUser = {
+            ...serverUser,
+            avatar: serverUser.avatar || currentUser?.avatar,
+          };
+
           set({
-            user: response.data.data,
+            user: mergedUser,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -114,10 +124,29 @@ export const useAuthStore = create<AuthState>()(
           set({ user: { ...currentUser, ...data } });
         }
       },
+
+      updateAvatar: async (avatarData: string) => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+
+        // Update local state immediately for instant feedback
+        set({ user: { ...currentUser, avatar: avatarData } });
+
+        // Try to sync with server (will fail gracefully if server doesn't support base64)
+        try {
+          await usersApi.update(currentUser.id, { avatar: avatarData });
+        } catch (error) {
+          // Server may not support base64, but we still save locally
+          console.log('Avatar saved locally. Server sync skipped.');
+        }
+      },
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ token: state.token }),
+      partialize: (state) => ({
+        token: state.token,
+        user: state.user ? { ...state.user } : null, // Persist full user including avatar
+      }),
     }
   )
 );
