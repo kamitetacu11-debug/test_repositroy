@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ColorPicker } from '@/components/ui/color-picker';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useCRMStore, useCRMHydration, PipelineStage } from '@/stores/crm.store';
 import { useSettingsStore } from '@/stores/settings.store';
@@ -568,25 +569,10 @@ export default function PipelinesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Color</Label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={editStageColor}
-                    onChange={(e) => setEditStageColor(e.target.value)}
-                    className="w-12 h-10 rounded-lg border border-glass-border cursor-pointer"
-                    style={{ background: 'transparent' }}
-                  />
-                  <Input
-                    value={editStageColor}
-                    onChange={(e) => setEditStageColor(e.target.value)}
-                    placeholder="#6B7280"
-                    className="flex-1"
-                  />
-                  <div
-                    className="w-10 h-10 rounded-lg border border-glass-border"
-                    style={{ backgroundColor: editStageColor }}
-                  />
-                </div>
+                <ColorPicker
+                  value={editStageColor}
+                  onChange={setEditStageColor}
+                />
               </div>
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2">
