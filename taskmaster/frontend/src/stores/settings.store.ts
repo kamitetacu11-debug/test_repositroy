@@ -167,11 +167,13 @@ interface SettingsState {
   compactMode: boolean;
   animations: boolean;
   glassOpacity: number; // 0-100
+  starBrightness: number; // 0-100
 
   setTheme: (theme: Theme) => void;
   setCompactMode: (enabled: boolean) => void;
   setAnimations: (enabled: boolean) => void;
   setGlassOpacity: (opacity: number) => void;
+  setStarBrightness: (brightness: number) => void;
   getCurrentTheme: () => ThemeConfig;
 }
 
@@ -182,11 +184,13 @@ export const useSettingsStore = create<SettingsState>()(
       compactMode: false,
       animations: true,
       glassOpacity: 50,
+      starBrightness: 50,
 
       setTheme: (theme) => set({ theme }),
       setCompactMode: (enabled) => set({ compactMode: enabled }),
       setAnimations: (enabled) => set({ animations: enabled }),
       setGlassOpacity: (opacity) => set({ glassOpacity: opacity }),
+      setStarBrightness: (brightness) => set({ starBrightness: brightness }),
 
       getCurrentTheme: () => {
         const currentTheme = get().theme;

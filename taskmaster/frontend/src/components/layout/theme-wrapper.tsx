@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSettingsStore, themes } from '@/stores/settings.store';
 import { cn } from '@/lib/utils';
 
@@ -9,7 +9,7 @@ interface ThemeWrapperProps {
 }
 
 // Generate twinkling stars
-function TwinklingStars({ animations }: { animations: boolean }) {
+function TwinklingStars({ animations, brightness }: { animations: boolean; brightness: number }) {
   const stars = useMemo(() => {
     return Array.from({ length: 80 }, (_, i) => ({
       id: i,
@@ -18,11 +18,13 @@ function TwinklingStars({ animations }: { animations: boolean }) {
       size: Math.random() * 2 + 1,
       duration: Math.random() * 3 + 2,
       delay: Math.random() * 5,
-      opacity: Math.random() * 0.5 + 0.3,
+      baseOpacity: Math.random() * 0.5 + 0.3,
     }));
   }, []);
 
-  if (!animations) return null;
+  if (!animations || brightness === 0) return null;
+
+  const opacityMultiplier = brightness / 50; // 0-2 range
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -35,10 +37,10 @@ function TwinklingStars({ animations }: { animations: boolean }) {
             top: `${star.y}%`,
             width: `${star.size}px`,
             height: `${star.size}px`,
-            opacity: star.opacity,
+            opacity: Math.min(star.baseOpacity * opacityMultiplier, 1),
             animationDuration: `${star.duration}s`,
             animationDelay: `${star.delay}s`,
-            boxShadow: `0 0 ${star.size * 2}px rgba(255, 255, 255, 0.5)`,
+            boxShadow: `0 0 ${star.size * 2 * opacityMultiplier}px rgba(255, 255, 255, ${0.5 * opacityMultiplier})`,
           }}
         />
       ))}
@@ -46,129 +48,46 @@ function TwinklingStars({ animations }: { animations: boolean }) {
   );
 }
 
-// White noise audio component
-function WhiteNoiseAmbient() {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.05);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
-  const noiseNodeRef = useRef<AudioBufferSourceNode | null>(null);
-
-  const toggleNoise = () => {
-    if (isPlaying) {
-      stopNoise();
-    } else {
-      startNoise();
-    }
-  };
-
-  const startNoise = () => {
-    try {
-      const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      audioContextRef.current = audioContext;
-
-      const bufferSize = 2 * audioContext.sampleRate;
-      const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-      const output = noiseBuffer.getChannelData(0);
-
-      for (let i = 0; i < bufferSize; i++) {
-        output[i] = Math.random() * 2 - 1;
-      }
-
-      const whiteNoise = audioContext.createBufferSource();
-      whiteNoise.buffer = noiseBuffer;
-      whiteNoise.loop = true;
-
-      const gainNode = audioContext.createGain();
-      gainNode.gain.value = volume;
-
-      // Add low-pass filter for softer sound
-      const filter = audioContext.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 1000;
-
-      whiteNoise.connect(filter);
-      filter.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      whiteNoise.start();
-      noiseNodeRef.current = whiteNoise;
-      gainNodeRef.current = gainNode;
-      setIsPlaying(true);
-    } catch (error) {
-      console.error('Failed to start white noise:', error);
-    }
-  };
-
-  const stopNoise = () => {
-    if (noiseNodeRef.current) {
-      noiseNodeRef.current.stop();
-      noiseNodeRef.current = null;
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    gainNodeRef.current = null;
-    setIsPlaying(false);
-  };
-
-  useEffect(() => {
-    if (gainNodeRef.current) {
-      gainNodeRef.current.gain.value = volume;
-    }
-  }, [volume]);
-
-  useEffect(() => {
-    return () => {
-      stopNoise();
-    };
-  }, []);
+// Star brightness control component
+function StarBrightnessControl() {
+  const { starBrightness, setStarBrightness } = useSettingsStore();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 p-2 rounded-xl bg-glass-light/80 backdrop-blur-sm border border-glass-border">
       <button
-        onClick={toggleNoise}
+        onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
           "p-2 rounded-lg transition-all",
-          isPlaying ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"
+          isExpanded ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"
         )}
-        title={isPlaying ? "Stop ambient sound" : "Play ambient sound"}
+        title="Star brightness"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          {isPlaying ? (
-            <>
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-            </>
-          ) : (
-            <>
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-              <line x1="23" y1="9" x2="17" y2="15" />
-              <line x1="17" y1="9" x2="23" y2="15" />
-            </>
-          )}
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
         </svg>
       </button>
-      {isPlaying && (
-        <input
-          type="range"
-          min="0"
-          max="0.2"
-          step="0.01"
-          value={volume}
-          onChange={(e) => setVolume(parseFloat(e.target.value))}
-          className="w-16 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-          title="Volume"
-        />
+      {isExpanded && (
+        <div className="flex items-center gap-2">
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value={starBrightness}
+            onChange={(e) => setStarBrightness(parseInt(e.target.value))}
+            className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+            title="Star brightness"
+          />
+          <span className="text-xs text-gray-400 w-8">{starBrightness}%</span>
+        </div>
       )}
     </div>
   );
 }
 
 export function ThemeWrapper({ children }: ThemeWrapperProps) {
-  const { theme, compactMode, animations, glassOpacity } = useSettingsStore();
+  const { theme, compactMode, animations, glassOpacity, starBrightness } = useSettingsStore();
 
   const currentTheme = themes.find(t => t.id === theme) || themes[0];
 
@@ -248,13 +167,13 @@ export function ThemeWrapper({ children }: ThemeWrapperProps) {
         <div className="stars" />
 
         {/* Animated Twinkling Stars */}
-        <TwinklingStars animations={animations} />
+        <TwinklingStars animations={animations} brightness={starBrightness} />
       </div>
 
       {children}
 
-      {/* White Noise Ambient Control */}
-      <WhiteNoiseAmbient />
+      {/* Star Brightness Control */}
+      <StarBrightnessControl />
     </div>
   );
 }

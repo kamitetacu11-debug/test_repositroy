@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Task } from './task-modal';
+import { useSettingsStore } from '@/stores/settings.store';
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -76,6 +77,8 @@ export function CreateTaskModal({
   onClose,
   onCreate,
 }: CreateTaskModalProps) {
+  const { getCurrentTheme } = useSettingsStore();
+  const currentTheme = getCurrentTheme();
   const [task, setTask] = useState<NewTask>(defaultTask);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [assigneeSearch, setAssigneeSearch] = useState('');
@@ -251,8 +254,11 @@ export function CreateTaskModal({
           {task.assignee ? (
             <div className="flex items-center justify-between p-3 rounded-xl bg-glass-light border border-glass-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-cosmic-purple/20 flex items-center justify-center">
-                  <span className="text-sm font-medium text-cosmic-purple">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: `${currentTheme.colors.primary}20` }}
+                >
+                  <span className="text-sm font-medium" style={{ color: currentTheme.colors.primary }}>
                     {task.assignee
                       .split(' ')
                       .map((n) => n[0])
@@ -293,7 +299,10 @@ export function CreateTaskModal({
 
               {/* Dropdown */}
               {showAssigneeDropdown && (
-                <div className="absolute z-10 mt-2 w-full rounded-xl bg-cosmic-dark border border-glass-border shadow-xl max-h-48 overflow-y-auto">
+                <div
+                  className="absolute z-10 mt-2 w-full rounded-xl border border-glass-border shadow-xl max-h-48 overflow-y-auto"
+                  style={{ backgroundColor: currentTheme.colors.background }}
+                >
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
                       <button
@@ -301,8 +310,11 @@ export function CreateTaskModal({
                         onClick={() => selectAssignee(user)}
                         className="w-full flex items-center gap-3 p-3 hover:bg-glass-light transition text-left"
                       >
-                        <div className="w-8 h-8 rounded-full bg-cosmic-purple/20 flex items-center justify-center">
-                          <span className="text-xs font-medium text-cosmic-purple">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: `${currentTheme.colors.primary}20` }}
+                        >
+                          <span className="text-xs font-medium" style={{ color: currentTheme.colors.primary }}>
                             {user.name
                               .split(' ')
                               .map((n) => n[0])

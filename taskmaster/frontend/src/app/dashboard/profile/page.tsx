@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -10,10 +11,13 @@ import {
   Calendar,
   Award,
   TrendingUp,
+  Camera,
+  Upload,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import { formatNumber, getRankColor } from '@/lib/utils';
 
 const achievements = [
@@ -35,6 +39,26 @@ const activityHistory = [
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
+  const { getCurrentTheme } = useSettingsStore();
+  const currentTheme = getCurrentTheme();
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [isHoveringPhoto, setIsHoveringPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfilePhoto(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
 
   const mockUser = {
     firstName: user?.firstName || 'Admin',
@@ -62,16 +86,73 @@ export default function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <Card className="glass overflow-hidden">
-            <div className="h-32 bg-gradient-to-r from-cosmic-purple via-cosmic-blue to-cosmic-cyan" />
-            <CardContent className="relative pt-0">
-              <div className="flex flex-col md:flex-row items-center md:items-end gap-4 -mt-16">
-                <div className="w-32 h-32 rounded-full bg-cosmic-dark border-4 border-cosmic-purple flex items-center justify-center text-4xl font-bold">
-                  {mockUser.firstName.charAt(0)}{mockUser.lastName.charAt(0)}
+            {/* Theme-aware gradient header */}
+            <div
+              className="h-32"
+              style={{
+                background: `linear-gradient(135deg, ${currentTheme.colors.primary} 0%, ${currentTheme.colors.secondary} 50%, ${currentTheme.colors.accent} 100%)`
+              }}
+            />
+            <CardContent className="pt-6 pb-6">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                {/* Avatar with upload functionality */}
+                <div
+                  className="relative -mt-20 flex-shrink-0"
+                  onMouseEnter={() => setIsHoveringPhoto(true)}
+                  onMouseLeave={() => setIsHoveringPhoto(false)}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
+                  <div
+                    className="w-32 h-32 rounded-full border-4 flex items-center justify-center text-4xl font-bold cursor-pointer overflow-hidden transition-all"
+                    style={{
+                      borderColor: currentTheme.colors.primary,
+                      backgroundColor: currentTheme.colors.background
+                    }}
+                    onClick={triggerFileUpload}
+                  >
+                    {profilePhoto ? (
+                      <img
+                        src={profilePhoto}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span style={{ color: currentTheme.colors.primary }}>
+                        {mockUser.firstName.charAt(0)}{mockUser.lastName.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  {/* Upload overlay */}
+                  {isHoveringPhoto && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="absolute inset-0 rounded-full flex items-center justify-center cursor-pointer"
+                      style={{
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                        marginTop: '-5rem'
+                      }}
+                      onClick={triggerFileUpload}
+                    >
+                      <div className="flex flex-col items-center text-white">
+                        <Camera className="w-6 h-6 mb-1" />
+                        <span className="text-xs">Change</span>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
-                <div className="flex-1 text-center md:text-left pb-4">
+
+                {/* User info */}
+                <div className="flex-1 text-center md:text-left">
                   <h1 className="text-2xl font-bold">{mockUser.firstName} {mockUser.lastName}</h1>
                   <p className="text-gray-400">{mockUser.email}</p>
-                  <div className="flex items-center justify-center md:justify-start gap-4 mt-2">
+                  <div className="flex items-center justify-center md:justify-start gap-4 mt-2 flex-wrap">
                     <span
                       className="px-3 py-1 rounded-full text-sm font-medium"
                       style={{ backgroundColor: `${getRankColor(mockUser.currentRank)}20`, color: getRankColor(mockUser.currentRank) }}
@@ -79,12 +160,16 @@ export default function ProfilePage() {
                       {mockUser.currentRank}
                     </span>
                     <span className="text-gray-400">Level {mockUser.currentLevel}</span>
-                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-400 hidden sm:inline">•</span>
                     <span className="text-gray-400">{mockUser.teamName}</span>
                   </div>
                 </div>
-                <div className="text-center pb-4">
-                  <p className="text-3xl font-bold text-cosmic-purple">{formatNumber(mockUser.totalPoints)}</p>
+
+                {/* Points display */}
+                <div className="text-center">
+                  <p className="text-3xl font-bold" style={{ color: currentTheme.colors.primary }}>
+                    {formatNumber(mockUser.totalPoints)}
+                  </p>
                   <p className="text-gray-400">Total Points</p>
                 </div>
               </div>

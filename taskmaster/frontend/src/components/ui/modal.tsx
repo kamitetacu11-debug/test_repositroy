@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from './button';
+import { useSettingsStore } from '@/stores/settings.store';
 
 interface ModalProps {
   isOpen: boolean;
@@ -35,6 +36,9 @@ export function Modal({
   showCloseButton = true,
   className,
 }: ModalProps) {
+  const { getCurrentTheme } = useSettingsStore();
+  const currentTheme = getCurrentTheme();
+
   // Close on Escape key
   React.useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -84,9 +88,13 @@ export function Modal({
           >
             <div
               className={cn(
-                'relative rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl shadow-cosmic-purple/10',
+                'relative rounded-2xl border border-glass-border shadow-2xl',
                 className
               )}
+              style={{
+                backgroundColor: `${currentTheme.colors.background}f5`,
+                boxShadow: `0 25px 50px -12px ${currentTheme.colors.primary}20`
+              }}
             >
               {/* Header */}
               {(title || showCloseButton) && (
