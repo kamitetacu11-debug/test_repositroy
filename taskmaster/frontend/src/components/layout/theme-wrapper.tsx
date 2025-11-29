@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useSettingsStore, themes } from '@/stores/settings.store';
 import { cn } from '@/lib/utils';
 
@@ -8,18 +9,10 @@ interface ThemeWrapperProps {
   children: React.ReactNode;
 }
 
-// Generate twinkling stars - only renders on client to avoid hydration mismatch
-function TwinklingStars({ animations, brightness }: { animations: boolean; brightness: number }) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  // Only generate stars after component mounts on client
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const stars = useMemo(() => {
-    if (!isMounted) return [];
-    return Array.from({ length: 80 }, (_, i) => ({
+// Twinkling stars component - client only
+function TwinklingStarsClient({ animations, brightness }: { animations: boolean; brightness: number }) {
+  const [stars] = useState(() =>
+    Array.from({ length: 80 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
@@ -27,12 +20,12 @@ function TwinklingStars({ animations, brightness }: { animations: boolean; brigh
       duration: Math.random() * 3 + 2,
       delay: Math.random() * 5,
       baseOpacity: Math.random() * 0.5 + 0.3,
-    }));
-  }, [isMounted]);
+    }))
+  );
 
-  if (!isMounted || !animations || brightness === 0) return null;
+  if (!animations || brightness === 0) return null;
 
-  const opacityMultiplier = brightness / 50; // 0-2 range
+  const opacityMultiplier = brightness / 50;
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -55,6 +48,11 @@ function TwinklingStars({ animations, brightness }: { animations: boolean; brigh
     </div>
   );
 }
+
+// Dynamic import with SSR disabled - completely avoids hydration issues
+const TwinklingStars = dynamic(() => Promise.resolve(TwinklingStarsClient), {
+  ssr: false,
+});
 
 export function ThemeWrapper({ children }: ThemeWrapperProps) {
   const { theme, compactMode, animations, glassOpacity, starBrightness } = useSettingsStore();

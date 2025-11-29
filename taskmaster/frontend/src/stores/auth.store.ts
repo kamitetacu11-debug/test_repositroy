@@ -153,15 +153,27 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         token: state.token,
         user: state.user ? { ...state.user } : null,
-        isAuthenticated: state.isAuthenticated, // Also persist isAuthenticated
+        isAuthenticated: state.isAuthenticated,
       }),
-      onRehydrateStorage: () => (state) => {
-        // Called after hydration is complete
-        state?.setHasHydrated(true);
+      onRehydrateStorage: () => (state, error) => {
+        // Always set hydrated to true, even on error
+        if (error) {
+          console.error('Auth hydration error:', error);
+          useAuthStore.setState({ _hasHydrated: true });
+          return;
+        }
 
-        // If we have a token but not authenticated, set authenticated
-        if (state?.token && state?.user && !state?.isAuthenticated) {
-          useAuthStore.setState({ isAuthenticated: true });
+        // Called after hydration is complete
+        if (state) {
+          state.setHasHydrated(true);
+
+          // If we have a token but not authenticated, set authenticated
+          if (state.token && state.user && !state.isAuthenticated) {
+            useAuthStore.setState({ isAuthenticated: true });
+          }
+        } else {
+          // State is null/undefined - still mark as hydrated
+          useAuthStore.setState({ _hasHydrated: true });
         }
       },
     }
