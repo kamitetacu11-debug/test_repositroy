@@ -308,7 +308,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <div className="flex-1 min-w-0" />
 
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="fixed top-3 right-4 sm:right-6 z-50 flex items-center gap-2 sm:gap-4 bg-glass-heavy/80 backdrop-blur-sm rounded-xl px-2 py-1">
             {/* Notifications */}
             <div className="relative" ref={notificationsRef}>
               <Button
