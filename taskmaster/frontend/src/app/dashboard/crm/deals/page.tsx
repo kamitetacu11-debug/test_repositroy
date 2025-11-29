@@ -388,13 +388,11 @@ export default function DealsPage() {
               </p>
             </div>
           </div>
+          <Button onClick={openNewDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t.crm.addDeal}
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openNewDialog}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t.crm.addDeal}
-              </Button>
-            </DialogTrigger>
             <DialogContent
               className="max-w-2xl glass"
               style={{

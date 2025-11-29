@@ -25,7 +25,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { useCRMStore, useCRMHydration } from '@/stores/crm.store';
+import { useCRMStore, useCRMHydration, PipelineStage } from '@/stores/crm.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   Plus,
@@ -36,6 +37,8 @@ import {
   GripVertical,
   Grip,
   Loader2,
+  Trash2,
+  Pencil,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -49,15 +52,24 @@ export default function PipelinesPage() {
   const router = useRouter();
   const t = useTranslation();
   const hasHydrated = useCRMHydration();
+  const { getCurrentTheme } = useSettingsStore();
+  const theme = getCurrentTheme();
 
   // Get data from CRM store
-  const { pipelines, deals, addPipeline } = useCRMStore();
+  const { pipelines, deals, addPipeline, updatePipeline, deletePipeline } = useCRMStore();
 
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState('');
   const [newPipelineDescription, setNewPipelineDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Edit stage state
+  const [isEditStageOpen, setIsEditStageOpen] = useState(false);
+  const [editingStage, setEditingStage] = useState<PipelineStage | null>(null);
+  const [editStageName, setEditStageName] = useState('');
+  const [editStageColor, setEditStageColor] = useState('');
+  const [editStageWinProbability, setEditStageWinProbability] = useState('');
 
   // Drag-to-scroll state
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +117,62 @@ export default function PipelinesPage() {
     setNewPipelineName('');
     setNewPipelineDescription('');
     setSubmitting(false);
+  };
+
+  // Open edit stage dialog
+  const handleEditStage = (stage: PipelineStage) => {
+    setEditingStage(stage);
+    setEditStageName(stage.name);
+    setEditStageColor(stage.color);
+    setEditStageWinProbability(stage.winProbability.toString());
+    setIsEditStageOpen(true);
+  };
+
+  // Save stage changes
+  const handleSaveStage = () => {
+    if (!editingStage || !selectedPipeline) return;
+
+    const updatedStages = selectedPipeline.stages.map(s =>
+      s.id === editingStage.id
+        ? {
+            ...s,
+            name: editStageName,
+            color: editStageColor,
+            winProbability: parseInt(editStageWinProbability) || 0
+          }
+        : s
+    );
+
+    updatePipeline(selectedPipeline.id, { stages: updatedStages });
+    setIsEditStageOpen(false);
+    setEditingStage(null);
+  };
+
+  // Delete stage
+  const handleDeleteStage = (stageId: string) => {
+    if (!selectedPipeline) return;
+    if (!confirm('Are you sure you want to delete this stage?')) return;
+
+    const updatedStages = selectedPipeline.stages.filter(s => s.id !== stageId);
+    updatePipeline(selectedPipeline.id, { stages: updatedStages });
+  };
+
+  // Add new stage
+  const handleAddStage = () => {
+    if (!selectedPipeline) return;
+
+    const maxSortOrder = Math.max(...selectedPipeline.stages.map(s => s.sortOrder), -1);
+    const newStage: PipelineStage = {
+      id: `stage-${Date.now()}`,
+      name: 'New Stage',
+      color: '#6B7280',
+      sortOrder: maxSortOrder + 1,
+      winProbability: 50
+    };
+
+    updatePipeline(selectedPipeline.id, {
+      stages: [...selectedPipeline.stages, newStage]
+    });
   };
 
   const formatCurrency = (amount: number) => {
@@ -217,9 +285,16 @@ export default function PipelinesPage() {
                 {t.crm.createPipeline}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[95vw] sm:max-w-lg">
+            <DialogContent
+              className="max-w-[95vw] sm:max-w-lg glass"
+              style={{
+                background: `linear-gradient(135deg, ${theme.colors.background}f0 0%, ${theme.colors.background}e0 100%)`,
+                borderColor: `${theme.colors.primary}40`,
+                boxShadow: `0 0 40px ${theme.colors.glow1}, 0 0 80px ${theme.colors.glow2}`
+              }}
+            >
               <DialogHeader>
-                <DialogTitle>{t.crm.createNewPipeline}</DialogTitle>
+                <DialogTitle style={{ color: theme.colors.primary }}>{t.crm.createNewPipeline}</DialogTitle>
                 <DialogDescription>
                   {t.crm.addDealToPipeline}
                 </DialogDescription>
@@ -251,7 +326,15 @@ export default function PipelinesPage() {
                 >
                   {t.crm.cancel}
                 </Button>
-                <Button onClick={handleCreatePipeline} disabled={submitting} className="w-full sm:w-auto">
+                <Button
+                  onClick={handleCreatePipeline}
+                  disabled={submitting}
+                  className="w-full sm:w-auto"
+                  style={{
+                    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                    border: 'none'
+                  }}
+                >
                   {submitting ? t.crm.saving : t.crm.create}
                 </Button>
               </DialogFooter>
@@ -347,10 +430,24 @@ export default function PipelinesPage() {
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                  <Settings className="mr-2 h-4 w-4" />
+                              <DropdownMenuContent
+                                align="end"
+                                className="glass"
+                                style={{
+                                  background: `${theme.colors.background}f5`,
+                                  borderColor: `${theme.colors.primary}40`
+                                }}
+                              >
+                                <DropdownMenuItem onClick={() => handleEditStage(stage)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
                                   {t.crm.edit}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleDeleteStage(stage.id)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  {t.crm.delete}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -430,6 +527,89 @@ export default function PipelinesPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Edit Stage Dialog */}
+        <Dialog open={isEditStageOpen} onOpenChange={setIsEditStageOpen}>
+          <DialogContent
+            className="max-w-[95vw] sm:max-w-md glass"
+            style={{
+              background: `linear-gradient(135deg, ${theme.colors.background}f0 0%, ${theme.colors.background}e0 100%)`,
+              borderColor: `${theme.colors.primary}40`,
+              boxShadow: `0 0 40px ${theme.colors.glow1}, 0 0 80px ${theme.colors.glow2}`
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle style={{ color: theme.colors.primary }}>
+                {t.crm.edit} {t.crm.stage}
+              </DialogTitle>
+              <DialogDescription>
+                {t.crm.updateDealInfo || 'Update stage information'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label>{t.crm.stageName} *</Label>
+                <Input
+                  value={editStageName}
+                  onChange={(e) => setEditStageName(e.target.value)}
+                  placeholder={t.crm.stageName}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t.crm.winProbability} (%)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={editStageWinProbability}
+                  onChange={(e) => setEditStageWinProbability(e.target.value)}
+                  placeholder="50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Color</Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={editStageColor}
+                    onChange={(e) => setEditStageColor(e.target.value)}
+                    className="w-12 h-10 rounded-lg border border-glass-border cursor-pointer"
+                    style={{ background: 'transparent' }}
+                  />
+                  <Input
+                    value={editStageColor}
+                    onChange={(e) => setEditStageColor(e.target.value)}
+                    placeholder="#6B7280"
+                    className="flex-1"
+                  />
+                  <div
+                    className="w-10 h-10 rounded-lg border border-glass-border"
+                    style={{ backgroundColor: editStageColor }}
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditStageOpen(false)}
+                className="w-full sm:w-auto"
+              >
+                {t.crm.cancel}
+              </Button>
+              <Button
+                onClick={handleSaveStage}
+                className="w-full sm:w-auto"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                  border: 'none'
+                }}
+              >
+                {t.crm.update}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
