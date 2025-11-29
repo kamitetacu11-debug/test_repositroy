@@ -150,10 +150,10 @@ export default function CustomerDetailPage() {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-4">
-          <div className="text-muted-foreground">{t.crm.customerNotFound || 'Customer not found'}</div>
+          <div className="text-muted-foreground">{t.crm.customerNotFound}</div>
           <Button onClick={() => router.push('/dashboard/crm/customers')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            {t.crm.backToCustomers || 'Back to Customers'}
+            {t.crm.backToCustomers}
           </Button>
         </div>
       </DashboardLayout>
@@ -264,7 +264,7 @@ export default function CustomerDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="h-5 w-5" />
-                  {t.crm.activity || 'Activity'}
+                  {t.crm.activity}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -275,7 +275,7 @@ export default function CustomerDetailPage() {
                         <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div>
-                        <p className="font-medium">{t.crm.lastUpdated || 'Last updated'}</p>
+                        <p className="font-medium">{t.crm.lastUpdated}</p>
                         <p className="text-sm text-muted-foreground">
                           {formatDate(customer.updatedAt)}
                         </p>
@@ -287,7 +287,7 @@ export default function CustomerDetailPage() {
                       <Calendar className="h-4 w-4 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
-                      <p className="font-medium">{t.crm.created || 'Created'}</p>
+                      <p className="font-medium">{t.crm.created}</p>
                       <p className="text-sm text-muted-foreground">
                         {formatDate(customer.createdAt)}
                       </p>
@@ -303,7 +303,7 @@ export default function CustomerDetailPage() {
             {/* Quick Stats */}
             <Card>
               <CardHeader>
-                <CardTitle>{t.crm.overview || 'Overview'}</CardTitle>
+                <CardTitle>{t.crm.overview}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {customer.industry && (
@@ -340,7 +340,7 @@ export default function CustomerDetailPage() {
                     {customerDealsCount}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {t.crm.activeDeals || 'Active deals'}
+                    {t.crm.activeDeals}
                   </p>
                 </div>
                 <Button
@@ -348,7 +348,7 @@ export default function CustomerDetailPage() {
                   className="w-full mt-2"
                   onClick={() => router.push('/dashboard/crm/deals')}
                 >
-                  {t.crm.viewDeals || 'View Deals'}
+                  {t.crm.viewDeals}
                 </Button>
               </CardContent>
             </Card>

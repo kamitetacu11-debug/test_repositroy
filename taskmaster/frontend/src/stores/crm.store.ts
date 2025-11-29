@@ -36,6 +36,7 @@ export interface Customer {
   assignedTo: { id: string; firstName: string; lastName: string } | null;
   _count: { deals: number; contacts: number };
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Deal {

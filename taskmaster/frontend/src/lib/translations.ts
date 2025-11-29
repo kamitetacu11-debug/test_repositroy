@@ -549,6 +549,14 @@ export const translations = {
       company: 'Company',
       individual: 'Individual',
       noCustomersFound: 'No customers found. Add your first customer to get started.',
+      customerNotFound: 'Customer not found',
+      backToCustomers: 'Back to Customers',
+      activity: 'Activity',
+      lastUpdated: 'Last updated',
+      created: 'Created',
+      overview: 'Overview',
+      activeDeals: 'Active deals',
+      viewDeals: 'View Deals',
 
       // Customer Form
       editCustomer: 'Edit Customer',
@@ -597,6 +605,12 @@ export const translations = {
       won: 'Won',
       lost: 'Lost',
       noDealsFound: 'No deals found. Create your first deal to get started.',
+      totalValue: 'Total Value',
+      lostDeals: 'Lost Deals',
+      deal: 'Deal',
+      closeDate: 'Close Date',
+      status: 'Status',
+      selectDate: 'Select date',
 
       // Deal Form
       editDeal: 'Edit Deal',
@@ -1193,6 +1207,14 @@ export const translations = {
       company: 'Компания',
       individual: 'Физ. лицо',
       noCustomersFound: 'Клиенты не найдены. Добавьте первого клиента.',
+      customerNotFound: 'Клиент не найден',
+      backToCustomers: 'Назад к клиентам',
+      activity: 'Активность',
+      lastUpdated: 'Последнее обновление',
+      created: 'Создан',
+      overview: 'Обзор',
+      activeDeals: 'Активные сделки',
+      viewDeals: 'Посмотреть сделки',
 
       // Customer Form
       editCustomer: 'Редактировать клиента',
@@ -1241,6 +1263,12 @@ export const translations = {
       won: 'Выигранные',
       lost: 'Проигранные',
       noDealsFound: 'Сделки не найдены. Создайте первую сделку.',
+      totalValue: 'Общая стоимость',
+      lostDeals: 'Проигранные сделки',
+      deal: 'Сделка',
+      closeDate: 'Дата закрытия',
+      status: 'Статус',
+      selectDate: 'Выберите дату',
 
       // Deal Form
       editDeal: 'Редактировать сделку',
@@ -1837,6 +1865,14 @@ export const translations = {
       company: '公司',
       individual: '个人',
       noCustomersFound: '未找到客户。添加您的第一个客户。',
+      customerNotFound: '未找到客户',
+      backToCustomers: '返回客户列表',
+      activity: '活动',
+      lastUpdated: '最后更新',
+      created: '创建时间',
+      overview: '概览',
+      activeDeals: '活跃交易',
+      viewDeals: '查看交易',
 
       // Customer Form
       editCustomer: '编辑客户',
@@ -1885,6 +1921,12 @@ export const translations = {
       won: '已成交',
       lost: '已失败',
       noDealsFound: '未找到交易。创建您的第一笔交易。',
+      totalValue: '总价值',
+      lostDeals: '已失败交易',
+      deal: '交易',
+      closeDate: '成交日期',
+      status: '状态',
+      selectDate: '选择日期',
 
       // Deal Form
       editDeal: '编辑交易',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,8 +49,8 @@ import {
   Loader2,
   ChevronUp,
   ChevronDown,
-  CalendarDays,
 } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,57 +126,6 @@ function StyledNumberInput({ value, onChange, min, max, placeholder, suffix }: S
   );
 }
 
-// Custom styled date input
-interface StyledDateInputProps {
-  value: string;
-  onChange: (value: string) => void;
-}
-
-function StyledDateInput({ value, onChange }: StyledDateInputProps) {
-  const { getCurrentTheme } = useSettingsStore();
-  const theme = getCurrentTheme();
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const formatDisplayDate = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
-
-  const handleIconClick = () => {
-    inputRef.current?.showPicker();
-  };
-
-  return (
-    <div className="relative">
-      <Input
-        ref={inputRef}
-        type="date"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="pr-12 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-        style={{
-          colorScheme: 'dark'
-        }}
-      />
-      <button
-        type="button"
-        onClick={handleIconClick}
-        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:scale-110"
-        style={{
-          background: `linear-gradient(135deg, ${theme.colors.primary}40, ${theme.colors.secondary}40)`,
-          border: `1px solid ${theme.colors.primary}50`
-        }}
-      >
-        <CalendarDays className="w-4 h-4 text-white" />
-      </button>
-    </div>
-  );
-}
 
 interface DealFormData {
   title: string;
@@ -392,8 +341,11 @@ export default function DealsPage() {
             <Plus className="mr-2 h-4 w-4" />
             {t.crm.addDeal}
           </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent
+        </div>
+
+        {/* Add/Edit Deal Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent
               className="max-w-2xl glass"
               style={{
                 background: `linear-gradient(135deg, ${theme.colors.background}f0 0%, ${theme.colors.background}e0 100%)`,
@@ -551,11 +503,13 @@ export default function DealsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>{t.crm.expectedCloseDate}</Label>
-                    <StyledDateInput
+                    <DatePicker
                       value={formData.expectedCloseDate}
                       onChange={(value) =>
                         setFormData({ ...formData, expectedCloseDate: value })
                       }
+                      placeholder={t.crm.selectDate || 'Select date'}
+                      locale="en"
                     />
                   </div>
                 </div>
@@ -595,7 +549,6 @@ export default function DealsPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">
