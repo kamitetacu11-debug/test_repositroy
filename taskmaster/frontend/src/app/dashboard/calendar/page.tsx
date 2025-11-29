@@ -19,6 +19,7 @@ import {
   Trash2,
   UserPlus,
   CalendarX,
+  Undo2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,7 +46,10 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Modal, ModalFooter } from '@/components/ui/modal';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
+
+const CALENDAR_TASKS_KEY = 'taskmaster_calendar_tasks';
 
 interface Task {
   id: string;
@@ -186,13 +190,16 @@ const initialTaskForm: TaskFormData = {
 export default function CalendarPage() {
   const { token } = useAuthStore();
   const t = useTranslation();
+  const { addToast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  const [dragOverSidebar, setDragOverSidebar] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [taskForm, setTaskForm] = useState<TaskFormData>(initialTaskForm);
@@ -216,9 +223,31 @@ export default function CalendarPage() {
     t.leaderboard.thursday, t.leaderboard.friday, t.leaderboard.saturday
   ];
 
+  // Hydration effect - load from localStorage first
   useEffect(() => {
+    setIsHydrated(true);
+    const savedTasks = localStorage.getItem(CALENDAR_TASKS_KEY);
+    if (savedTasks) {
+      try {
+        const parsed = JSON.parse(savedTasks);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setTasks(parsed);
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.error('Failed to parse saved tasks:', e);
+      }
+    }
     fetchTasks();
   }, []);
+
+  // Save tasks to localStorage whenever they change
+  useEffect(() => {
+    if (isHydrated && tasks.length > 0) {
+      localStorage.setItem(CALENDAR_TASKS_KEY, JSON.stringify(tasks));
+    }
+  }, [tasks, isHydrated]);
 
   const fetchTasks = async () => {
     try {
@@ -234,7 +263,8 @@ export default function CalendarPage() {
         const data = await response.json();
         const apiTasks = data.data || [];
         // Use demo data if no tasks returned
-        setTasks(apiTasks.length > 0 ? apiTasks : generateDemoTasks());
+        const tasksToUse = apiTasks.length > 0 ? apiTasks : generateDemoTasks();
+        setTasks(tasksToUse);
       } else {
         // Use demo data on error
         setTasks(generateDemoTasks());
@@ -386,6 +416,7 @@ export default function CalendarPage() {
 
   const handleDragLeave = () => {
     setDragOverDate(null);
+    setDragOverSidebar(null);
   };
 
   const handleDrop = async (e: React.DragEvent, dateKey: string) => {
@@ -400,6 +431,12 @@ export default function CalendarPage() {
         ? { ...t, dueDate: `${dateKey}T23:59:59.000Z` }
         : t
     ));
+
+    addToast({
+      type: 'success',
+      title: t.calendar.taskMoved || 'Task moved',
+      message: `${draggedTask.title} ${t.calendar.movedToDate || 'moved to'} ${dateKey}`,
+    });
 
     // Try to update on server (skip for demo tasks)
     if (!draggedTask.id.startsWith('demo-')) {
@@ -416,6 +453,82 @@ export default function CalendarPage() {
         });
       } catch (error) {
         console.error('Failed to update task date:', error);
+      }
+    }
+
+    setDraggedTask(null);
+  };
+
+  // Sidebar drop handlers
+  const handleSidebarDragOver = (e: React.DragEvent, section: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverSidebar(section);
+  };
+
+  const handleSidebarDrop = async (e: React.DragEvent, section: 'overdue' | 'upcoming' | 'completed' | 'unscheduled') => {
+    e.preventDefault();
+    setDragOverSidebar(null);
+
+    if (!draggedTask) return;
+
+    let newDueDate: string | null = null;
+    let newStatus: Task['status'] = draggedTask.status;
+
+    if (section === 'completed') {
+      // Mark task as completed, keep the due date
+      newStatus = 'COMPLETED';
+      newDueDate = draggedTask.dueDate;
+    } else if (section === 'unscheduled') {
+      // Remove due date
+      newDueDate = null;
+    } else if (section === 'overdue') {
+      // Set to yesterday
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      newDueDate = `${formatDateKeyFromDate(yesterday)}T23:59:59.000Z`;
+    } else if (section === 'upcoming') {
+      // Set to tomorrow
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      newDueDate = `${formatDateKeyFromDate(tomorrow)}T23:59:59.000Z`;
+    }
+
+    setTasks(prev => prev.map(t =>
+      t.id === draggedTask.id
+        ? { ...t, dueDate: newDueDate, status: newStatus }
+        : t
+    ));
+
+    const sectionNames: Record<string, string> = {
+      completed: t.calendar.completed,
+      unscheduled: t.calendar.unscheduled || 'Unscheduled',
+      overdue: t.calendar.overdue,
+      upcoming: t.calendar.upcoming,
+    };
+
+    addToast({
+      type: 'success',
+      title: t.calendar.taskMoved || 'Task moved',
+      message: `${draggedTask.title} → ${sectionNames[section]}`,
+    });
+
+    // Try to update on server
+    if (!draggedTask.id.startsWith('demo-')) {
+      try {
+        await fetch(`/api/v1/tasks/${draggedTask.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            dueDate: newDueDate,
+            status: newStatus,
+          }),
+        });
+      } catch (error) {
+        console.error('Failed to update task:', error);
       }
     }
 
@@ -486,6 +599,7 @@ export default function CalendarPage() {
     if (!selectedTask) return;
 
     setDeleting(true);
+    const taskTitle = selectedTask.title;
 
     // Remove from local state
     setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
@@ -504,6 +618,12 @@ export default function CalendarPage() {
       }
     }
 
+    addToast({
+      type: 'success',
+      title: t.calendar.taskDeleted || 'Task deleted',
+      message: taskTitle,
+    });
+
     setDeleting(false);
     setShowDeleteConfirm(false);
     setShowTaskModal(false);
@@ -512,6 +632,8 @@ export default function CalendarPage() {
 
   const handleRemoveFromCalendar = async () => {
     if (!selectedTask) return;
+
+    const taskTitle = selectedTask.title;
 
     // Update local state - remove dueDate
     setTasks(prev => prev.map(t =>
@@ -537,6 +659,52 @@ export default function CalendarPage() {
         console.error('Failed to remove task from calendar:', error);
       }
     }
+
+    addToast({
+      type: 'info',
+      title: t.calendar.removedFromCalendar || 'Removed from calendar',
+      message: taskTitle,
+    });
+
+    setShowTaskModal(false);
+    setSelectedTask(null);
+  };
+
+  const handleMarkCompleted = async () => {
+    if (!selectedTask) return;
+
+    const taskTitle = selectedTask.title;
+
+    // Update local state - mark as completed
+    setTasks(prev => prev.map(t =>
+      t.id === selectedTask.id
+        ? { ...t, status: 'COMPLETED' as const }
+        : t
+    ));
+
+    // Try to update on server
+    if (!selectedTask.id.startsWith('demo-')) {
+      try {
+        await fetch(`/api/v1/tasks/${selectedTask.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            status: 'COMPLETED',
+          }),
+        });
+      } catch (error) {
+        console.error('Failed to mark task as completed:', error);
+      }
+    }
+
+    addToast({
+      type: 'success',
+      title: t.calendar.taskCompleted || 'Task completed',
+      message: taskTitle,
+    });
 
     setShowTaskModal(false);
     setSelectedTask(null);
@@ -604,6 +772,10 @@ export default function CalendarPage() {
     return dueDate >= today && t.status !== 'COMPLETED';
   }).slice(0, 10);
 
+  const completedTasks = tasks.filter(t => t.status === 'COMPLETED').slice(0, 10);
+
+  const unscheduledTasks = tasks.filter(t => !t.dueDate && t.status !== 'COMPLETED');
+
   const getWeekRange = () => {
     const weekDays = getWeekDays();
     const start = weekDays[0];
@@ -627,7 +799,15 @@ export default function CalendarPage() {
             {t.calendar.addTask}
           </Button>
 
-          <Card className="glass">
+          <Card
+            className={cn(
+              'glass transition-all',
+              dragOverSidebar === 'overdue' && 'ring-2 ring-red-500 bg-red-500/10'
+            )}
+            onDragOver={(e) => handleSidebarDragOver(e, 'overdue')}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleSidebarDrop(e, 'overdue')}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2 text-red-500">
                 <AlertCircle className="w-4 h-4" />
@@ -637,7 +817,7 @@ export default function CalendarPage() {
             <CardContent className="space-y-2 max-h-48 overflow-y-auto">
               {overdueTasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-2">
-                  {t.calendar.noTasks}
+                  {dragOverSidebar === 'overdue' ? (t.calendar.dropHere || 'Drop here') : t.calendar.noTasks}
                 </p>
               ) : (
                 overdueTasks.map(task => (
@@ -671,17 +851,25 @@ export default function CalendarPage() {
             </CardContent>
           </Card>
 
-          <Card className="glass">
+          <Card
+            className={cn(
+              'glass transition-all',
+              dragOverSidebar === 'upcoming' && 'ring-2 ring-blue-500 bg-blue-500/10'
+            )}
+            onDragOver={(e) => handleSidebarDragOver(e, 'upcoming')}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleSidebarDrop(e, 'upcoming')}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-500" />
                 {t.calendar.upcoming} ({upcomingTasks.length})
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 max-h-96 overflow-y-auto">
+            <CardContent className="space-y-2 max-h-40 overflow-y-auto">
               {upcomingTasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-2">
-                  {t.calendar.noTasks}
+                  {dragOverSidebar === 'upcoming' ? (t.calendar.dropHere || 'Drop here') : t.calendar.noTasks}
                 </p>
               ) : (
                 upcomingTasks.map(task => (
@@ -708,6 +896,91 @@ export default function CalendarPage() {
                           {task.assignee.firstName}
                         </span>
                       )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Completed Tasks */}
+          <Card
+            className={cn(
+              'glass transition-all',
+              dragOverSidebar === 'completed' && 'ring-2 ring-green-500 bg-green-500/10'
+            )}
+            onDragOver={(e) => handleSidebarDragOver(e, 'completed')}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleSidebarDrop(e, 'completed')}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2 text-green-500">
+                <CheckCircle2 className="w-4 h-4" />
+                {t.calendar.completed} ({completedTasks.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 max-h-32 overflow-y-auto">
+              {completedTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  {dragOverSidebar === 'completed' ? (t.calendar.dropHere || 'Drop here') : t.calendar.noTasks}
+                </p>
+              ) : (
+                completedTasks.map(task => (
+                  <div
+                    key={task.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task)}
+                    onClick={() => handleTaskClick(task)}
+                    className="p-2 rounded-lg border-l-4 border-l-green-500 bg-green-500/10 cursor-pointer hover:opacity-80 transition opacity-60"
+                  >
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="w-3 h-3 text-gray-400 cursor-grab" />
+                      <CheckCircle2 className="w-3 h-3 text-green-500" />
+                      <span className="text-sm font-medium truncate flex-1 line-through">{task.title}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Unscheduled Tasks */}
+          <Card
+            className={cn(
+              'glass transition-all',
+              dragOverSidebar === 'unscheduled' && 'ring-2 ring-gray-500 bg-gray-500/10'
+            )}
+            onDragOver={(e) => handleSidebarDragOver(e, 'unscheduled')}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleSidebarDrop(e, 'unscheduled')}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2 text-gray-400">
+                <CalendarX className="w-4 h-4" />
+                {t.calendar.unscheduled || 'Unscheduled'} ({unscheduledTasks.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 max-h-32 overflow-y-auto">
+              {unscheduledTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  {dragOverSidebar === 'unscheduled' ? (t.calendar.dropHere || 'Drop here') : t.calendar.noTasks}
+                </p>
+              ) : (
+                unscheduledTasks.map(task => (
+                  <div
+                    key={task.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task)}
+                    onClick={() => handleTaskClick(task)}
+                    className={cn(
+                      'p-2 rounded-lg border-l-4 cursor-pointer hover:opacity-80 transition',
+                      getPriorityColor(task.priority)
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="w-3 h-3 text-gray-400 cursor-grab" />
+                      {getStatusIcon(task.status)}
+                      <span className="text-sm font-medium truncate flex-1">{task.title}</span>
                     </div>
                   </div>
                 ))
@@ -1096,6 +1369,17 @@ export default function CalendarPage() {
                 +{selectedTask.basePoints} pts
               </span>
               <div className="flex items-center gap-2">
+                {selectedTask.status !== 'COMPLETED' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-green-500 hover:text-green-600 hover:bg-green-500/10"
+                    onClick={handleMarkCompleted}
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                    {t.calendar.markComplete || 'Complete'}
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"

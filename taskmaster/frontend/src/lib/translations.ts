@@ -486,6 +486,14 @@ export const translations = {
       deleteTask: 'Delete',
       confirmDelete: 'Confirm delete?',
       removeFromCalendar: 'Remove from Calendar',
+      taskMoved: 'Task moved',
+      movedToDate: 'moved to',
+      dropHere: 'Drop here',
+      taskDeleted: 'Task deleted',
+      removedFromCalendar: 'Removed from calendar',
+      taskCompleted: 'Task completed',
+      unscheduled: 'Unscheduled',
+      markComplete: 'Complete',
     },
 
     // CRM
@@ -1118,6 +1126,14 @@ export const translations = {
       deleteTask: 'Удалить',
       confirmDelete: 'Подтвердить удаление?',
       removeFromCalendar: 'Убрать из календаря',
+      taskMoved: 'Задача перемещена',
+      movedToDate: 'перемещена на',
+      dropHere: 'Перетащите сюда',
+      taskDeleted: 'Задача удалена',
+      removedFromCalendar: 'Убрано из календаря',
+      taskCompleted: 'Задача завершена',
+      unscheduled: 'Без даты',
+      markComplete: 'Завершить',
     },
 
     // CRM
@@ -1750,6 +1766,14 @@ export const translations = {
       deleteTask: '删除',
       confirmDelete: '确认删除？',
       removeFromCalendar: '从日历中移除',
+      taskMoved: '任务已移动',
+      movedToDate: '移动到',
+      dropHere: '放在这里',
+      taskDeleted: '任务已删除',
+      removedFromCalendar: '已从日历中移除',
+      taskCompleted: '任务已完成',
+      unscheduled: '未安排',
+      markComplete: '完成',
     },
 
     // CRM
