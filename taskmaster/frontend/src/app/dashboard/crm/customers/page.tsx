@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useCRMStore, useCRMHydration } from '@/stores/crm.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   Plus,
@@ -89,6 +90,8 @@ export default function CustomersPage() {
   const router = useRouter();
   const t = useTranslation();
   const hasHydrated = useCRMHydration();
+  const { getCurrentTheme } = useSettingsStore();
+  const theme = getCurrentTheme();
 
   // Get data from CRM store
   const { customers, addCustomer, updateCustomer, deleteCustomer } = useCRMStore();
@@ -233,16 +236,21 @@ export default function CustomersPage() {
               </p>
             </div>
           </div>
+          <Button onClick={openNewDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t.crm.addCustomer}
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openNewDialog}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t.crm.addCustomer}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent
+              className="max-w-2xl glass"
+              style={{
+                background: `linear-gradient(135deg, ${theme.colors.background}f0 0%, ${theme.colors.background}e0 100%)`,
+                borderColor: `${theme.colors.primary}40`,
+                boxShadow: `0 0 40px ${theme.colors.glow1}, 0 0 80px ${theme.colors.glow2}`
+              }}
+            >
               <DialogHeader>
-                <DialogTitle>
+                <DialogTitle style={{ color: theme.colors.primary }}>
                   {editingCustomer ? t.crm.editCustomer : t.crm.addNewCustomer}
                 </DialogTitle>
                 <DialogDescription>
@@ -393,7 +401,14 @@ export default function CustomersPage() {
                 >
                   {t.crm.cancel}
                 </Button>
-                <Button onClick={handleSubmit} disabled={submitting}>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  style={{
+                    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                    border: 'none'
+                  }}
+                >
                   {submitting
                     ? t.crm.saving
                     : editingCustomer

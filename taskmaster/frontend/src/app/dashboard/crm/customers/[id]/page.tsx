@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { useAuthStore } from '@/stores/auth.store';
+import { useCRMStore, useCRMHydration } from '@/stores/crm.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   ArrowLeft,
@@ -39,166 +40,31 @@ import {
   Calendar,
   Briefcase,
   Activity,
+  Loader2,
 } from 'lucide-react';
-
-interface Customer {
-  id: string;
-  type: 'COMPANY' | 'INDIVIDUAL';
-  name: string;
-  email: string | null;
-  phone: string | null;
-  website: string | null;
-  industry: string | null;
-  address: string | null;
-  city: string | null;
-  state: string | null;
-  country: string | null;
-  postalCode: string | null;
-  notes: string | null;
-  assignedTo: { id: string; firstName: string; lastName: string } | null;
-  _count: { deals: number; contacts: number };
-  createdAt: string;
-  updatedAt?: string;
-}
-
-// Demo data for when API returns 404
-const demoCustomersBase: Record<string, Customer> = {
-  'demo-1': {
-    id: 'demo-1',
-    type: 'COMPANY',
-    name: 'TechCorp International',
-    email: 'contact@techcorp.io',
-    phone: '+1 (555) 123-4567',
-    website: 'https://techcorp.io',
-    industry: 'Technology',
-    address: '123 Tech Street',
-    city: 'San Francisco',
-    state: 'CA',
-    country: 'USA',
-    postalCode: '94102',
-    notes: 'Major enterprise client. Primary contact is John Smith, VP of Engineering.',
-    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
-    _count: { deals: 3, contacts: 5 },
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  'demo-2': {
-    id: 'demo-2',
-    type: 'COMPANY',
-    name: 'Global Finance Ltd',
-    email: 'info@globalfinance.com',
-    phone: '+1 (555) 234-5678',
-    website: 'https://globalfinance.com',
-    industry: 'Finance',
-    address: '456 Wall Street',
-    city: 'New York',
-    state: 'NY',
-    country: 'USA',
-    postalCode: '10005',
-    notes: 'Financial services company. Interested in compliance solutions.',
-    assignedTo: { id: 'user-2', firstName: 'Sarah', lastName: 'Johnson' },
-    _count: { deals: 2, contacts: 3 },
-    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  'demo-3': {
-    id: 'demo-3',
-    type: 'INDIVIDUAL',
-    name: 'Michael Chen',
-    email: 'michael.chen@email.com',
-    phone: '+1 (555) 345-6789',
-    website: null,
-    industry: 'Consulting',
-    address: '789 Sunset Blvd',
-    city: 'Los Angeles',
-    state: 'CA',
-    country: 'USA',
-    postalCode: '90028',
-    notes: 'Independent consultant specializing in digital transformation.',
-    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
-    _count: { deals: 1, contacts: 1 },
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  'demo-4': {
-    id: 'demo-4',
-    type: 'COMPANY',
-    name: 'HealthPlus Medical',
-    email: 'partners@healthplus.org',
-    phone: '+1 (555) 456-7890',
-    website: 'https://healthplus.org',
-    industry: 'Healthcare',
-    address: '321 Medical Center Dr',
-    city: 'Boston',
-    state: 'MA',
-    country: 'USA',
-    postalCode: '02114',
-    notes: 'Healthcare provider network. Looking for EMR integration solutions.',
-    assignedTo: null,
-    _count: { deals: 4, contacts: 8 },
-    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  'demo-5': {
-    id: 'demo-5',
-    type: 'COMPANY',
-    name: 'EcoGreen Solutions',
-    email: 'business@ecogreen.co',
-    phone: '+44 20 7123 4567',
-    website: 'https://ecogreen.co',
-    industry: 'Environmental',
-    address: '10 Green Park',
-    city: 'London',
-    state: null,
-    country: 'UK',
-    postalCode: 'W1K 1AB',
-    notes: 'Environmental consulting firm based in UK. Expanding to US market.',
-    assignedTo: { id: 'user-2', firstName: 'Sarah', lastName: 'Johnson' },
-    _count: { deals: 2, contacts: 4 },
-    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  'demo-6': {
-    id: 'demo-6',
-    type: 'INDIVIDUAL',
-    name: 'Anna Schmidt',
-    email: 'anna.schmidt@mail.de',
-    phone: '+49 30 123456',
-    website: null,
-    industry: 'Marketing',
-    address: 'Unter den Linden 15',
-    city: 'Berlin',
-    state: null,
-    country: 'Germany',
-    postalCode: '10117',
-    notes: 'Marketing specialist. Interested in CRM and analytics tools.',
-    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
-    _count: { deals: 1, contacts: 1 },
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-};
-
-// Create aliases for demo-customer-* IDs (used in deals page)
-const demoCustomers: Record<string, Customer> = {
-  ...demoCustomersBase,
-  'demo-customer-1': demoCustomersBase['demo-1'],
-  'demo-customer-2': demoCustomersBase['demo-2'],
-  'demo-customer-3': demoCustomersBase['demo-3'],
-  'demo-customer-4': demoCustomersBase['demo-4'],
-  'demo-customer-5': demoCustomersBase['demo-5'],
-  'demo-customer-6': demoCustomersBase['demo-6'],
-};
 
 export default function CustomerDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { token } = useAuthStore();
   const t = useTranslation();
+  const hasHydrated = useCRMHydration();
+  const { getCurrentTheme } = useSettingsStore();
+  const theme = getCurrentTheme();
   const customerId = params.id as string;
 
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Get data from CRM store
+  const { customers, deals, updateCustomer, deleteCustomer } = useCRMStore();
+
+  // Find customer from store
+  const customer = useMemo(() => {
+    return customers.find(c => c.id === customerId) || null;
+  }, [customers, customerId]);
+
+  // Count deals for this customer
+  const customerDealsCount = useMemo(() => {
+    return deals.filter(d => d.customer.id === customerId).length;
+  }, [deals, customerId]);
+
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     type: 'COMPANY' as 'COMPANY' | 'INDIVIDUAL',
@@ -216,136 +82,65 @@ export default function CustomerDetailPage() {
   });
   const [saving, setSaving] = useState(false);
 
+  // Update edit form when customer changes
   useEffect(() => {
-    fetchCustomer();
-  }, [customerId]);
-
-  const fetchCustomer = async () => {
-    setLoading(true);
-
-    // Check if it's a demo customer (supports both 'demo-X' and 'demo-customer-X' formats)
-    const isDemoCustomer = customerId.startsWith('demo-');
-    if (isDemoCustomer) {
-      const demoCustomer = demoCustomers[customerId];
-      if (demoCustomer) {
-        setCustomer(demoCustomer);
-        setEditForm({
-          type: demoCustomer.type,
-          name: demoCustomer.name,
-          email: demoCustomer.email || '',
-          phone: demoCustomer.phone || '',
-          website: demoCustomer.website || '',
-          industry: demoCustomer.industry || '',
-          address: demoCustomer.address || '',
-          city: demoCustomer.city || '',
-          state: demoCustomer.state || '',
-          country: demoCustomer.country || '',
-          postalCode: demoCustomer.postalCode || '',
-          notes: demoCustomer.notes || '',
-        });
-      }
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/v1/crm/customers/${customerId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+    if (customer) {
+      setEditForm({
+        type: customer.type,
+        name: customer.name,
+        email: customer.email || '',
+        phone: customer.phone || '',
+        website: customer.website || '',
+        industry: customer.industry || '',
+        address: customer.address || '',
+        city: customer.city || '',
+        state: customer.state || '',
+        country: customer.country || '',
+        postalCode: customer.postalCode || '',
+        notes: customer.notes || '',
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCustomer(data.data);
-        setEditForm({
-          type: data.data.type,
-          name: data.data.name,
-          email: data.data.email || '',
-          phone: data.data.phone || '',
-          website: data.data.website || '',
-          industry: data.data.industry || '',
-          address: data.data.address || '',
-          city: data.data.city || '',
-          state: data.data.state || '',
-          country: data.data.country || '',
-          postalCode: data.data.postalCode || '',
-          notes: data.data.notes || '',
-        });
-      }
-    } catch (error) {
-      console.error('Failed to fetch customer:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [customer]);
 
-  const handleUpdateCustomer = async () => {
-    if (customerId.startsWith('demo-')) {
-      // For demo customers, just update local state
-      if (customer) {
-        const updatedCustomer = {
-          ...customer,
-          ...editForm,
-          updatedAt: new Date().toISOString(),
-        };
-        setCustomer(updatedCustomer);
-      }
-      setIsEditDialogOpen(false);
-      return;
-    }
-
+  const handleUpdateCustomer = () => {
+    if (!customer) return;
     setSaving(true);
-    try {
-      const response = await fetch(`/api/v1/crm/customers/${customerId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(editForm),
-      });
 
-      if (response.ok) {
-        fetchCustomer();
-        setIsEditDialogOpen(false);
-      }
-    } catch (error) {
-      console.error('Failed to update customer:', error);
-    } finally {
-      setSaving(false);
-    }
+    updateCustomer(customerId, {
+      type: editForm.type,
+      name: editForm.name,
+      email: editForm.email || null,
+      phone: editForm.phone || null,
+      website: editForm.website || null,
+      industry: editForm.industry || null,
+      address: editForm.address || null,
+      city: editForm.city || null,
+      state: editForm.state || null,
+      country: editForm.country || null,
+      postalCode: editForm.postalCode || null,
+      notes: editForm.notes || null,
+    });
+
+    setIsEditDialogOpen(false);
+    setSaving(false);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!confirm(t.crm.confirmDelete)) return;
-
-    if (customerId.startsWith('demo-')) {
-      router.push('/dashboard/crm/customers');
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/v1/crm/customers/${customerId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        router.push('/dashboard/crm/customers');
-      }
-    } catch (error) {
-      console.error('Failed to delete customer:', error);
-    }
+    deleteCustomer(customerId);
+    router.push('/dashboard/crm/customers');
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  if (loading) {
+  // Show loading until hydrated
+  if (!hasHydrated) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">{t.crm.loading}</div>
+          <Loader2 className="w-8 h-8 animate-spin text-cosmic-purple" />
         </div>
       </DashboardLayout>
     );
@@ -541,8 +336,8 @@ export default function CustomerDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-center py-4">
-                  <div className="text-4xl font-bold text-cosmic-purple">
-                    {customer._count?.deals || 0}
+                  <div className="text-4xl font-bold" style={{ color: theme.colors.primary }}>
+                    {customerDealsCount}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     {t.crm.activeDeals || 'Active deals'}
@@ -557,32 +352,22 @@ export default function CustomerDetailPage() {
                 </Button>
               </CardContent>
             </Card>
-
-            {/* Contacts Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t.crm.contacts || 'Contacts'}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-4">
-                  <div className="text-4xl font-bold text-cosmic-cyan">
-                    {customer._count?.contacts || 0}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {t.crm.totalContacts || 'Total contacts'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent
+          className="max-w-2xl glass"
+          style={{
+            background: `linear-gradient(135deg, ${theme.colors.background}f0 0%, ${theme.colors.background}e0 100%)`,
+            borderColor: `${theme.colors.primary}40`,
+            boxShadow: `0 0 40px ${theme.colors.glow1}, 0 0 80px ${theme.colors.glow2}`
+          }}
+        >
           <DialogHeader>
-            <DialogTitle>{t.crm.editCustomer}</DialogTitle>
+            <DialogTitle style={{ color: theme.colors.primary }}>{t.crm.editCustomer}</DialogTitle>
             <DialogDescription>{t.crm.updateCustomerInfo}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -695,7 +480,14 @@ export default function CustomerDetailPage() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               {t.crm.cancel}
             </Button>
-            <Button onClick={handleUpdateCustomer} disabled={saving}>
+            <Button
+              onClick={handleUpdateCustomer}
+              disabled={saving}
+              style={{
+                background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                border: 'none'
+              }}
+            >
               {saving ? t.crm.saving : t.crm.update}
             </Button>
           </DialogFooter>
