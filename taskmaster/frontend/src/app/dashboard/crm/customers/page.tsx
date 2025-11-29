@@ -205,6 +205,25 @@ export default function CustomersPage() {
     fetchCustomers();
   }, [searchQuery, typeFilter]);
 
+  const applyFilters = (data: Customer[]) => {
+    let filtered = [...data];
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        c => c.name.toLowerCase().includes(query) ||
+             c.email?.toLowerCase().includes(query) ||
+             c.industry?.toLowerCase().includes(query)
+      );
+    }
+
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(c => c.type === typeFilter);
+    }
+
+    return filtered;
+  };
+
   const fetchCustomers = async () => {
     try {
       const params = new URLSearchParams();
@@ -221,35 +240,21 @@ export default function CustomersPage() {
         const data = await response.json();
         const fetchedCustomers = data.data || [];
 
-        // Use demo data if API returns empty
-        if (fetchedCustomers.length === 0 && !searchQuery && typeFilter === 'all') {
-          setCustomers(demoCustomers);
-        } else if (fetchedCustomers.length === 0) {
-          // Filter demo data based on search/filter criteria
-          let filteredDemo = [...demoCustomers];
-          if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filteredDemo = filteredDemo.filter(
-              c => c.name.toLowerCase().includes(query) ||
-                   c.email?.toLowerCase().includes(query) ||
-                   c.industry?.toLowerCase().includes(query)
-            );
-          }
-          if (typeFilter !== 'all') {
-            filteredDemo = filteredDemo.filter(c => c.type === typeFilter);
-          }
-          setCustomers(filteredDemo);
-        } else {
+        if (fetchedCustomers.length > 0) {
+          // Use API data (already filtered by server)
           setCustomers(fetchedCustomers);
+        } else {
+          // Use demo data with local filtering
+          setCustomers(applyFilters(demoCustomers));
         }
       } else {
-        // Fallback to demo data on error
-        setCustomers(demoCustomers);
+        // Fallback to demo data on error with local filtering
+        setCustomers(applyFilters(demoCustomers));
       }
     } catch (error) {
       console.error('Failed to fetch customers:', error);
-      // Fallback to demo data on error
-      setCustomers(demoCustomers);
+      // Fallback to demo data on error with local filtering
+      setCustomers(applyFilters(demoCustomers));
     } finally {
       setLoading(false);
     }
