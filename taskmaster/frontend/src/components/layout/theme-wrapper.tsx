@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSettingsStore, themes } from '@/stores/settings.store';
 import { cn } from '@/lib/utils';
 
@@ -8,9 +8,17 @@ interface ThemeWrapperProps {
   children: React.ReactNode;
 }
 
-// Generate twinkling stars
+// Generate twinkling stars - only renders on client to avoid hydration mismatch
 function TwinklingStars({ animations, brightness }: { animations: boolean; brightness: number }) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Only generate stars after component mounts on client
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const stars = useMemo(() => {
+    if (!isMounted) return [];
     return Array.from({ length: 80 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
@@ -20,9 +28,9 @@ function TwinklingStars({ animations, brightness }: { animations: boolean; brigh
       delay: Math.random() * 5,
       baseOpacity: Math.random() * 0.5 + 0.3,
     }));
-  }, []);
+  }, [isMounted]);
 
-  if (!animations || brightness === 0) return null;
+  if (!isMounted || !animations || brightness === 0) return null;
 
   const opacityMultiplier = brightness / 50; // 0-2 range
 
