@@ -92,6 +92,7 @@ const mockNotifications: Notification[] = [
 ];
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  // ALL HOOKS MUST BE CALLED FIRST - before any conditional returns
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const hasHydrated = useAuthHydration();
@@ -99,28 +100,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const currentTheme = getCurrentTheme();
   const t = useTranslation();
 
-  // Show loading state until auth store is hydrated
-  if (!hasHydrated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-cosmic-purple" />
-          <span className="text-muted-foreground text-sm">Loading...</span>
-        </div>
-      </div>
-    );
-  }
-
-  const navigation = [
-    { name: t.nav.dashboard, href: '/dashboard', icon: LayoutDashboard },
-    { name: t.nav.tasks, href: '/dashboard/tasks', icon: Target },
-    { name: t.calendar.title, href: '/dashboard/calendar', icon: CalendarDays },
-    { name: t.nav.teams, href: '/dashboard/teams', icon: Users },
-    { name: 'CRM', href: '/dashboard/crm', icon: Building2 },
-    { name: t.nav.leaderboard, href: '/dashboard/leaderboard', icon: Trophy },
-    { name: t.nav.analytics, href: '/dashboard/analytics', icon: BarChart3 },
-    { name: t.nav.aiInsights, href: '/dashboard/ai', icon: Sparkles },
-  ];
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
@@ -144,6 +123,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [notificationsOpen]);
+
+  // Show loading state until auth store is hydrated
+  if (!hasHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-cosmic-purple" />
+          <span className="text-muted-foreground text-sm">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const navigation = [
+    { name: t.nav.dashboard, href: '/dashboard', icon: LayoutDashboard },
+    { name: t.nav.tasks, href: '/dashboard/tasks', icon: Target },
+    { name: t.calendar.title, href: '/dashboard/calendar', icon: CalendarDays },
+    { name: t.nav.teams, href: '/dashboard/teams', icon: Users },
+    { name: 'CRM', href: '/dashboard/crm', icon: Building2 },
+    { name: t.nav.leaderboard, href: '/dashboard/leaderboard', icon: Trophy },
+    { name: t.nav.analytics, href: '/dashboard/analytics', icon: BarChart3 },
+    { name: t.nav.aiInsights, href: '/dashboard/ai', icon: Sparkles },
+  ];
 
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
