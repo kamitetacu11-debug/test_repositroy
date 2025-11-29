@@ -618,6 +618,7 @@ export const translations = {
       stages: 'stages',
       stage: 'Stage',
       noPipelinesFound: 'No pipelines found. Create your first pipeline to get started.',
+      holdAndDragToScroll: 'Hold and drag to scroll',
 
       // Pipeline Form
       editPipeline: 'Edit Pipeline',
@@ -1258,6 +1259,7 @@ export const translations = {
       stages: 'этапов',
       stage: 'Этап',
       noPipelinesFound: 'Воронки не найдены. Создайте первую воронку.',
+      holdAndDragToScroll: 'Удерживайте и перетаскивайте для прокрутки',
 
       // Pipeline Form
       editPipeline: 'Редактировать воронку',
@@ -1898,6 +1900,7 @@ export const translations = {
       stages: '阶段',
       stage: '阶段',
       noPipelinesFound: '未找到渠道。创建您的第一个渠道。',
+      holdAndDragToScroll: '按住并拖动以滚动',
 
       // Pipeline Form
       editPipeline: '编辑渠道',

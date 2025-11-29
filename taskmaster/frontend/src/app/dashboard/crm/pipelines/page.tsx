@@ -34,8 +34,6 @@ import {
   DollarSign,
   MoreHorizontal,
   GripVertical,
-  ChevronLeft,
-  ChevronRight,
   Grip,
 } from 'lucide-react';
 import {
@@ -154,8 +152,9 @@ export default function PipelinesPage() {
   // Drag-to-scroll state
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
+  const [hasDragged, setHasDragged] = useState(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
 
   useEffect(() => {
     fetchPipelines();
@@ -291,36 +290,42 @@ export default function PipelinesPage() {
   // Drag-to-scroll handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!scrollContainerRef.current) return;
+
     setIsDragging(true);
-    setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
-    setScrollLeft(scrollContainerRef.current.scrollLeft);
+    setHasDragged(false);
+    startXRef.current = e.clientX;
+    scrollLeftRef.current = scrollContainerRef.current.scrollLeft;
+
+    // Prevent text selection while dragging
+    e.preventDefault();
   }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDragging || !scrollContainerRef.current) return;
+
     e.preventDefault();
-    const x = e.pageX - scrollContainerRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5; // Scroll speed multiplier
-    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
-  }, [isDragging, startX, scrollLeft]);
+    const deltaX = e.clientX - startXRef.current;
+
+    // Mark as dragged if moved more than 5 pixels (to differentiate from click)
+    if (Math.abs(deltaX) > 5) {
+      setHasDragged(true);
+    }
+
+    scrollContainerRef.current.scrollLeft = scrollLeftRef.current - deltaX;
+  }, [isDragging]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
+    // Reset hasDragged after a short delay to allow click handlers to check it
+    setTimeout(() => setHasDragged(false), 100);
   }, []);
 
   const handleMouseLeave = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  // Scroll navigation buttons
-  const scrollToDirection = (direction: 'left' | 'right') => {
-    if (!scrollContainerRef.current) return;
-    const scrollAmount = 340; // Slightly larger than card width
-    scrollContainerRef.current.scrollBy({
-      left: direction === 'left' ? -scrollAmount : scrollAmount,
-      behavior: 'smooth',
-    });
-  };
+    if (isDragging) {
+      setIsDragging(false);
+      setTimeout(() => setHasDragged(false), 100);
+    }
+  }, [isDragging]);
 
   const handlePipelineChange = (pipelineId: string) => {
     const pipeline = pipelines.find((p) => p.id === pipelineId);
@@ -436,39 +441,20 @@ export default function PipelinesPage() {
         {/* Pipeline Board with drag-to-scroll */}
         {selectedPipeline ? (
           <div className="relative">
-            {/* Scroll navigation buttons - hidden on mobile */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm shadow-md hidden lg:flex"
-              onClick={() => scrollToDirection('left')}
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm shadow-md hidden lg:flex"
-              onClick={() => scrollToDirection('right')}
-            >
-              <ChevronRight className="h-6 w-6" />
-            </Button>
-
             {/* Drag hint */}
             <div className="flex items-center justify-center gap-2 mb-2 text-xs text-muted-foreground">
               <Grip className="h-3 w-3" />
-              <span className="hidden sm:inline">{t.calendar.dragToMove || 'Hold and drag to scroll'}</span>
-              <span className="sm:hidden">Swipe to scroll</span>
+              <span>{t.crm.holdAndDragToScroll || 'Hold and drag to scroll'}</span>
             </div>
 
-            {/* Scrollable container */}
+            {/* Scrollable container - drag to scroll only */}
             <div
               ref={scrollContainerRef}
               className={cn(
-                "flex gap-3 sm:gap-4 pb-4 px-0 lg:px-8 overflow-x-auto scrollbar-hide",
-                isDragging ? "cursor-grabbing select-none" : "cursor-grab"
+                "flex gap-3 sm:gap-4 pb-4 overflow-x-scroll",
+                isDragging ? "cursor-grabbing select-none" : "cursor-grab",
+                "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
               )}
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
@@ -530,7 +516,7 @@ export default function PipelinesPage() {
                                 key={deal.id}
                                 className="cursor-pointer hover:shadow-md transition-shadow bg-glass-light/30"
                                 onClick={(e) => {
-                                  if (!isDragging) {
+                                  if (!hasDragged) {
                                     router.push(`/dashboard/crm/deals/${deal.id}`);
                                   }
                                 }}
@@ -561,7 +547,7 @@ export default function PipelinesPage() {
                             className="w-full border-dashed border text-xs sm:text-sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (!isDragging) {
+                              if (!hasDragged) {
                                 router.push('/dashboard/crm/deals');
                               }
                             }}
