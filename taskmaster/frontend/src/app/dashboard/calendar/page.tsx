@@ -18,6 +18,7 @@ import {
   LayoutGrid,
   Trash2,
   UserPlus,
+  CalendarX,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -509,6 +510,38 @@ export default function CalendarPage() {
     setSelectedTask(null);
   };
 
+  const handleRemoveFromCalendar = async () => {
+    if (!selectedTask) return;
+
+    // Update local state - remove dueDate
+    setTasks(prev => prev.map(t =>
+      t.id === selectedTask.id
+        ? { ...t, dueDate: null }
+        : t
+    ));
+
+    // Try to update on server (skip for demo tasks)
+    if (!selectedTask.id.startsWith('demo-')) {
+      try {
+        await fetch(`/api/v1/tasks/${selectedTask.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            dueDate: null,
+          }),
+        });
+      } catch (error) {
+        console.error('Failed to remove task from calendar:', error);
+      }
+    }
+
+    setShowTaskModal(false);
+    setSelectedTask(null);
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'COMPLETED':
@@ -804,13 +837,48 @@ export default function CalendarPage() {
                             onDragStart={(e) => handleDragStart(e, task)}
                             onClick={() => handleTaskClick(task)}
                             className={cn(
-                              'text-xs p-1 rounded border-l-2 cursor-pointer hover:opacity-80 transition truncate',
+                              'text-xs p-1 rounded border-l-2 cursor-pointer hover:opacity-80 transition truncate relative group/mtask',
                               task.status === 'COMPLETED'
                                 ? 'border-l-green-500 bg-green-500/10 line-through opacity-60'
                                 : getPriorityColor(task.priority)
                             )}
                           >
-                            {task.title}
+                            <div className="flex items-center gap-1">
+                              {task.assignee && (
+                                <div className="w-4 h-4 rounded-full bg-cosmic-purple/20 flex-shrink-0 flex items-center justify-center text-[8px] font-medium text-cosmic-purple">
+                                  {task.assignee.firstName[0]}
+                                </div>
+                              )}
+                              <span className="truncate">{task.title}</span>
+                            </div>
+                            {/* Month View Task Popup */}
+                            <div className="absolute bottom-full left-0 mb-1 p-2 bg-popover border border-glass-border rounded-lg shadow-lg opacity-0 group-hover/mtask:opacity-100 transition-opacity pointer-events-none z-50 min-w-[180px]">
+                              <p className="text-xs font-medium mb-2">{task.title}</p>
+                              <div className="space-y-1">
+                                {task.assignee && (
+                                  <div className="flex items-center gap-2 text-[10px]">
+                                    <div className="w-5 h-5 rounded-full bg-cosmic-purple/20 flex items-center justify-center text-[9px] font-medium text-cosmic-purple">
+                                      {task.assignee.firstName[0]}{task.assignee.lastName[0]}
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">{t.calendar.assignee}: </span>
+                                      <span className="font-medium">{task.assignee.firstName} {task.assignee.lastName}</span>
+                                    </div>
+                                  </div>
+                                )}
+                                {task.creator && (
+                                  <div className="flex items-center gap-2 text-[10px]">
+                                    <div className="w-5 h-5 rounded-full bg-cosmic-cyan/20 flex items-center justify-center text-[9px] font-medium text-cosmic-cyan">
+                                      {task.creator.firstName[0]}{task.creator.lastName[0]}
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">{t.calendar.creator}: </span>
+                                      <span className="font-medium">{task.creator.firstName} {task.creator.lastName}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         ))}
                         {dayTasks.length > 3 && (
@@ -884,7 +952,7 @@ export default function CalendarPage() {
                             onDragStart={(e) => handleDragStart(e, task)}
                             onClick={() => handleTaskClick(task)}
                             className={cn(
-                              'p-2 rounded-lg border-l-4 cursor-pointer hover:opacity-80 transition',
+                              'p-2 rounded-lg border-l-4 cursor-pointer hover:opacity-80 transition group/task relative',
                               task.status === 'COMPLETED'
                                 ? 'border-l-green-500 bg-green-500/10 line-through opacity-60'
                                 : getPriorityColor(task.priority)
@@ -894,12 +962,48 @@ export default function CalendarPage() {
                               {getStatusIcon(task.status)}
                               <span className="text-sm font-medium truncate">{task.title}</span>
                             </div>
-                            {task.assignee && (
-                              <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                <User className="w-3 h-3" />
-                                {task.assignee.firstName}
-                              </div>
-                            )}
+                            <div className="flex items-center justify-between mt-1">
+                              {task.assignee ? (
+                                <div className="text-xs text-muted-foreground flex items-center gap-1 relative group/assignee">
+                                  <div className="w-5 h-5 rounded-full bg-cosmic-purple/20 flex items-center justify-center text-[10px] font-medium text-cosmic-purple">
+                                    {task.assignee.firstName[0]}{task.assignee.lastName[0]}
+                                  </div>
+                                  <span className="truncate max-w-[80px]">{task.assignee.firstName}</span>
+                                  {/* Assignee Profile Popup */}
+                                  <div className="absolute bottom-full left-0 mb-1 p-2 bg-popover border border-glass-border rounded-lg shadow-lg opacity-0 group-hover/assignee:opacity-100 transition-opacity pointer-events-none z-50 min-w-[150px]">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 rounded-full bg-cosmic-purple/30 flex items-center justify-center text-sm font-medium text-cosmic-purple">
+                                        {task.assignee.firstName[0]}{task.assignee.lastName[0]}
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-medium">{task.assignee.firstName} {task.assignee.lastName}</p>
+                                        <p className="text-[10px] text-muted-foreground">{t.calendar.assignee}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">-</span>
+                              )}
+                              {task.creator && (
+                                <div className="text-xs text-muted-foreground flex items-center gap-1 relative group/creator">
+                                  <UserPlus className="w-3 h-3" />
+                                  <span className="truncate max-w-[60px]">{task.creator.firstName[0]}.</span>
+                                  {/* Creator Profile Popup */}
+                                  <div className="absolute bottom-full right-0 mb-1 p-2 bg-popover border border-glass-border rounded-lg shadow-lg opacity-0 group-hover/creator:opacity-100 transition-opacity pointer-events-none z-50 min-w-[150px]">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 rounded-full bg-cosmic-cyan/30 flex items-center justify-center text-sm font-medium text-cosmic-cyan">
+                                        {task.creator.firstName[0]}{task.creator.lastName[0]}
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-medium">{task.creator.firstName} {task.creator.lastName}</p>
+                                        <p className="text-[10px] text-muted-foreground">{t.calendar.creator}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -991,36 +1095,47 @@ export default function CalendarPage() {
               <span className="text-cosmic-purple font-medium">
                 +{selectedTask.basePoints} pts
               </span>
-              {!showDeleteConfirm ? (
+              <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10"
+                  onClick={handleRemoveFromCalendar}
                 >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  {t.calendar.deleteTask || 'Delete'}
+                  <CalendarX className="w-4 h-4 mr-1" />
+                  {t.calendar.removeFromCalendar || 'Remove from Calendar'}
                 </Button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-red-500">{t.calendar.confirmDelete || 'Confirm?'}</span>
+                {!showDeleteConfirm ? (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowDeleteConfirm(false)}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                    onClick={() => setShowDeleteConfirm(true)}
                   >
-                    {t.ai.cancel}
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    {t.calendar.deleteTask || 'Delete'}
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDeleteTask}
-                    disabled={deleting}
-                  >
-                    {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : t.calendar.deleteTask || 'Delete'}
-                  </Button>
-                </div>
-              )}
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-red-500">{t.calendar.confirmDelete || 'Confirm?'}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowDeleteConfirm(false)}
+                    >
+                      {t.ai.cancel}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteTask}
+                      disabled={deleting}
+                    >
+                      {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : t.calendar.deleteTask || 'Delete'}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

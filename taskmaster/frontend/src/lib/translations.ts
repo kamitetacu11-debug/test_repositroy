@@ -485,6 +485,7 @@ export const translations = {
       creator: 'Created by',
       deleteTask: 'Delete',
       confirmDelete: 'Confirm delete?',
+      removeFromCalendar: 'Remove from Calendar',
     },
 
     // CRM
@@ -1113,6 +1114,7 @@ export const translations = {
       creator: 'Создал',
       deleteTask: 'Удалить',
       confirmDelete: 'Подтвердить удаление?',
+      removeFromCalendar: 'Убрать из календаря',
     },
 
     // CRM
@@ -1741,6 +1743,7 @@ export const translations = {
       creator: '创建者',
       deleteTask: '删除',
       confirmDelete: '确认删除？',
+      removeFromCalendar: '从日历中移除',
     },
 
     // CRM

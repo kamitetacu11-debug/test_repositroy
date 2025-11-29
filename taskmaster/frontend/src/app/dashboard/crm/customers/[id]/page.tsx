@@ -62,7 +62,7 @@ interface Customer {
 }
 
 // Demo data for when API returns 404
-const demoCustomers: Record<string, Customer> = {
+const demoCustomersBase: Record<string, Customer> = {
   'demo-1': {
     id: 'demo-1',
     type: 'COMPANY',
@@ -179,6 +179,17 @@ const demoCustomers: Record<string, Customer> = {
   },
 };
 
+// Create aliases for demo-customer-* IDs (used in deals page)
+const demoCustomers: Record<string, Customer> = {
+  ...demoCustomersBase,
+  'demo-customer-1': demoCustomersBase['demo-1'],
+  'demo-customer-2': demoCustomersBase['demo-2'],
+  'demo-customer-3': demoCustomersBase['demo-3'],
+  'demo-customer-4': demoCustomersBase['demo-4'],
+  'demo-customer-5': demoCustomersBase['demo-5'],
+  'demo-customer-6': demoCustomersBase['demo-6'],
+};
+
 export default function CustomerDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -212,8 +223,9 @@ export default function CustomerDetailPage() {
   const fetchCustomer = async () => {
     setLoading(true);
 
-    // Check if it's a demo customer
-    if (customerId.startsWith('demo-')) {
+    // Check if it's a demo customer (supports both 'demo-X' and 'demo-customer-X' formats)
+    const isDemoCustomer = customerId.startsWith('demo-');
+    if (isDemoCustomer) {
       const demoCustomer = demoCustomers[customerId];
       if (demoCustomer) {
         setCustomer(demoCustomer);
