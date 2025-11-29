@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { useAuthStore } from '@/stores/auth.store';
+import { useCRMStore, useCRMHydration } from '@/stores/crm.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   Plus,
@@ -35,6 +35,7 @@ import {
   MoreHorizontal,
   GripVertical,
   Grip,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -44,106 +45,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-interface PipelineStage {
-  id: string;
-  name: string;
-  color: string;
-  sortOrder: number;
-  winProbability: number;
-}
-
-interface Deal {
-  id: string;
-  title: string;
-  amount: number | null;
-  customer: { id: string; name: string };
-  stage: { id: string };
-  updatedAt: string;
-}
-
-interface Pipeline {
-  id: string;
-  name: string;
-  description: string | null;
-  isDefault: boolean;
-  stages: PipelineStage[];
-}
-
-// Demo data for when API returns empty
-const demoPipeline: Pipeline = {
-  id: 'demo-pipeline-1',
-  name: 'Sales Pipeline',
-  description: 'Main sales pipeline for tracking all deals',
-  isDefault: true,
-  stages: [
-    { id: 'demo-stage-1', name: 'Lead', color: '#6B7280', sortOrder: 0, winProbability: 10 },
-    { id: 'demo-stage-2', name: 'Qualified', color: '#3B82F6', sortOrder: 1, winProbability: 25 },
-    { id: 'demo-stage-3', name: 'Proposal', color: '#F59E0B', sortOrder: 2, winProbability: 50 },
-    { id: 'demo-stage-4', name: 'Negotiation', color: '#8B5CF6', sortOrder: 3, winProbability: 75 },
-    { id: 'demo-stage-5', name: 'Closed Won', color: '#10B981', sortOrder: 4, winProbability: 100 },
-    { id: 'demo-stage-6', name: 'Closed Lost', color: '#EF4444', sortOrder: 5, winProbability: 0 },
-  ],
-};
-
-const demoDeals: Deal[] = [
-  {
-    id: 'demo-deal-1',
-    title: 'Enterprise Software License',
-    amount: 150000,
-    customer: { id: 'demo-customer-1', name: 'TechCorp International' },
-    stage: { id: 'demo-stage-3' },
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'demo-deal-2',
-    title: 'Financial Consulting Package',
-    amount: 85000,
-    customer: { id: 'demo-customer-2', name: 'Global Finance Ltd' },
-    stage: { id: 'demo-stage-2' },
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'demo-deal-3',
-    title: 'Healthcare Platform Implementation',
-    amount: 250000,
-    customer: { id: 'demo-customer-3', name: 'HealthPlus Medical' },
-    stage: { id: 'demo-stage-4' },
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'demo-deal-4',
-    title: 'Green Energy Audit',
-    amount: 35000,
-    customer: { id: 'demo-customer-4', name: 'EcoGreen Solutions' },
-    stage: { id: 'demo-stage-1' },
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'demo-deal-5',
-    title: 'Startup Accelerator Program',
-    amount: 120000,
-    customer: { id: 'demo-customer-5', name: 'StartupHub Inc' },
-    stage: { id: 'demo-stage-5' },
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'demo-deal-6',
-    title: 'Retail POS System',
-    amount: 45000,
-    customer: { id: 'demo-customer-6', name: 'RetailMax Group' },
-    stage: { id: 'demo-stage-6' },
-    updatedAt: new Date().toISOString(),
-  },
-];
-
 export default function PipelinesPage() {
   const router = useRouter();
-  const { token } = useAuthStore();
   const t = useTranslation();
-  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
-  const [loading, setLoading] = useState(true);
+  const hasHydrated = useCRMHydration();
+
+  // Get data from CRM store
+  const { pipelines, deals, addPipeline } = useCRMStore();
+
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState('');
   const [newPipelineDescription, setNewPipelineDescription] = useState('');
@@ -156,125 +66,27 @@ export default function PipelinesPage() {
   const startXRef = useRef(0);
   const scrollLeftRef = useRef(0);
 
+  // Set default pipeline after hydration
   useEffect(() => {
-    fetchPipelines();
-  }, []);
-
-  useEffect(() => {
-    if (selectedPipeline) {
-      fetchDeals(selectedPipeline.id);
+    if (hasHydrated && pipelines.length > 0 && !selectedPipelineId) {
+      const defaultPipeline = pipelines.find(p => p.isDefault) || pipelines[0];
+      setSelectedPipelineId(defaultPipeline.id);
     }
-  }, [selectedPipeline]);
+  }, [hasHydrated, pipelines, selectedPipelineId]);
 
-  const fetchPipelines = async () => {
-    try {
-      const response = await fetch('/api/v1/crm/pipelines', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  const selectedPipeline = pipelines.find(p => p.id === selectedPipelineId) || null;
 
-      if (response.ok) {
-        const data = await response.json();
-        const pipelinesList = data.data || [];
-        if (pipelinesList.length > 0) {
-          setPipelines(pipelinesList);
-          if (!selectedPipeline) {
-            setSelectedPipeline(pipelinesList[0]);
-          }
-        } else {
-          // Use demo data
-          setPipelines([demoPipeline]);
-          setSelectedPipeline(demoPipeline);
-          setDeals(demoDeals);
-        }
-      } else {
-        // Use demo data on error
-        setPipelines([demoPipeline]);
-        setSelectedPipeline(demoPipeline);
-        setDeals(demoDeals);
-      }
-    } catch (error) {
-      console.error('Failed to fetch pipelines:', error);
-      // Use demo data on error
-      setPipelines([demoPipeline]);
-      setSelectedPipeline(demoPipeline);
-      setDeals(demoDeals);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Get deals for the selected pipeline
+  const pipelineDeals = selectedPipeline
+    ? deals.filter(d => d.pipeline.id === selectedPipeline.id)
+    : [];
 
-  const fetchDeals = async (pipelineId: string) => {
-    // Skip API call for demo pipeline
-    if (pipelineId === 'demo-pipeline-1') {
-      setDeals(demoDeals);
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/v1/crm/deals?pipelineId=${pipelineId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const dealsList = data.data || [];
-        if (dealsList.length > 0) {
-          setDeals(dealsList);
-        } else {
-          // Use demo deals if empty
-          setDeals(demoDeals);
-        }
-      } else {
-        setDeals(demoDeals);
-      }
-    } catch (error) {
-      console.error('Failed to fetch deals:', error);
-      setDeals(demoDeals);
-    }
-  };
-
-  const handleCreatePipeline = async () => {
+  const handleCreatePipeline = () => {
     if (!newPipelineName.trim()) return;
 
     setSubmitting(true);
-    try {
-      const response = await fetch('/api/v1/crm/pipelines', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: newPipelineName,
-          description: newPipelineDescription || null,
-        }),
-      });
 
-      if (response.ok) {
-        setIsDialogOpen(false);
-        setNewPipelineName('');
-        setNewPipelineDescription('');
-        fetchPipelines();
-      } else {
-        // API failed - create demo pipeline locally
-        createDemoPipeline();
-      }
-    } catch (error) {
-      console.error('Failed to create pipeline:', error);
-      // API not available - create demo pipeline locally
-      createDemoPipeline();
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const createDemoPipeline = () => {
-    const newPipeline: Pipeline = {
-      id: `demo-pipeline-${Date.now()}`,
+    const newPipeline = addPipeline({
       name: newPipelineName,
       description: newPipelineDescription || null,
       isDefault: pipelines.length === 0,
@@ -286,13 +98,13 @@ export default function PipelinesPage() {
         { id: `stage-${Date.now()}-5`, name: 'Closed Won', color: '#10B981', sortOrder: 4, winProbability: 100 },
         { id: `stage-${Date.now()}-6`, name: 'Closed Lost', color: '#EF4444', sortOrder: 5, winProbability: 0 },
       ],
-    };
+    });
 
-    setPipelines([...pipelines, newPipeline]);
-    setSelectedPipeline(newPipeline);
+    setSelectedPipelineId(newPipeline.id);
     setIsDialogOpen(false);
     setNewPipelineName('');
     setNewPipelineDescription('');
+    setSubmitting(false);
   };
 
   const formatCurrency = (amount: number) => {
@@ -305,7 +117,7 @@ export default function PipelinesPage() {
   };
 
   const getDealsForStage = (stageId: string) => {
-    return deals.filter((deal) => deal.stage.id === stageId);
+    return pipelineDeals.filter((deal) => deal.stage.id === stageId);
   };
 
   const getStageTotal = (stageId: string) => {
@@ -324,7 +136,6 @@ export default function PipelinesPage() {
     startXRef.current = e.clientX;
     scrollLeftRef.current = scrollContainerRef.current.scrollLeft;
 
-    // Prevent text selection while dragging
     e.preventDefault();
   }, []);
 
@@ -334,7 +145,6 @@ export default function PipelinesPage() {
     e.preventDefault();
     const deltaX = e.clientX - startXRef.current;
 
-    // Mark as dragged if moved more than 5 pixels (to differentiate from click)
     if (Math.abs(deltaX) > 5) {
       setHasDragged(true);
     }
@@ -344,7 +154,6 @@ export default function PipelinesPage() {
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-    // Reset hasDragged after a short delay to allow click handlers to check it
     setTimeout(() => setHasDragged(false), 100);
   }, []);
 
@@ -356,11 +165,19 @@ export default function PipelinesPage() {
   }, [isDragging]);
 
   const handlePipelineChange = (pipelineId: string) => {
-    const pipeline = pipelines.find((p) => p.id === pipelineId);
-    if (pipeline) {
-      setSelectedPipeline(pipeline);
-    }
+    setSelectedPipelineId(pipelineId);
   };
+
+  // Show loading until hydrated
+  if (!hasHydrated) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-cosmic-purple" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -447,7 +264,7 @@ export default function PipelinesPage() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <Label className="text-sm text-muted-foreground shrink-0">{t.crm.pipelines}:</Label>
             <Select
-              value={selectedPipeline?.id || ''}
+              value={selectedPipelineId || ''}
               onValueChange={handlePipelineChange}
             >
               <SelectTrigger className="w-full sm:w-[280px]">
@@ -470,7 +287,7 @@ export default function PipelinesPage() {
             </Select>
             {pipelines.length > 1 && (
               <span className="text-xs text-muted-foreground">
-                {pipelines.length} {t.crm.stages}
+                {pipelines.length} {t.crm.pipelines}
               </span>
             )}
           </div>
@@ -598,14 +415,8 @@ export default function PipelinesPage() {
                     </div>
                   );
                 })}
-              </div>
+            </div>
           </div>
-        ) : loading ? (
-          <Card className="glass">
-            <CardContent className="py-8 text-center">
-              {t.crm.loading}
-            </CardContent>
-          </Card>
         ) : (
           <Card className="glass">
             <CardContent className="py-8 text-center">

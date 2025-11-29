@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +33,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { useAuthStore } from '@/stores/auth.store';
+import { useCRMStore, useCRMHydration } from '@/stores/crm.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   Plus,
@@ -45,6 +45,7 @@ import {
   Trash2,
   ArrowLeft,
   TrendingUp,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -52,32 +53,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-interface Deal {
-  id: string;
-  title: string;
-  amount: number | null;
-  probability: number | null;
-  expectedCloseDate: string | null;
-  status: 'OPEN' | 'WON' | 'LOST';
-  customer: { id: string; name: string };
-  stage: { id: string; name: string; color: string };
-  pipeline: { id: string; name: string };
-  assignedTo: { id: string; firstName: string; lastName: string } | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Pipeline {
-  id: string;
-  name: string;
-  stages: { id: string; name: string; color: string; sortOrder: number }[];
-}
-
-interface Customer {
-  id: string;
-  name: string;
-}
 
 interface DealFormData {
   title: string;
@@ -87,7 +62,7 @@ interface DealFormData {
   amount: string;
   probability: string;
   expectedCloseDate: string;
-  description: string;
+  notes: string;
 }
 
 const initialFormData: DealFormData = {
@@ -98,140 +73,28 @@ const initialFormData: DealFormData = {
   amount: '',
   probability: '',
   expectedCloseDate: '',
-  description: '',
+  notes: '',
 };
-
-// Demo data for better UX when database is empty
-const demoPipelines: Pipeline[] = [
-  {
-    id: 'demo-pipeline-1',
-    name: 'Sales Pipeline',
-    stages: [
-      { id: 'demo-stage-1', name: 'Lead', color: '#6B7280', sortOrder: 0 },
-      { id: 'demo-stage-2', name: 'Qualified', color: '#3B82F6', sortOrder: 1 },
-      { id: 'demo-stage-3', name: 'Proposal', color: '#F59E0B', sortOrder: 2 },
-      { id: 'demo-stage-4', name: 'Negotiation', color: '#8B5CF6', sortOrder: 3 },
-      { id: 'demo-stage-5', name: 'Closed Won', color: '#10B981', sortOrder: 4 },
-      { id: 'demo-stage-6', name: 'Closed Lost', color: '#EF4444', sortOrder: 5 },
-    ],
-  },
-];
-
-const demoCustomers: Customer[] = [
-  { id: 'demo-customer-1', name: 'TechCorp International' },
-  { id: 'demo-customer-2', name: 'Global Finance Ltd' },
-  { id: 'demo-customer-3', name: 'HealthPlus Medical' },
-  { id: 'demo-customer-4', name: 'EcoGreen Solutions' },
-  { id: 'demo-customer-5', name: 'StartupHub Inc' },
-  { id: 'demo-customer-6', name: 'RetailMax Group' },
-];
-
-const demoDeals: Deal[] = [
-  {
-    id: 'demo-deal-1',
-    title: 'Enterprise Software License',
-    amount: 150000,
-    probability: 75,
-    expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'OPEN',
-    customer: { id: 'demo-customer-1', name: 'TechCorp International' },
-    stage: { id: 'demo-stage-3', name: 'Proposal', color: '#F59E0B' },
-    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
-    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'demo-deal-2',
-    title: 'Financial Consulting Package',
-    amount: 85000,
-    probability: 60,
-    expectedCloseDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'OPEN',
-    customer: { id: 'demo-customer-2', name: 'Global Finance Ltd' },
-    stage: { id: 'demo-stage-2', name: 'Qualified', color: '#3B82F6' },
-    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
-    assignedTo: { id: 'user-2', firstName: 'Sarah', lastName: 'Johnson' },
-    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'demo-deal-3',
-    title: 'Healthcare Platform Implementation',
-    amount: 250000,
-    probability: 90,
-    expectedCloseDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'OPEN',
-    customer: { id: 'demo-customer-3', name: 'HealthPlus Medical' },
-    stage: { id: 'demo-stage-4', name: 'Negotiation', color: '#8B5CF6' },
-    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
-    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
-    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'demo-deal-4',
-    title: 'Green Energy Audit',
-    amount: 35000,
-    probability: 40,
-    expectedCloseDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'OPEN',
-    customer: { id: 'demo-customer-4', name: 'EcoGreen Solutions' },
-    stage: { id: 'demo-stage-1', name: 'Lead', color: '#6B7280' },
-    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
-    assignedTo: null,
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'demo-deal-5',
-    title: 'Startup Accelerator Program',
-    amount: 120000,
-    probability: 100,
-    expectedCloseDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'WON',
-    customer: { id: 'demo-customer-5', name: 'StartupHub Inc' },
-    stage: { id: 'demo-stage-5', name: 'Closed Won', color: '#10B981' },
-    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
-    assignedTo: { id: 'user-2', firstName: 'Sarah', lastName: 'Johnson' },
-    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'demo-deal-6',
-    title: 'Retail POS System',
-    amount: 45000,
-    probability: 0,
-    expectedCloseDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'LOST',
-    customer: { id: 'demo-customer-6', name: 'RetailMax Group' },
-    stage: { id: 'demo-stage-6', name: 'Closed Lost', color: '#EF4444' },
-    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
-    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
-    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
 
 export default function DealsPage() {
   const router = useRouter();
-  const { token } = useAuthStore();
   const t = useTranslation();
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const hasHydrated = useCRMHydration();
+
+  // Get data from CRM store
+  const { deals, pipelines, customers, addDeal, updateDeal, deleteDeal } = useCRMStore();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [pipelineFilter, setPipelineFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
+  const [editingDealId, setEditingDealId] = useState<string | null>(null);
   const [formData, setFormData] = useState<DealFormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
 
-  // Function to filter demo data based on current filters
-  const filterDemoDeals = (data: Deal[]) => {
-    let filtered = [...data];
+  // Filter deals
+  const filteredDeals = useMemo(() => {
+    let filtered = [...deals];
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -250,148 +113,63 @@ export default function DealsPage() {
     }
 
     return filtered;
-  };
+  }, [deals, searchQuery, statusFilter, pipelineFilter]);
 
-  useEffect(() => {
-    fetchDeals();
-    fetchPipelines();
-    fetchCustomers();
-  }, [searchQuery, statusFilter, pipelineFilter]);
+  const editingDeal = editingDealId
+    ? deals.find(d => d.id === editingDealId)
+    : null;
 
-  const fetchDeals = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.append('search', searchQuery);
-      if (statusFilter !== 'all') params.append('status', statusFilter);
-      if (pipelineFilter !== 'all') params.append('pipelineId', pipelineFilter);
+  // Get stages for selected pipeline in form
+  const selectedPipelineStages = useMemo(() => {
+    if (!formData.pipelineId) return [];
+    const pipeline = pipelines.find(p => p.id === formData.pipelineId);
+    return pipeline?.stages || [];
+  }, [pipelines, formData.pipelineId]);
 
-      const response = await fetch(`/api/v1/crm/deals?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const fetchedDeals = data.data || [];
-
-        // Use demo data if API returns empty
-        if (fetchedDeals.length === 0) {
-          // Always filter demo data based on current filters
-          setDeals(filterDemoDeals(demoDeals));
-        } else {
-          setDeals(fetchedDeals);
-        }
-      } else {
-        // Fallback to filtered demo data on error
-        setDeals(filterDemoDeals(demoDeals));
-      }
-    } catch (error) {
-      console.error('Failed to fetch deals:', error);
-      // Fallback to filtered demo data on error
-      setDeals(filterDemoDeals(demoDeals));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPipelines = async () => {
-    try {
-      const response = await fetch('/api/v1/crm/pipelines', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const fetchedPipelines = data.data || [];
-        // Use demo data if API returns empty
-        if (fetchedPipelines.length === 0) {
-          setPipelines(demoPipelines);
-        } else {
-          setPipelines(fetchedPipelines);
-        }
-      } else {
-        setPipelines(demoPipelines);
-      }
-    } catch (error) {
-      console.error('Failed to fetch pipelines:', error);
-      setPipelines(demoPipelines);
-    }
-  };
-
-  const fetchCustomers = async () => {
-    try {
-      const response = await fetch('/api/v1/crm/customers?limit=100', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const fetchedCustomers = data.data || [];
-        // Use demo data if API returns empty
-        if (fetchedCustomers.length === 0) {
-          setCustomers(demoCustomers);
-        } else {
-          setCustomers(fetchedCustomers);
-        }
-      } else {
-        setCustomers(demoCustomers);
-      }
-    } catch (error) {
-      console.error('Failed to fetch customers:', error);
-      setCustomers(demoCustomers);
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!formData.title.trim() || !formData.customerId || !formData.pipelineId || !formData.stageId) return;
 
     setSubmitting(true);
-    try {
-      const url = editingDeal
-        ? `/api/v1/crm/deals/${editingDeal.id}`
-        : '/api/v1/crm/deals';
-      const method = editingDeal ? 'PUT' : 'POST';
 
-      const payload = {
-        title: formData.title,
-        customerId: formData.customerId,
-        pipelineId: formData.pipelineId,
-        stageId: formData.stageId,
-        amount: formData.amount ? parseFloat(formData.amount) : null,
-        probability: formData.probability ? parseInt(formData.probability) : null,
-        expectedCloseDate: formData.expectedCloseDate || null,
-        description: formData.description || null,
-      };
+    const customer = customers.find(c => c.id === formData.customerId);
+    const pipeline = pipelines.find(p => p.id === formData.pipelineId);
+    const stage = pipeline?.stages.find(s => s.id === formData.stageId);
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        setIsDialogOpen(false);
-        setFormData(initialFormData);
-        setEditingDeal(null);
-        fetchDeals();
-      }
-    } catch (error) {
-      console.error('Failed to save deal:', error);
-    } finally {
+    if (!customer || !pipeline || !stage) {
       setSubmitting(false);
+      return;
     }
+
+    const dealData = {
+      title: formData.title,
+      amount: formData.amount ? parseFloat(formData.amount) : null,
+      probability: formData.probability ? parseInt(formData.probability) : stage.winProbability,
+      expectedCloseDate: formData.expectedCloseDate || null,
+      notes: formData.notes || null,
+      status: stage.winProbability === 100 ? 'WON' as const : stage.winProbability === 0 ? 'LOST' as const : 'OPEN' as const,
+      customer: { id: customer.id, name: customer.name },
+      pipeline: { id: pipeline.id, name: pipeline.name },
+      stage: { id: stage.id, name: stage.name, color: stage.color },
+      assignedTo: null,
+    };
+
+    if (editingDealId) {
+      updateDeal(editingDealId, dealData);
+    } else {
+      addDeal(dealData);
+    }
+
+    setIsDialogOpen(false);
+    setFormData(initialFormData);
+    setEditingDealId(null);
+    setSubmitting(false);
   };
 
-  const handleEdit = (deal: Deal) => {
-    setEditingDeal(deal);
+  const handleEdit = (dealId: string) => {
+    const deal = deals.find(d => d.id === dealId);
+    if (!deal) return;
+
+    setEditingDealId(dealId);
     setFormData({
       title: deal.title,
       customerId: deal.customer.id,
@@ -399,34 +177,23 @@ export default function DealsPage() {
       stageId: deal.stage.id,
       amount: deal.amount?.toString() || '',
       probability: deal.probability?.toString() || '',
-      expectedCloseDate: deal.expectedCloseDate?.split('T')[0] || '',
-      description: '',
+      expectedCloseDate: deal.expectedCloseDate ? deal.expectedCloseDate.split('T')[0] : '',
+      notes: deal.notes || '',
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (dealId: string) => {
+  const handleDelete = (dealId: string) => {
     if (!confirm(t.crm.confirmDelete)) return;
-
-    try {
-      const response = await fetch(`/api/v1/crm/deals/${dealId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        fetchDeals();
-      }
-    } catch (error) {
-      console.error('Failed to delete deal:', error);
-    }
+    deleteDeal(dealId);
   };
 
   const openNewDialog = () => {
-    setEditingDeal(null);
-    setFormData(initialFormData);
+    setEditingDealId(null);
+    setFormData({
+      ...initialFormData,
+      pipelineId: pipelines[0]?.id || '',
+    });
     setIsDialogOpen(true);
   };
 
@@ -439,18 +206,35 @@ export default function DealsPage() {
     }).format(amount);
   };
 
-  const getStatusBadge = (status: string) => {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'WON':
-        return <Badge className="bg-green-500">{t.crm.won}</Badge>;
+        return 'bg-green-500/20 text-green-500';
       case 'LOST':
-        return <Badge variant="destructive">{t.crm.lost}</Badge>;
+        return 'bg-red-500/20 text-red-500';
       default:
-        return <Badge variant="secondary">{t.crm.open}</Badge>;
+        return 'bg-blue-500/20 text-blue-500';
     }
   };
 
-  const selectedPipeline = pipelines.find((p) => p.id === formData.pipelineId);
+  // Show loading until hydrated
+  if (!hasHydrated) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-cosmic-purple" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -472,188 +256,228 @@ export default function DealsPage() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => router.push('/dashboard/crm/pipelines')}
-            >
-              <TrendingUp className="mr-2 h-4 w-4" />
-              {t.crm.viewPipeline}
-            </Button>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openNewDialog}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {t.crm.newDeal}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingDeal ? t.crm.editDeal : t.crm.createNewDeal}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {editingDeal
-                      ? t.crm.updateDealInfo
-                      : t.crm.addDealToPipeline}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openNewDialog}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t.crm.addDeal}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingDeal ? t.crm.editDeal : t.crm.addNewDeal}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingDeal
+                    ? t.crm.updateDealInfo
+                    : t.crm.addDealToPipeline}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label>{t.crm.dealTitle} *</Label>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    placeholder={t.crm.dealTitlePlaceholder}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>{t.crm.dealTitle} *</Label>
+                    <Label>{t.crm.customer} *</Label>
+                    <Select
+                      value={formData.customerId}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, customerId: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t.crm.selectCustomer} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t.crm.amount}</Label>
                     <Input
-                      value={formData.title}
+                      type="number"
+                      value={formData.amount}
                       onChange={(e) =>
-                        setFormData({ ...formData, title: e.target.value })
+                        setFormData({ ...formData, amount: e.target.value })
                       }
-                      placeholder={t.crm.dealTitlePlaceholder}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>{t.crm.customer} *</Label>
-                      <Select
-                        value={formData.customerId}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, customerId: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={t.crm.selectCustomer} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {customers.map((customer) => (
-                            <SelectItem key={customer.id} value={customer.id}>
-                              {customer.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t.crm.pipelines} *</Label>
-                      <Select
-                        value={formData.pipelineId}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, pipelineId: value, stageId: '' })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={t.crm.selectPipeline} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {pipelines.map((pipeline) => (
-                            <SelectItem key={pipeline.id} value={pipeline.id}>
-                              {pipeline.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  {selectedPipeline && (
-                    <div className="space-y-2">
-                      <Label>{t.crm.stage} *</Label>
-                      <Select
-                        value={formData.stageId}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, stageId: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={t.crm.selectStage} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {selectedPipeline.stages
-                            .sort((a, b) => a.sortOrder - b.sortOrder)
-                            .map((stage) => (
-                              <SelectItem key={stage.id} value={stage.id}>
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: stage.color }}
-                                  />
-                                  {stage.name}
-                                </div>
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>{t.crm.amount} ($)</Label>
-                      <Input
-                        type="number"
-                        value={formData.amount}
-                        onChange={(e) =>
-                          setFormData({ ...formData, amount: e.target.value })
-                        }
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t.crm.probability} (%)</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={formData.probability}
-                        onChange={(e) =>
-                          setFormData({ ...formData, probability: e.target.value })
-                        }
-                        placeholder="50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t.crm.expectedCloseDate}</Label>
-                      <Input
-                        type="date"
-                        value={formData.expectedCloseDate}
-                        onChange={(e) =>
-                          setFormData({ ...formData, expectedCloseDate: e.target.value })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t.crm.description}</Label>
-                    <Textarea
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData({ ...formData, description: e.target.value })
-                      }
-                      placeholder={t.crm.descriptionPlaceholder}
-                      rows={3}
+                      placeholder="0"
                     />
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    {t.crm.cancel}
-                  </Button>
-                  <Button onClick={handleSubmit} disabled={submitting}>
-                    {submitting
-                      ? t.crm.saving
-                      : editingDeal
-                      ? t.crm.update
-                      : t.crm.create}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t.crm.pipeline} *</Label>
+                    <Select
+                      value={formData.pipelineId}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, pipelineId: value, stageId: '' })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t.crm.selectPipeline} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pipelines.map((pipeline) => (
+                          <SelectItem key={pipeline.id} value={pipeline.id}>
+                            {pipeline.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t.crm.stage} *</Label>
+                    <Select
+                      value={formData.stageId}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, stageId: value })
+                      }
+                      disabled={!formData.pipelineId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t.crm.selectStage} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedPipelineStages
+                          .sort((a, b) => a.sortOrder - b.sortOrder)
+                          .map((stage) => (
+                            <SelectItem key={stage.id} value={stage.id}>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: stage.color }}
+                                />
+                                {stage.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t.crm.probability} (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.probability}
+                      onChange={(e) =>
+                        setFormData({ ...formData, probability: e.target.value })
+                      }
+                      placeholder="50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t.crm.expectedCloseDate}</Label>
+                    <Input
+                      type="date"
+                      value={formData.expectedCloseDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, expectedCloseDate: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t.crm.notes}</Label>
+                  <Textarea
+                    value={formData.notes}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
+                    placeholder={t.crm.additionalNotes}
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  {t.crm.cancel}
+                </Button>
+                <Button onClick={handleSubmit} disabled={submitting}>
+                  {submitting
+                    ? t.crm.saving
+                    : editingDeal
+                    ? t.crm.update
+                    : t.crm.create}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Stats */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <DollarSign className="h-4 w-4" />
+                <span className="text-sm">{t.crm.totalValue}</span>
+              </div>
+              <div className="text-2xl font-bold mt-1">
+                {formatCurrency(deals.reduce((sum, d) => sum + (d.amount || 0), 0))}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <TrendingUp className="h-4 w-4" />
+                <span className="text-sm">{t.crm.openDeals}</span>
+              </div>
+              <div className="text-2xl font-bold mt-1">
+                {deals.filter(d => d.status === 'OPEN').length}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 text-green-500">
+                <DollarSign className="h-4 w-4" />
+                <span className="text-sm">{t.crm.wonDeals}</span>
+              </div>
+              <div className="text-2xl font-bold mt-1 text-green-500">
+                {deals.filter(d => d.status === 'WON').length}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 text-red-500">
+                <DollarSign className="h-4 w-4" />
+                <span className="text-sm">{t.crm.lostDeals}</span>
+              </div>
+              <div className="text-2xl font-bold mt-1 text-red-500">
+                {deals.filter(d => d.status === 'LOST').length}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filters */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <div className="relative flex-1">
+            <div className="flex flex-wrap gap-4">
+              <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder={t.crm.searchDeals}
@@ -664,9 +488,9 @@ export default function DealsPage() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder={t.tasks.status} />
+                  <SelectValue placeholder={t.crm.status} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent align="end">
                   <SelectItem value="all">{t.crm.allStatuses}</SelectItem>
                   <SelectItem value="OPEN">{t.crm.open}</SelectItem>
                   <SelectItem value="WON">{t.crm.won}</SelectItem>
@@ -675,9 +499,9 @@ export default function DealsPage() {
               </Select>
               <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder={t.crm.pipelines} />
+                  <SelectValue placeholder={t.crm.pipeline} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent align="end">
                   <SelectItem value="all">{t.crm.allPipelines}</SelectItem>
                   {pipelines.map((pipeline) => (
                     <SelectItem key={pipeline.id} value={pipeline.id}>
@@ -696,24 +520,18 @@ export default function DealsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t.crm.deals}</TableHead>
+                  <TableHead>{t.crm.deal}</TableHead>
                   <TableHead>{t.crm.customer}</TableHead>
                   <TableHead>{t.crm.stage}</TableHead>
                   <TableHead>{t.crm.amount}</TableHead>
                   <TableHead>{t.crm.probability}</TableHead>
-                  <TableHead>{t.crm.expectedCloseDate}</TableHead>
-                  <TableHead>{t.tasks.status}</TableHead>
+                  <TableHead>{t.crm.closeDate}</TableHead>
+                  <TableHead>{t.crm.status}</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      {t.crm.loading}
-                    </TableCell>
-                  </TableRow>
-                ) : deals.length === 0 ? (
+                {filteredDeals.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={8}
@@ -723,7 +541,7 @@ export default function DealsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  deals.map((deal) => (
+                  filteredDeals.map((deal) => (
                     <TableRow
                       key={deal.id}
                       className="cursor-pointer"
@@ -733,35 +551,44 @@ export default function DealsPage() {
                     >
                       <TableCell>
                         <div className="font-medium">{deal.title}</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-xs text-muted-foreground">
                           {deal.pipeline.name}
                         </div>
                       </TableCell>
                       <TableCell>{deal.customer.name}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant="outline"
-                          style={{
-                            backgroundColor: `${deal.stage.color}20`,
-                            borderColor: deal.stage.color,
-                            color: deal.stage.color,
-                          }}
-                        >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: deal.stage.color }}
+                          />
                           {deal.stage.name}
-                        </Badge>
+                        </div>
                       </TableCell>
                       <TableCell>
                         {deal.amount ? formatCurrency(deal.amount) : '-'}
                       </TableCell>
                       <TableCell>
-                        {deal.probability !== null ? `${deal.probability}%` : '-'}
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                          {deal.probability}%
+                        </div>
                       </TableCell>
                       <TableCell>
-                        {deal.expectedCloseDate
-                          ? new Date(deal.expectedCloseDate).toLocaleDateString()
-                          : '-'}
+                        {deal.expectedCloseDate ? (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            {formatDate(deal.expectedCloseDate)}
+                          </div>
+                        ) : (
+                          '-'
+                        )}
                       </TableCell>
-                      <TableCell>{getStatusBadge(deal.status)}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(deal.status)}>
+                          {deal.status}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger
@@ -776,7 +603,7 @@ export default function DealsPage() {
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleEdit(deal);
+                                handleEdit(deal.id);
                               }}
                             >
                               <Pencil className="mr-2 h-4 w-4" />

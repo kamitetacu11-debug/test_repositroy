@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +33,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { useAuthStore } from '@/stores/auth.store';
+import { useCRMStore, useCRMHydration } from '@/stores/crm.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   Plus,
@@ -42,11 +42,11 @@ import {
   User,
   Mail,
   Phone,
-  Globe,
   MoreHorizontal,
   Pencil,
   Trash2,
   ArrowLeft,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -54,21 +54,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-interface Customer {
-  id: string;
-  type: 'COMPANY' | 'INDIVIDUAL';
-  name: string;
-  email: string | null;
-  phone: string | null;
-  website: string | null;
-  industry: string | null;
-  city: string | null;
-  country: string | null;
-  assignedTo: { id: string; firstName: string; lastName: string } | null;
-  _count: { deals: number; contacts: number };
-  createdAt: string;
-}
 
 interface CustomerFormData {
   type: 'COMPANY' | 'INDIVIDUAL';
@@ -100,113 +85,24 @@ const initialFormData: CustomerFormData = {
   notes: '',
 };
 
-// Demo data for better UX when database is empty
-const demoCustomers: Customer[] = [
-  {
-    id: 'demo-1',
-    type: 'COMPANY',
-    name: 'TechCorp International',
-    email: 'contact@techcorp.io',
-    phone: '+1 (555) 123-4567',
-    website: 'https://techcorp.io',
-    industry: 'Technology',
-    city: 'San Francisco',
-    country: 'USA',
-    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
-    _count: { deals: 3, contacts: 5 },
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'demo-2',
-    type: 'COMPANY',
-    name: 'Global Finance Ltd',
-    email: 'info@globalfinance.com',
-    phone: '+1 (555) 234-5678',
-    website: 'https://globalfinance.com',
-    industry: 'Finance',
-    city: 'New York',
-    country: 'USA',
-    assignedTo: { id: 'user-2', firstName: 'Sarah', lastName: 'Johnson' },
-    _count: { deals: 2, contacts: 3 },
-    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'demo-3',
-    type: 'INDIVIDUAL',
-    name: 'Michael Chen',
-    email: 'michael.chen@email.com',
-    phone: '+1 (555) 345-6789',
-    website: null,
-    industry: 'Consulting',
-    city: 'Los Angeles',
-    country: 'USA',
-    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
-    _count: { deals: 1, contacts: 1 },
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'demo-4',
-    type: 'COMPANY',
-    name: 'HealthPlus Medical',
-    email: 'partners@healthplus.org',
-    phone: '+1 (555) 456-7890',
-    website: 'https://healthplus.org',
-    industry: 'Healthcare',
-    city: 'Boston',
-    country: 'USA',
-    assignedTo: null,
-    _count: { deals: 4, contacts: 8 },
-    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'demo-5',
-    type: 'COMPANY',
-    name: 'EcoGreen Solutions',
-    email: 'business@ecogreen.co',
-    phone: '+44 20 7123 4567',
-    website: 'https://ecogreen.co',
-    industry: 'Environmental',
-    city: 'London',
-    country: 'UK',
-    assignedTo: { id: 'user-2', firstName: 'Sarah', lastName: 'Johnson' },
-    _count: { deals: 2, contacts: 4 },
-    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'demo-6',
-    type: 'INDIVIDUAL',
-    name: 'Anna Schmidt',
-    email: 'anna.schmidt@mail.de',
-    phone: '+49 30 123456',
-    website: null,
-    industry: 'Marketing',
-    city: 'Berlin',
-    country: 'Germany',
-    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
-    _count: { deals: 1, contacts: 1 },
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
 export default function CustomersPage() {
   const router = useRouter();
-  const { token } = useAuthStore();
   const t = useTranslation();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const hasHydrated = useCRMHydration();
+
+  // Get data from CRM store
+  const { customers, addCustomer, updateCustomer, deleteCustomer } = useCRMStore();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   const [formData, setFormData] = useState<CustomerFormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchCustomers();
-  }, [searchQuery, typeFilter]);
-
-  const applyFilters = (data: Customer[]) => {
-    let filtered = [...data];
+  // Filter customers
+  const filteredCustomers = useMemo(() => {
+    let filtered = [...customers];
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -222,125 +118,62 @@ export default function CustomersPage() {
     }
 
     return filtered;
-  };
+  }, [customers, searchQuery, typeFilter]);
 
-  const fetchCustomers = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.append('search', searchQuery);
-      if (typeFilter !== 'all') params.append('type', typeFilter);
+  const editingCustomer = editingCustomerId
+    ? customers.find(c => c.id === editingCustomerId)
+    : null;
 
-      const response = await fetch(`/api/v1/crm/customers?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const fetchedCustomers = data.data || [];
-
-        if (fetchedCustomers.length > 0) {
-          // Use API data (already filtered by server)
-          setCustomers(fetchedCustomers);
-        } else {
-          // Use demo data with local filtering
-          setCustomers(applyFilters(demoCustomers));
-        }
-      } else {
-        // Fallback to demo data on error with local filtering
-        setCustomers(applyFilters(demoCustomers));
-      }
-    } catch (error) {
-      console.error('Failed to fetch customers:', error);
-      // Fallback to demo data on error with local filtering
-      setCustomers(applyFilters(demoCustomers));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!formData.name.trim()) return;
 
     setSubmitting(true);
-    try {
-      const url = editingCustomer
-        ? `/api/v1/crm/customers/${editingCustomer.id}`
-        : '/api/v1/crm/customers';
-      const method = editingCustomer ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        setIsDialogOpen(false);
-        setFormData(initialFormData);
-        setEditingCustomer(null);
-        fetchCustomers();
-      } else {
-        // API failed - handle locally
-        handleLocalSave();
-      }
-    } catch (error) {
-      console.error('Failed to save customer:', error);
-      // API not available - handle locally
-      handleLocalSave();
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleLocalSave = () => {
-    if (editingCustomer) {
-      // Update existing customer locally
-      setCustomers(customers.map(c =>
-        c.id === editingCustomer.id
-          ? {
-              ...c,
-              type: formData.type,
-              name: formData.name,
-              email: formData.email || null,
-              phone: formData.phone || null,
-              website: formData.website || null,
-              industry: formData.industry || null,
-              city: formData.city || null,
-              country: formData.country || null,
-            }
-          : c
-      ));
-    } else {
-      // Create new customer locally
-      const newCustomer: Customer = {
-        id: `demo-${Date.now()}`,
+    if (editingCustomerId) {
+      // Update existing customer
+      updateCustomer(editingCustomerId, {
         type: formData.type,
         name: formData.name,
         email: formData.email || null,
         phone: formData.phone || null,
         website: formData.website || null,
         industry: formData.industry || null,
+        address: formData.address || null,
         city: formData.city || null,
+        state: formData.state || null,
         country: formData.country || null,
-        assignedTo: null,
-        _count: { deals: 0, contacts: 0 },
-        createdAt: new Date().toISOString(),
-      };
-      setCustomers([newCustomer, ...customers]);
+        postalCode: formData.postalCode || null,
+        notes: formData.notes || null,
+      });
+    } else {
+      // Create new customer
+      addCustomer({
+        type: formData.type,
+        name: formData.name,
+        email: formData.email || null,
+        phone: formData.phone || null,
+        website: formData.website || null,
+        industry: formData.industry || null,
+        address: formData.address || null,
+        city: formData.city || null,
+        state: formData.state || null,
+        country: formData.country || null,
+        postalCode: formData.postalCode || null,
+        notes: formData.notes || null,
+      });
     }
 
     setIsDialogOpen(false);
     setFormData(initialFormData);
-    setEditingCustomer(null);
+    setEditingCustomerId(null);
+    setSubmitting(false);
   };
 
-  const handleEdit = (customer: Customer) => {
-    setEditingCustomer(customer);
+  const handleEdit = (customerId: string) => {
+    const customer = customers.find(c => c.id === customerId);
+    if (!customer) return;
+
+    setEditingCustomerId(customerId);
     setFormData({
       type: customer.type,
       name: customer.name,
@@ -348,45 +181,37 @@ export default function CustomersPage() {
       phone: customer.phone || '',
       website: customer.website || '',
       industry: customer.industry || '',
-      address: '',
+      address: customer.address || '',
       city: customer.city || '',
-      state: '',
+      state: customer.state || '',
       country: customer.country || '',
-      postalCode: '',
-      notes: '',
+      postalCode: customer.postalCode || '',
+      notes: customer.notes || '',
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (customerId: string) => {
+  const handleDelete = (customerId: string) => {
     if (!confirm(t.crm.confirmDelete)) return;
-
-    try {
-      const response = await fetch(`/api/v1/crm/customers/${customerId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        fetchCustomers();
-      } else {
-        // API failed - delete locally
-        setCustomers(customers.filter(c => c.id !== customerId));
-      }
-    } catch (error) {
-      console.error('Failed to delete customer:', error);
-      // API not available - delete locally
-      setCustomers(customers.filter(c => c.id !== customerId));
-    }
+    deleteCustomer(customerId);
   };
 
   const openNewDialog = () => {
-    setEditingCustomer(null);
+    setEditingCustomerId(null);
     setFormData(initialFormData);
     setIsDialogOpen(true);
   };
+
+  // Show loading until hydrated
+  if (!hasHydrated) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-cosmic-purple" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -623,13 +448,7 @@ export default function CustomersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      {t.crm.loading}
-                    </TableCell>
-                  </TableRow>
-                ) : customers.length === 0 ? (
+                {filteredCustomers.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={7}
@@ -639,7 +458,7 @@ export default function CustomersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  customers.map((customer) => (
+                  filteredCustomers.map((customer) => (
                     <TableRow
                       key={customer.id}
                       className="cursor-pointer"
@@ -710,7 +529,7 @@ export default function CustomersPage() {
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleEdit(customer);
+                                handleEdit(customer.id);
                               }}
                             >
                               <Pencil className="mr-2 h-4 w-4" />
