@@ -545,7 +545,7 @@ export default function CustomersPage() {
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder={t.crm.filterByType} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent align="end">
                   <SelectItem value="all">{t.crm.allTypes}</SelectItem>
                   <SelectItem value="COMPANY">{t.crm.companies}</SelectItem>
                   <SelectItem value="INDIVIDUAL">{t.crm.individuals}</SelectItem>
