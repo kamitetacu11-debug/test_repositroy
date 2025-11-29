@@ -1364,61 +1364,69 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-glass-border">
-              <span className="text-cosmic-purple font-medium">
-                +{selectedTask.basePoints} pts
-              </span>
-              <div className="flex items-center gap-2">
-                {selectedTask.status !== 'COMPLETED' && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-green-500 hover:text-green-600 hover:bg-green-500/10"
-                    onClick={handleMarkCompleted}
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-1" />
-                    {t.calendar.markComplete || 'Complete'}
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10"
-                  onClick={handleRemoveFromCalendar}
-                >
-                  <CalendarX className="w-4 h-4 mr-1" />
-                  {t.calendar.removeFromCalendar || 'Remove from Calendar'}
-                </Button>
-                {!showDeleteConfirm ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                    onClick={() => setShowDeleteConfirm(true)}
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    {t.calendar.deleteTask || 'Delete'}
-                  </Button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-red-500">{t.calendar.confirmDelete || 'Confirm?'}</span>
+            <div className="flex flex-col gap-3 pt-3 border-t border-glass-border">
+              {/* Action buttons row - responsive */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-cosmic-purple font-medium text-sm">
+                  +{selectedTask.basePoints} pts
+                </span>
+                <div className="flex flex-wrap items-center gap-1">
+                  {selectedTask.status !== 'COMPLETED' && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setShowDeleteConfirm(false)}
+                      className="text-green-500 hover:text-green-600 hover:bg-green-500/10 px-2 h-8"
+                      onClick={handleMarkCompleted}
+                      title={t.calendar.markComplete || 'Complete'}
                     >
-                      {t.ai.cancel}
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">{t.calendar.markComplete || 'Complete'}</span>
                     </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10 px-2 h-8"
+                    onClick={handleRemoveFromCalendar}
+                    title={t.calendar.removeFromCalendar || 'Remove'}
+                  >
+                    <CalendarX className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">{t.calendar.removeFromCalendar || 'Remove'}</span>
+                  </Button>
+                  {!showDeleteConfirm ? (
                     <Button
-                      variant="destructive"
+                      variant="ghost"
                       size="sm"
-                      onClick={handleDeleteTask}
-                      disabled={deleting}
+                      className="text-red-500 hover:text-red-600 hover:bg-red-500/10 px-2 h-8"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      title={t.calendar.deleteTask || 'Delete'}
                     >
-                      {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : t.calendar.deleteTask || 'Delete'}
+                      <Trash2 className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">{t.calendar.deleteTask || 'Delete'}</span>
                     </Button>
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex items-center gap-1 ml-2 p-1 rounded-lg bg-red-500/10">
+                      <span className="text-xs text-red-500 px-1">{t.calendar.confirmDelete || 'Confirm?'}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setShowDeleteConfirm(false)}
+                      >
+                        {t.ai.cancel}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={handleDeleteTask}
+                        disabled={deleting}
+                      >
+                        {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
