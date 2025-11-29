@@ -518,6 +518,9 @@ export const translations = {
       recentDeals: 'Recent Deals',
       noPipelineData: 'No pipeline data. Create a pipeline to get started.',
       noDealsYet: 'No deals yet. Create your first deal to get started.',
+      clickToViewDetails: 'Click to view details',
+      pipelineValueBreakdown: 'Value breakdown by pipeline stage',
+      wonDeals: 'Won Deals',
 
       // Quick Actions
       manageCustomerAccounts: 'Manage customer accounts',
@@ -1147,6 +1150,9 @@ export const translations = {
       recentDeals: 'Недавние сделки',
       noPipelineData: 'Нет данных воронки. Создайте воронку для начала работы.',
       noDealsYet: 'Сделок пока нет. Создайте первую сделку.',
+      clickToViewDetails: 'Нажмите для просмотра',
+      pipelineValueBreakdown: 'Распределение суммы по этапам',
+      wonDeals: 'Выигранные сделки',
 
       // Quick Actions
       manageCustomerAccounts: 'Управление клиентскими аккаунтами',
@@ -1776,6 +1782,9 @@ export const translations = {
       recentDeals: '最近交易',
       noPipelineData: '没有渠道数据。创建渠道开始。',
       noDealsYet: '还没有交易。创建您的第一笔交易。',
+      clickToViewDetails: '点击查看详情',
+      pipelineValueBreakdown: '按阶段划分的价值',
+      wonDeals: '赢得的交易',
 
       // Quick Actions
       manageCustomerAccounts: '管理客户账户',

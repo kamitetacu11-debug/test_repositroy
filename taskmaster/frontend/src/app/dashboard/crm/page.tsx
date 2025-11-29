@@ -57,6 +57,7 @@ interface StageStats {
   stageName: string;
   stageColor: string;
   count: number;
+  value?: number;
 }
 
 interface Pipeline {
@@ -102,53 +103,53 @@ const demoStats: DashboardStats = {
 
 const demoRecentDeals: RecentDeal[] = [
   {
-    id: 'demo-1',
-    title: 'Enterprise Platform License',
-    customer: { id: 'c1', name: 'TechCorp Solutions' },
-    stage: { id: 's1', name: 'Negotiation', color: '#d946ef' },
+    id: 'demo-deal-1',
+    title: 'Enterprise Software License',
+    customer: { id: 'demo-customer-1', name: 'TechCorp International' },
+    stage: { id: 'demo-stage-3', name: 'Proposal', color: '#F59E0B' },
     amount: 150000,
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'demo-2',
-    title: 'Inventory Management System',
-    customer: { id: 'c2', name: 'Global Retail Group' },
-    stage: { id: 's2', name: 'Proposal', color: '#a855f7' },
+    id: 'demo-deal-2',
+    title: 'Financial Consulting Package',
+    customer: { id: 'demo-customer-2', name: 'Global Finance Ltd' },
+    stage: { id: 'demo-stage-2', name: 'Qualified', color: '#3B82F6' },
     amount: 85000,
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'demo-3',
-    title: 'Healthcare Compliance Package',
-    customer: { id: 'c3', name: 'HealthFirst Medical' },
-    stage: { id: 's3', name: 'Qualified', color: '#8b5cf6' },
-    amount: 200000,
+    id: 'demo-deal-3',
+    title: 'Healthcare Platform Implementation',
+    customer: { id: 'demo-customer-3', name: 'HealthPlus Medical' },
+    stage: { id: 'demo-stage-4', name: 'Negotiation', color: '#8B5CF6' },
+    amount: 250000,
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'demo-4',
-    title: 'Startup Growth Plan',
-    customer: { id: 'c4', name: 'StartupHub Inc' },
-    stage: { id: 's4', name: 'Lead', color: '#6366f1' },
-    amount: 25000,
+    id: 'demo-deal-4',
+    title: 'Green Energy Audit',
+    customer: { id: 'demo-customer-4', name: 'EcoGreen Solutions' },
+    stage: { id: 'demo-stage-1', name: 'Lead', color: '#6B7280' },
+    amount: 35000,
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'demo-5',
-    title: 'Educational Platform License',
-    customer: { id: 'c5', name: 'EduTech Academy' },
-    stage: { id: 's5', name: 'Proposal', color: '#a855f7' },
-    amount: 45000,
+    id: 'demo-deal-5',
+    title: 'Startup Accelerator Program',
+    customer: { id: 'demo-customer-5', name: 'StartupHub Inc' },
+    stage: { id: 'demo-stage-5', name: 'Closed Won', color: '#10B981' },
+    amount: 120000,
     updatedAt: new Date().toISOString(),
   },
 ];
 
 const demoDealsByStage: StageStats[] = [
-  { stageId: 's1', stageName: 'Lead', stageColor: '#6366f1', count: 1 },
-  { stageId: 's2', stageName: 'Qualified', stageColor: '#8b5cf6', count: 1 },
-  { stageId: 's3', stageName: 'Proposal', stageColor: '#a855f7', count: 2 },
-  { stageId: 's4', stageName: 'Negotiation', stageColor: '#d946ef', count: 1 },
-  { stageId: 's5', stageName: 'Closed Won', stageColor: '#22c55e', count: 0 },
+  { stageId: 'demo-stage-1', stageName: 'Lead', stageColor: '#6B7280', count: 1, value: 35000 },
+  { stageId: 'demo-stage-2', stageName: 'Qualified', stageColor: '#3B82F6', count: 1, value: 85000 },
+  { stageId: 'demo-stage-3', stageName: 'Proposal', stageColor: '#F59E0B', count: 1, value: 150000 },
+  { stageId: 'demo-stage-4', stageName: 'Negotiation', stageColor: '#8B5CF6', count: 1, value: 250000 },
+  { stageId: 'demo-stage-5', stageName: 'Closed Won', stageColor: '#10B981', count: 1, value: 120000 },
 ];
 
 const demoPipelines: Pipeline[] = [
@@ -156,23 +157,23 @@ const demoPipelines: Pipeline[] = [
     id: 'demo-pipeline-1',
     name: 'Sales Pipeline',
     stages: [
-      { id: 'ds1', name: 'Lead', color: '#6366f1', sortOrder: 0 },
-      { id: 'ds2', name: 'Qualified', color: '#8b5cf6', sortOrder: 1 },
-      { id: 'ds3', name: 'Proposal', color: '#a855f7', sortOrder: 2 },
-      { id: 'ds4', name: 'Negotiation', color: '#d946ef', sortOrder: 3 },
-      { id: 'ds5', name: 'Closed Won', color: '#22c55e', sortOrder: 4 },
-      { id: 'ds6', name: 'Closed Lost', color: '#ef4444', sortOrder: 5 },
+      { id: 'demo-stage-1', name: 'Lead', color: '#6B7280', sortOrder: 0 },
+      { id: 'demo-stage-2', name: 'Qualified', color: '#3B82F6', sortOrder: 1 },
+      { id: 'demo-stage-3', name: 'Proposal', color: '#F59E0B', sortOrder: 2 },
+      { id: 'demo-stage-4', name: 'Negotiation', color: '#8B5CF6', sortOrder: 3 },
+      { id: 'demo-stage-5', name: 'Closed Won', color: '#10B981', sortOrder: 4 },
+      { id: 'demo-stage-6', name: 'Closed Lost', color: '#EF4444', sortOrder: 5 },
     ],
   },
 ];
 
 const demoCustomers: Customer[] = [
-  { id: 'dc1', name: 'TechCorp Solutions' },
-  { id: 'dc2', name: 'Global Retail Group' },
-  { id: 'dc3', name: 'HealthFirst Medical' },
-  { id: 'dc4', name: 'StartupHub Inc' },
-  { id: 'dc5', name: 'John Williams' },
-  { id: 'dc6', name: 'EduTech Academy' },
+  { id: 'demo-customer-1', name: 'TechCorp International' },
+  { id: 'demo-customer-2', name: 'Global Finance Ltd' },
+  { id: 'demo-customer-3', name: 'HealthPlus Medical' },
+  { id: 'demo-customer-4', name: 'EcoGreen Solutions' },
+  { id: 'demo-customer-5', name: 'StartupHub Inc' },
+  { id: 'demo-customer-6', name: 'RetailMax Group' },
 ];
 
 export default function CRMDashboardPage() {
@@ -190,6 +191,9 @@ export default function CRMDashboardPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [formData, setFormData] = useState<DealFormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
+
+  // Pipeline Value Dialog state
+  const [isPipelineValueDialogOpen, setIsPipelineValueDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -390,9 +394,12 @@ export default function CRMDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setIsPipelineValueDialogOpen(true)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t.crm.pipelineValue}</CardTitle>
+              <CardTitle className="text-sm font-medium text-cosmic-purple">{t.crm.pipelineValue}</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -401,6 +408,26 @@ export default function CRMDashboardPage() {
               </div>
               <p className="text-xs text-muted-foreground">
                 {t.crm.totalPotentialRevenue}
+              </p>
+              {/* Progress bar showing value distribution */}
+              <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden flex">
+                {dealsByStage.slice(0, 5).map((stage, index) => {
+                  const totalValue = dealsByStage.reduce((sum, s) => sum + (s.value || 0), 0);
+                  const percentage = totalValue > 0 ? ((stage.value || 0) / totalValue) * 100 : 0;
+                  return (
+                    <div
+                      key={stage.stageId}
+                      className="h-full transition-all"
+                      style={{
+                        backgroundColor: stage.stageColor,
+                        width: `${percentage}%`,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {t.crm.clickToViewDetails || 'Click to view details'}
               </p>
             </CardContent>
           </Card>
@@ -690,6 +717,94 @@ export default function CRMDashboardPage() {
             </Button>
             <Button onClick={handleSubmitNewDeal} disabled={submitting}>
               {submitting ? t.crm.saving : t.crm.create}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pipeline Value Dialog */}
+      <Dialog open={isPipelineValueDialogOpen} onOpenChange={setIsPipelineValueDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t.crm.pipelineValue}</DialogTitle>
+            <DialogDescription>{t.crm.pipelineValueBreakdown || 'Value breakdown by pipeline stage'}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-cosmic-purple">
+                {formatCurrency(stats?.pipelineValue || 0)}
+              </div>
+              <p className="text-sm text-muted-foreground">{t.crm.totalPotentialRevenue}</p>
+            </div>
+
+            {/* Stage breakdown */}
+            <div className="space-y-3">
+              {dealsByStage.map((stage) => {
+                const totalValue = dealsByStage.reduce((sum, s) => sum + (s.value || 0), 0);
+                const percentage = totalValue > 0 ? ((stage.value || 0) / totalValue) * 100 : 0;
+                return (
+                  <div key={stage.stageId} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: stage.stageColor }}
+                        />
+                        <span className="font-medium">{stage.stageName}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {stage.count} {stage.count === 1 ? 'deal' : 'deals'}
+                        </Badge>
+                      </div>
+                      <span className="font-semibold">{formatCurrency(stage.value || 0)}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full transition-all duration-500"
+                        style={{
+                          backgroundColor: stage.stageColor,
+                          width: `${percentage}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground text-right">
+                      {percentage.toFixed(1)}%
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Total Won vs Open */}
+            <div className="pt-4 border-t border-glass-border">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <div className="text-lg font-bold text-green-500">
+                    {formatCurrency(dealsByStage.find(s => s.stageName === 'Closed Won')?.value || 0)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t.crm.wonDeals || 'Won Deals'}</p>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-blue-500">
+                    {formatCurrency(
+                      dealsByStage
+                        .filter(s => !['Closed Won', 'Closed Lost'].includes(s.stageName))
+                        .reduce((sum, s) => sum + (s.value || 0), 0)
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t.crm.openDeals}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPipelineValueDialogOpen(false)}>
+              {t.ai?.close || 'Close'}
+            </Button>
+            <Button onClick={() => {
+              setIsPipelineValueDialogOpen(false);
+              router.push('/dashboard/crm/pipelines');
+            }}>
+              {t.crm.viewPipeline}
             </Button>
           </DialogFooter>
         </DialogContent>

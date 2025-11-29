@@ -59,6 +59,73 @@ interface Pipeline {
   stages: PipelineStage[];
 }
 
+// Demo data for when API returns empty
+const demoPipeline: Pipeline = {
+  id: 'demo-pipeline-1',
+  name: 'Sales Pipeline',
+  description: 'Main sales pipeline for tracking all deals',
+  isDefault: true,
+  stages: [
+    { id: 'demo-stage-1', name: 'Lead', color: '#6B7280', sortOrder: 0, winProbability: 10 },
+    { id: 'demo-stage-2', name: 'Qualified', color: '#3B82F6', sortOrder: 1, winProbability: 25 },
+    { id: 'demo-stage-3', name: 'Proposal', color: '#F59E0B', sortOrder: 2, winProbability: 50 },
+    { id: 'demo-stage-4', name: 'Negotiation', color: '#8B5CF6', sortOrder: 3, winProbability: 75 },
+    { id: 'demo-stage-5', name: 'Closed Won', color: '#10B981', sortOrder: 4, winProbability: 100 },
+    { id: 'demo-stage-6', name: 'Closed Lost', color: '#EF4444', sortOrder: 5, winProbability: 0 },
+  ],
+};
+
+const demoDeals: Deal[] = [
+  {
+    id: 'demo-deal-1',
+    title: 'Enterprise Software License',
+    amount: 150000,
+    customer: { id: 'demo-customer-1', name: 'TechCorp International' },
+    stage: { id: 'demo-stage-3' },
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'demo-deal-2',
+    title: 'Financial Consulting Package',
+    amount: 85000,
+    customer: { id: 'demo-customer-2', name: 'Global Finance Ltd' },
+    stage: { id: 'demo-stage-2' },
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'demo-deal-3',
+    title: 'Healthcare Platform Implementation',
+    amount: 250000,
+    customer: { id: 'demo-customer-3', name: 'HealthPlus Medical' },
+    stage: { id: 'demo-stage-4' },
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'demo-deal-4',
+    title: 'Green Energy Audit',
+    amount: 35000,
+    customer: { id: 'demo-customer-4', name: 'EcoGreen Solutions' },
+    stage: { id: 'demo-stage-1' },
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'demo-deal-5',
+    title: 'Startup Accelerator Program',
+    amount: 120000,
+    customer: { id: 'demo-customer-5', name: 'StartupHub Inc' },
+    stage: { id: 'demo-stage-5' },
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'demo-deal-6',
+    title: 'Retail POS System',
+    amount: 45000,
+    customer: { id: 'demo-customer-6', name: 'RetailMax Group' },
+    stage: { id: 'demo-stage-6' },
+    updatedAt: new Date().toISOString(),
+  },
+];
+
 export default function PipelinesPage() {
   const router = useRouter();
   const { token } = useAuthStore();
@@ -92,19 +159,41 @@ export default function PipelinesPage() {
       if (response.ok) {
         const data = await response.json();
         const pipelinesList = data.data || [];
-        setPipelines(pipelinesList);
-        if (pipelinesList.length > 0 && !selectedPipeline) {
-          setSelectedPipeline(pipelinesList[0]);
+        if (pipelinesList.length > 0) {
+          setPipelines(pipelinesList);
+          if (!selectedPipeline) {
+            setSelectedPipeline(pipelinesList[0]);
+          }
+        } else {
+          // Use demo data
+          setPipelines([demoPipeline]);
+          setSelectedPipeline(demoPipeline);
+          setDeals(demoDeals);
         }
+      } else {
+        // Use demo data on error
+        setPipelines([demoPipeline]);
+        setSelectedPipeline(demoPipeline);
+        setDeals(demoDeals);
       }
     } catch (error) {
       console.error('Failed to fetch pipelines:', error);
+      // Use demo data on error
+      setPipelines([demoPipeline]);
+      setSelectedPipeline(demoPipeline);
+      setDeals(demoDeals);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchDeals = async (pipelineId: string) => {
+    // Skip API call for demo pipeline
+    if (pipelineId === 'demo-pipeline-1') {
+      setDeals(demoDeals);
+      return;
+    }
+
     try {
       const response = await fetch(`/api/v1/crm/deals?pipelineId=${pipelineId}`, {
         headers: {
@@ -114,10 +203,19 @@ export default function PipelinesPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setDeals(data.data || []);
+        const dealsList = data.data || [];
+        if (dealsList.length > 0) {
+          setDeals(dealsList);
+        } else {
+          // Use demo deals if empty
+          setDeals(demoDeals);
+        }
+      } else {
+        setDeals(demoDeals);
       }
     } catch (error) {
       console.error('Failed to fetch deals:', error);
+      setDeals(demoDeals);
     }
   };
 
