@@ -38,6 +38,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/dropdown';
 import { useToast } from '@/components/ui/toast';
+import { useSettingsStore } from '@/stores/settings.store';
 import { formatNumber, getRankColor } from '@/lib/utils';
 
 interface TeamMember {
@@ -103,6 +104,8 @@ const mockTeams: Team[] = [
 
 export default function TeamsPage() {
   const { addToast } = useToast();
+  const { getCurrentTheme } = useSettingsStore();
+  const currentTheme = getCurrentTheme();
   const [teams, setTeams] = useState<Team[]>(mockTeams);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -285,11 +288,19 @@ export default function TeamsPage() {
 
         {/* Teams Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AnimatePresence mode="popLayout">
           {teams.map((team, i) => (
             <motion.div
               key={team.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              layout
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{
+                opacity: 0,
+                scale: 0.8,
+                y: -20,
+                transition: { duration: 0.3 }
+              }}
               transition={{ delay: 0.2 + i * 0.1 }}
             >
               <Card className="glass hover:shadow-glow-purple/20 transition-all">
@@ -419,6 +430,7 @@ export default function TeamsPage() {
               </Card>
             </motion.div>
           ))}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -439,12 +451,16 @@ export default function TeamsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl"
+              className="relative w-full max-w-md rounded-2xl border border-glass-border shadow-2xl"
+              style={{ backgroundColor: `${currentTheme.colors.background}f5` }}
             >
               <div className="flex items-center justify-between p-6 border-b border-glass-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-cosmic-purple/20 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-cosmic-purple" />
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: `${currentTheme.colors.primary}20` }}
+                  >
+                    <Users className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
                   </div>
                   <h2 className="text-xl font-semibold">Create New Team</h2>
                 </div>
@@ -517,12 +533,16 @@ export default function TeamsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl"
+              className="relative w-full max-w-md rounded-2xl border border-glass-border shadow-2xl"
+              style={{ backgroundColor: `${currentTheme.colors.background}f5` }}
             >
               <div className="flex items-center justify-between p-6 border-b border-glass-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-cosmic-cyan/20 flex items-center justify-center">
-                    <Edit className="w-5 h-5 text-cosmic-cyan" />
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: `${currentTheme.colors.secondary}20` }}
+                  >
+                    <Edit className="w-5 h-5" style={{ color: currentTheme.colors.secondary }} />
                   </div>
                   <h2 className="text-xl font-semibold">Edit Team</h2>
                 </div>
@@ -582,7 +602,8 @@ export default function TeamsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl"
+              className="relative w-full max-w-md rounded-2xl border border-glass-border shadow-2xl"
+              style={{ backgroundColor: `${currentTheme.colors.background}f5` }}
             >
               <div className="flex items-center justify-between p-6 border-b border-glass-border">
                 <div className="flex items-center gap-3">
@@ -673,11 +694,15 @@ export default function TeamsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl"
+              className="relative w-full max-w-lg rounded-2xl border border-glass-border shadow-2xl"
+              style={{ backgroundColor: `${currentTheme.colors.background}f5` }}
             >
               <div className="flex items-center justify-between p-6 border-b border-glass-border">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cosmic-purple to-cosmic-blue flex items-center justify-center text-2xl font-bold">
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold"
+                    style={{ background: `linear-gradient(135deg, ${currentTheme.colors.primary}, ${currentTheme.colors.secondary})` }}
+                  >
                     {selectedMember.name.charAt(0)}
                   </div>
                   <div>
@@ -778,12 +803,19 @@ export default function TeamsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl"
+              className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-glass-border shadow-2xl"
+              style={{ backgroundColor: `${currentTheme.colors.background}f5` }}
             >
-              <div className="flex items-center justify-between p-6 border-b border-glass-border sticky top-0 bg-cosmic-dark/95 backdrop-blur-sm z-10">
+              <div
+                className="flex items-center justify-between p-6 border-b border-glass-border sticky top-0 backdrop-blur-sm z-10"
+                style={{ backgroundColor: `${currentTheme.colors.background}f5` }}
+              >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-cosmic-purple/20 flex items-center justify-center">
-                    <Settings className="w-5 h-5 text-cosmic-purple" />
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: `${currentTheme.colors.primary}20` }}
+                  >
+                    <Settings className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold">Team Settings</h2>
@@ -840,7 +872,8 @@ export default function TeamsPage() {
                       </div>
                       <button
                         onClick={() => setTeamSettings({ ...teamSettings, allowMemberInvites: !teamSettings.allowMemberInvites })}
-                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.allowMemberInvites ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                        className="w-12 h-6 rounded-full transition-colors"
+                        style={{ backgroundColor: teamSettings.allowMemberInvites ? currentTheme.colors.primary : '#4b5563' }}
                       >
                         <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.allowMemberInvites ? 'translate-x-6' : 'translate-x-0.5'}`} />
                       </button>
@@ -856,7 +889,8 @@ export default function TeamsPage() {
                       </div>
                       <button
                         onClick={() => setTeamSettings({ ...teamSettings, requireApproval: !teamSettings.requireApproval })}
-                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.requireApproval ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                        className="w-12 h-6 rounded-full transition-colors"
+                        style={{ backgroundColor: teamSettings.requireApproval ? currentTheme.colors.primary : '#4b5563' }}
                       >
                         <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.requireApproval ? 'translate-x-6' : 'translate-x-0.5'}`} />
                       </button>
@@ -942,7 +976,8 @@ export default function TeamsPage() {
                       </div>
                       <button
                         onClick={() => setTeamSettings({ ...teamSettings, notifyOnTaskComplete: !teamSettings.notifyOnTaskComplete })}
-                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.notifyOnTaskComplete ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                        className="w-12 h-6 rounded-full transition-colors"
+                        style={{ backgroundColor: teamSettings.notifyOnTaskComplete ? currentTheme.colors.primary : '#4b5563' }}
                       >
                         <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.notifyOnTaskComplete ? 'translate-x-6' : 'translate-x-0.5'}`} />
                       </button>
@@ -958,7 +993,8 @@ export default function TeamsPage() {
                       </div>
                       <button
                         onClick={() => setTeamSettings({ ...teamSettings, notifyOnAchievement: !teamSettings.notifyOnAchievement })}
-                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.notifyOnAchievement ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                        className="w-12 h-6 rounded-full transition-colors"
+                        style={{ backgroundColor: teamSettings.notifyOnAchievement ? currentTheme.colors.primary : '#4b5563' }}
                       >
                         <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.notifyOnAchievement ? 'translate-x-6' : 'translate-x-0.5'}`} />
                       </button>
@@ -974,7 +1010,8 @@ export default function TeamsPage() {
                       </div>
                       <button
                         onClick={() => setTeamSettings({ ...teamSettings, notifyOnMemberJoin: !teamSettings.notifyOnMemberJoin })}
-                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.notifyOnMemberJoin ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                        className="w-12 h-6 rounded-full transition-colors"
+                        style={{ backgroundColor: teamSettings.notifyOnMemberJoin ? currentTheme.colors.primary : '#4b5563' }}
                       >
                         <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.notifyOnMemberJoin ? 'translate-x-6' : 'translate-x-0.5'}`} />
                       </button>
@@ -999,7 +1036,8 @@ export default function TeamsPage() {
                       </div>
                       <button
                         onClick={() => setTeamSettings({ ...teamSettings, autoAssignTasks: !teamSettings.autoAssignTasks })}
-                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.autoAssignTasks ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                        className="w-12 h-6 rounded-full transition-colors"
+                        style={{ backgroundColor: teamSettings.autoAssignTasks ? currentTheme.colors.primary : '#4b5563' }}
                       >
                         <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.autoAssignTasks ? 'translate-x-6' : 'translate-x-0.5'}`} />
                       </button>
@@ -1015,7 +1053,8 @@ export default function TeamsPage() {
                       </div>
                       <button
                         onClick={() => setTeamSettings({ ...teamSettings, showLeaderboard: !teamSettings.showLeaderboard })}
-                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.showLeaderboard ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                        className="w-12 h-6 rounded-full transition-colors"
+                        style={{ backgroundColor: teamSettings.showLeaderboard ? currentTheme.colors.primary : '#4b5563' }}
                       >
                         <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.showLeaderboard ? 'translate-x-6' : 'translate-x-0.5'}`} />
                       </button>
@@ -1031,7 +1070,8 @@ export default function TeamsPage() {
                       </div>
                       <button
                         onClick={() => setTeamSettings({ ...teamSettings, allowCompetitions: !teamSettings.allowCompetitions })}
-                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.allowCompetitions ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                        className="w-12 h-6 rounded-full transition-colors"
+                        style={{ backgroundColor: teamSettings.allowCompetitions ? currentTheme.colors.primary : '#4b5563' }}
                       >
                         <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.allowCompetitions ? 'translate-x-6' : 'translate-x-0.5'}`} />
                       </button>
@@ -1040,7 +1080,10 @@ export default function TeamsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 p-6 border-t border-glass-border sticky bottom-0 bg-cosmic-dark/95 backdrop-blur-sm">
+              <div
+                className="flex items-center justify-end gap-3 p-6 border-t border-glass-border sticky bottom-0 backdrop-blur-sm"
+                style={{ backgroundColor: `${currentTheme.colors.background}f5` }}
+              >
                 <Button variant="ghost" onClick={() => setShowSettingsModal(false)}>
                   Cancel
                 </Button>

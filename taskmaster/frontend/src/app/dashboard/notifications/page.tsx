@@ -296,13 +296,20 @@ export default function NotificationsPage() {
                     {date}
                   </h3>
                   <Card className="glass overflow-hidden">
-                    <AnimatePresence>
+                    <AnimatePresence mode="popLayout">
                       {items.map((notification, index) => (
                         <motion.div
                           key={notification.id}
+                          layout
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
+                          exit={{
+                            opacity: 0,
+                            x: 100,
+                            scale: 0.8,
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            transition: { duration: 0.3, ease: 'easeOut' }
+                          }}
                           transition={{ delay: index * 0.05 }}
                           className={cn(
                             'flex items-start gap-4 p-4 border-b border-glass-border/50 last:border-0 hover:bg-glass-light/50 transition cursor-pointer',

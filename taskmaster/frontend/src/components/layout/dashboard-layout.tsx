@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import { cn, getRankColor, getInitials } from '@/lib/utils';
 
 interface DashboardLayoutProps {
@@ -98,6 +99,8 @@ const navigation = [
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const { getCurrentTheme } = useSettingsStore();
+  const currentTheme = getCurrentTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
@@ -293,12 +296,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl backdrop-blur-sm z-50 overflow-hidden"
+                    className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl border border-glass-border shadow-2xl backdrop-blur-sm z-50 overflow-hidden"
+                    style={{ backgroundColor: `${currentTheme.colors.background}f5` }}
                   >
                       {/* Header */}
                       <div className="flex items-center justify-between p-4 border-b border-glass-border">
                         <div className="flex items-center gap-2">
-                          <Bell className="w-5 h-5 text-cosmic-purple" />
+                          <Bell className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
                           <h3 className="font-semibold">Notifications</h3>
                           {unreadCount > 0 && (
                             <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-status-error text-white">
@@ -309,7 +313,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         {unreadCount > 0 && (
                           <button
                             onClick={markAllAsRead}
-                            className="text-sm text-cosmic-purple hover:text-cosmic-purple/80 transition"
+                            className="text-sm hover:opacity-80 transition"
+                            style={{ color: currentTheme.colors.primary }}
                           >
                             Mark all read
                           </button>
@@ -369,7 +374,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         <div className="p-3 border-t border-glass-border bg-glass-light/30">
                           <Link
                             href="/dashboard/notifications"
-                            className="block text-center text-sm text-cosmic-purple hover:text-cosmic-purple/80 transition"
+                            className="block text-center text-sm hover:opacity-80 transition"
+                            style={{ color: currentTheme.colors.primary }}
                             onClick={() => setNotificationsOpen(false)}
                           >
                             View all notifications

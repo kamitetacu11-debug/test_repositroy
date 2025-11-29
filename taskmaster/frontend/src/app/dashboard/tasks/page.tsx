@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   Search,
@@ -253,11 +253,20 @@ export default function TasksPage() {
                     </p>
                   </div>
                 ) : (
-                  filteredTasks.map((task, i) => (
+                  <AnimatePresence mode="popLayout">
+                  {filteredTasks.map((task, i) => (
                     <motion.div
                       key={task.id}
+                      layout
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
+                      exit={{
+                        opacity: 0,
+                        x: -100,
+                        scale: 0.8,
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        transition: { duration: 0.3 }
+                      }}
                       transition={{ delay: 0.4 + i * 0.05 }}
                       className="flex items-center gap-4 p-4 hover:bg-glass-light transition cursor-pointer group"
                       onClick={() => handleTaskClick(task)}
@@ -358,7 +367,8 @@ export default function TasksPage() {
                         </Dropdown>
                       </div>
                     </motion.div>
-                  ))
+                  ))}
+                  </AnimatePresence>
                 )}
               </div>
             </CardContent>
