@@ -178,9 +178,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-hidden">
           {/* Logo */}
-          <div className="flex items-center justify-between p-6">
+          <div className="flex items-center justify-between p-6 flex-shrink-0">
             <Link href="/dashboard" className="flex items-center gap-2">
               <Rocket className="w-8 h-8 text-cosmic-purple" />
               <span className="text-xl font-bold gradient-text">TaskMaster</span>
@@ -194,7 +194,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 space-y-1">
+          <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -222,23 +222,28 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </nav>
 
           {/* User section */}
-          <div className="p-4 border-t border-glass-border">
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-glass-light">
-              <div className="w-10 h-10 rounded-full bg-cosmic-purple/30 flex items-center justify-center font-medium">
-                {user ? getInitials(user.firstName, user.lastName) : 'U'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">
-                  {user ? `${user.firstName} ${user.lastName}` : 'User'}
-                </p>
-                <p
-                  className="text-xs truncate"
-                  style={{ color: user ? getRankColor(user.currentRank) : '#9CA3AF' }}
+          <div className="p-4 border-t border-glass-border flex-shrink-0">
+            <Link href="/dashboard/profile">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-glass-light hover:bg-glass-medium transition cursor-pointer">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center font-medium"
+                  style={{ backgroundColor: `${currentTheme.colors.primary}30` }}
                 >
-                  {user?.currentRank || 'ROOKIE'} · Lvl {user?.currentLevel || 1}
-                </p>
+                  {user ? getInitials(user.firstName, user.lastName) : 'U'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">
+                    {user ? `${user.firstName} ${user.lastName}` : 'User'}
+                  </p>
+                  <p
+                    className="text-xs truncate"
+                    style={{ color: user ? getRankColor(user.currentRank) : '#9CA3AF' }}
+                  >
+                    {user?.currentRank || 'ROOKIE'} · Lvl {user?.currentLevel || 1}
+                  </p>
+                </div>
               </div>
-            </div>
+            </Link>
 
             <div className="flex items-center gap-2 mt-3">
               <Link href="/dashboard/settings" className="flex-1">
