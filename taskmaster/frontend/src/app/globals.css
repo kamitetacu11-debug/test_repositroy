@@ -72,6 +72,24 @@
   animation: twinkle 4s ease-in-out infinite;
 }
 
+/* Individual star twinkling animation */
+.star-twinkle {
+  animation: starTwinkle ease-in-out infinite;
+}
+
+@keyframes starTwinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+    filter: blur(0px);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+    filter: blur(0.5px);
+  }
+}
+
 /* Liquid Glass Effect - Dynamic with CSS Variables */
 .glass {
   background: var(--glass-bg, rgba(255, 255, 255, 0.05));

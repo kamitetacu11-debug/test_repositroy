@@ -1,11 +1,170 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useSettingsStore, themes } from '@/stores/settings.store';
 import { cn } from '@/lib/utils';
 
 interface ThemeWrapperProps {
   children: React.ReactNode;
+}
+
+// Generate twinkling stars
+function TwinklingStars({ animations }: { animations: boolean }) {
+  const stars = useMemo(() => {
+    return Array.from({ length: 80 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 2 + 1,
+      duration: Math.random() * 3 + 2,
+      delay: Math.random() * 5,
+      opacity: Math.random() * 0.5 + 0.3,
+    }));
+  }, []);
+
+  if (!animations) return null;
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {stars.map((star) => (
+        <div
+          key={star.id}
+          className="absolute rounded-full bg-white star-twinkle"
+          style={{
+            left: `${star.x}%`,
+            top: `${star.y}%`,
+            width: `${star.size}px`,
+            height: `${star.size}px`,
+            opacity: star.opacity,
+            animationDuration: `${star.duration}s`,
+            animationDelay: `${star.delay}s`,
+            boxShadow: `0 0 ${star.size * 2}px rgba(255, 255, 255, 0.5)`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// White noise audio component
+function WhiteNoiseAmbient() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.05);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const noiseNodeRef = useRef<AudioBufferSourceNode | null>(null);
+
+  const toggleNoise = () => {
+    if (isPlaying) {
+      stopNoise();
+    } else {
+      startNoise();
+    }
+  };
+
+  const startNoise = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      audioContextRef.current = audioContext;
+
+      const bufferSize = 2 * audioContext.sampleRate;
+      const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+
+      const whiteNoise = audioContext.createBufferSource();
+      whiteNoise.buffer = noiseBuffer;
+      whiteNoise.loop = true;
+
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = volume;
+
+      // Add low-pass filter for softer sound
+      const filter = audioContext.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 1000;
+
+      whiteNoise.connect(filter);
+      filter.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      whiteNoise.start();
+      noiseNodeRef.current = whiteNoise;
+      gainNodeRef.current = gainNode;
+      setIsPlaying(true);
+    } catch (error) {
+      console.error('Failed to start white noise:', error);
+    }
+  };
+
+  const stopNoise = () => {
+    if (noiseNodeRef.current) {
+      noiseNodeRef.current.stop();
+      noiseNodeRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    gainNodeRef.current = null;
+    setIsPlaying(false);
+  };
+
+  useEffect(() => {
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = volume;
+    }
+  }, [volume]);
+
+  useEffect(() => {
+    return () => {
+      stopNoise();
+    };
+  }, []);
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 p-2 rounded-xl bg-glass-light/80 backdrop-blur-sm border border-glass-border">
+      <button
+        onClick={toggleNoise}
+        className={cn(
+          "p-2 rounded-lg transition-all",
+          isPlaying ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"
+        )}
+        title={isPlaying ? "Stop ambient sound" : "Play ambient sound"}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {isPlaying ? (
+            <>
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </>
+          ) : (
+            <>
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <line x1="23" y1="9" x2="17" y2="15" />
+              <line x1="17" y1="9" x2="23" y2="15" />
+            </>
+          )}
+        </svg>
+      </button>
+      {isPlaying && (
+        <input
+          type="range"
+          min="0"
+          max="0.2"
+          step="0.01"
+          value={volume}
+          onChange={(e) => setVolume(parseFloat(e.target.value))}
+          className="w-16 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+          title="Volume"
+        />
+      )}
+    </div>
+  );
 }
 
 export function ThemeWrapper({ children }: ThemeWrapperProps) {
@@ -85,11 +244,17 @@ export function ThemeWrapper({ children }: ThemeWrapperProps) {
           }}
         />
 
-        {/* Stars */}
+        {/* Static Stars pattern */}
         <div className="stars" />
+
+        {/* Animated Twinkling Stars */}
+        <TwinklingStars animations={animations} />
       </div>
 
       {children}
+
+      {/* White Noise Ambient Control */}
+      <WhiteNoiseAmbient />
     </div>
   );
 }

@@ -20,6 +20,16 @@ import {
   CheckCircle2,
   Clock,
   Award,
+  Bell,
+  BellOff,
+  Eye,
+  EyeOff,
+  Lock,
+  Unlock,
+  BarChart2,
+  Swords,
+  UserCheck,
+  Shuffle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -98,11 +108,27 @@ export default function TeamsPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [newTeam, setNewTeam] = useState({ name: '', description: '' });
   const [newMember, setNewMember] = useState({ name: '', email: '', role: 'Developer' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Team settings state
+  const [teamSettings, setTeamSettings] = useState({
+    visibility: 'public' as 'public' | 'private',
+    allowMemberInvites: true,
+    requireApproval: false,
+    weeklyGoal: 500,
+    pointsMultiplier: 1,
+    notifyOnTaskComplete: true,
+    notifyOnAchievement: true,
+    notifyOnMemberJoin: true,
+    autoAssignTasks: false,
+    showLeaderboard: true,
+    allowCompetitions: true,
+  });
 
   const handleCreateTeam = () => {
     const newErrors: Record<string, string> = {};
@@ -194,6 +220,17 @@ export default function TeamsPage() {
       title: 'Member Added',
       message: `${member.name} has been added to ${selectedTeam.name}.`,
     });
+  };
+
+  const handleSaveSettings = () => {
+    if (!selectedTeam) return;
+
+    addToast({
+      type: 'success',
+      title: 'Settings Saved',
+      message: `Settings for ${selectedTeam.name} have been updated.`,
+    });
+    setShowSettingsModal(false);
   };
 
   return (
@@ -294,11 +331,8 @@ export default function TeamsPage() {
                     <DropdownItem
                       icon={<Settings className="w-4 h-4" />}
                       onClick={() => {
-                        addToast({
-                          type: 'info',
-                          title: 'Coming Soon',
-                          message: 'Team settings will be available soon.',
-                        });
+                        setSelectedTeam(team);
+                        setShowSettingsModal(true);
                       }}
                     >
                       Team Settings
@@ -720,6 +754,299 @@ export default function TeamsPage() {
                 >
                   <Mail className="w-4 h-4 mr-2" />
                   Send Message
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Team Settings Modal */}
+      <AnimatePresence>
+        {showSettingsModal && selectedTeam && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowSettingsModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-glass-border sticky top-0 bg-cosmic-dark/95 backdrop-blur-sm z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-cosmic-purple/20 flex items-center justify-center">
+                    <Settings className="w-5 h-5 text-cosmic-purple" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">Team Settings</h2>
+                    <p className="text-sm text-gray-400">{selectedTeam.name}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="p-2 rounded-lg hover:bg-glass-light transition"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Visibility Section */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                    {teamSettings.visibility === 'public' ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    Visibility & Access
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
+                      <div className="flex items-center gap-3">
+                        {teamSettings.visibility === 'public' ? (
+                          <Unlock className="w-5 h-5 text-status-success" />
+                        ) : (
+                          <Lock className="w-5 h-5 text-status-warning" />
+                        )}
+                        <div>
+                          <p className="font-medium">Team Visibility</p>
+                          <p className="text-sm text-gray-400">
+                            {teamSettings.visibility === 'public' ? 'Anyone can find and request to join' : 'Only invited members can join'}
+                          </p>
+                        </div>
+                      </div>
+                      <select
+                        value={teamSettings.visibility}
+                        onChange={(e) => setTeamSettings({ ...teamSettings, visibility: e.target.value as 'public' | 'private' })}
+                        className="px-3 py-2 rounded-lg bg-cosmic-dark border border-glass-border text-sm"
+                      >
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
+                      <div className="flex items-center gap-3">
+                        <UserPlus className="w-5 h-5 text-cosmic-cyan" />
+                        <div>
+                          <p className="font-medium">Member Invites</p>
+                          <p className="text-sm text-gray-400">Allow members to invite others</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setTeamSettings({ ...teamSettings, allowMemberInvites: !teamSettings.allowMemberInvites })}
+                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.allowMemberInvites ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.allowMemberInvites ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
+                      <div className="flex items-center gap-3">
+                        <UserCheck className="w-5 h-5 text-status-info" />
+                        <div>
+                          <p className="font-medium">Require Approval</p>
+                          <p className="text-sm text-gray-400">New members need leader approval</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setTeamSettings({ ...teamSettings, requireApproval: !teamSettings.requireApproval })}
+                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.requireApproval ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.requireApproval ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Goals & Points Section */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                    <Target className="w-4 h-4" />
+                    Goals & Points
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="p-4 rounded-xl bg-glass-light">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <Trophy className="w-5 h-5 text-yellow-500" />
+                          <div>
+                            <p className="font-medium">Weekly Goal</p>
+                            <p className="text-sm text-gray-400">Team points target per week</p>
+                          </div>
+                        </div>
+                        <span className="text-xl font-bold text-cosmic-purple">{teamSettings.weeklyGoal}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="100"
+                        max="2000"
+                        step="50"
+                        value={teamSettings.weeklyGoal}
+                        onChange={(e) => setTeamSettings({ ...teamSettings, weeklyGoal: parseInt(e.target.value) })}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>100</span>
+                        <span>2000</span>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-glass-light">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <Zap className="w-5 h-5 text-cosmic-cyan" />
+                          <div>
+                            <p className="font-medium">Points Multiplier</p>
+                            <p className="text-sm text-gray-400">Bonus multiplier for team tasks</p>
+                          </div>
+                        </div>
+                        <span className="text-xl font-bold text-cosmic-cyan">{teamSettings.pointsMultiplier}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="3"
+                        step="0.25"
+                        value={teamSettings.pointsMultiplier}
+                        onChange={(e) => setTeamSettings({ ...teamSettings, pointsMultiplier: parseFloat(e.target.value) })}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>1x</span>
+                        <span>3x</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notifications Section */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                    <Bell className="w-4 h-4" />
+                    Notifications
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-status-success" />
+                        <div>
+                          <p className="font-medium">Task Completion</p>
+                          <p className="text-sm text-gray-400">Notify when tasks are completed</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setTeamSettings({ ...teamSettings, notifyOnTaskComplete: !teamSettings.notifyOnTaskComplete })}
+                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.notifyOnTaskComplete ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.notifyOnTaskComplete ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
+                      <div className="flex items-center gap-3">
+                        <Award className="w-5 h-5 text-yellow-500" />
+                        <div>
+                          <p className="font-medium">Achievements</p>
+                          <p className="text-sm text-gray-400">Notify on team achievements</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setTeamSettings({ ...teamSettings, notifyOnAchievement: !teamSettings.notifyOnAchievement })}
+                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.notifyOnAchievement ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.notifyOnAchievement ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
+                      <div className="flex items-center gap-3">
+                        <UserPlus className="w-5 h-5 text-cosmic-blue" />
+                        <div>
+                          <p className="font-medium">New Members</p>
+                          <p className="text-sm text-gray-400">Notify when members join</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setTeamSettings({ ...teamSettings, notifyOnMemberJoin: !teamSettings.notifyOnMemberJoin })}
+                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.notifyOnMemberJoin ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.notifyOnMemberJoin ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Advanced Section */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    Advanced
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
+                      <div className="flex items-center gap-3">
+                        <Shuffle className="w-5 h-5 text-cosmic-purple" />
+                        <div>
+                          <p className="font-medium">Auto-assign Tasks</p>
+                          <p className="text-sm text-gray-400">Automatically distribute tasks to members</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setTeamSettings({ ...teamSettings, autoAssignTasks: !teamSettings.autoAssignTasks })}
+                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.autoAssignTasks ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.autoAssignTasks ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
+                      <div className="flex items-center gap-3">
+                        <BarChart2 className="w-5 h-5 text-status-info" />
+                        <div>
+                          <p className="font-medium">Show Leaderboard</p>
+                          <p className="text-sm text-gray-400">Display member rankings</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setTeamSettings({ ...teamSettings, showLeaderboard: !teamSettings.showLeaderboard })}
+                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.showLeaderboard ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.showLeaderboard ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
+                      <div className="flex items-center gap-3">
+                        <Swords className="w-5 h-5 text-status-error" />
+                        <div>
+                          <p className="font-medium">Team Competitions</p>
+                          <p className="text-sm text-gray-400">Allow team vs team challenges</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setTeamSettings({ ...teamSettings, allowCompetitions: !teamSettings.allowCompetitions })}
+                        className={`w-12 h-6 rounded-full transition-colors ${teamSettings.allowCompetitions ? 'bg-cosmic-purple' : 'bg-gray-600'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${teamSettings.allowCompetitions ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-glass-border sticky bottom-0 bg-cosmic-dark/95 backdrop-blur-sm">
+                <Button variant="ghost" onClick={() => setShowSettingsModal(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveSettings}>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Save Settings
                 </Button>
               </div>
             </motion.div>

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type Theme = 'cosmic-dark' | 'ocean-blue' | 'forest-green' | 'sunset-orange' | 'aurora-purple' | 'midnight-black';
+export type Theme = 'cosmic-dark' | 'ocean-blue' | 'forest-green' | 'sunset-orange' | 'aurora-purple' | 'midnight-black' | 'soft-slate' | 'warm-sepia' | 'minimal-gray' | 'gentle-lavender';
 
 export interface ThemeConfig {
   id: Theme;
@@ -101,6 +101,63 @@ export const themes: ThemeConfig[] = [
       glow1: 'rgba(99, 102, 241, 0.2)',
       glow2: 'rgba(139, 92, 246, 0.2)',
       glow3: 'rgba(167, 139, 250, 0.2)',
+    },
+  },
+  // Subtle/Modest themes - easier on eyes
+  {
+    id: 'soft-slate',
+    name: 'Soft Slate',
+    colors: {
+      primary: '#64748b',
+      secondary: '#475569',
+      accent: '#94a3b8',
+      background: '#1e293b',
+      backgroundGradient: 'linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e293b 100%)',
+      glow1: 'rgba(100, 116, 139, 0.15)',
+      glow2: 'rgba(71, 85, 105, 0.15)',
+      glow3: 'rgba(148, 163, 184, 0.15)',
+    },
+  },
+  {
+    id: 'warm-sepia',
+    name: 'Warm Sepia',
+    colors: {
+      primary: '#a8967a',
+      secondary: '#8b7355',
+      accent: '#c4b59d',
+      background: '#1c1917',
+      backgroundGradient: 'linear-gradient(135deg, #1c1917 0%, #292524 50%, #1c1917 100%)',
+      glow1: 'rgba(168, 150, 122, 0.12)',
+      glow2: 'rgba(139, 115, 85, 0.12)',
+      glow3: 'rgba(196, 181, 157, 0.12)',
+    },
+  },
+  {
+    id: 'minimal-gray',
+    name: 'Minimal Gray',
+    colors: {
+      primary: '#737373',
+      secondary: '#525252',
+      accent: '#a3a3a3',
+      background: '#171717',
+      backgroundGradient: 'linear-gradient(135deg, #171717 0%, #262626 50%, #171717 100%)',
+      glow1: 'rgba(115, 115, 115, 0.1)',
+      glow2: 'rgba(82, 82, 82, 0.1)',
+      glow3: 'rgba(163, 163, 163, 0.1)',
+    },
+  },
+  {
+    id: 'gentle-lavender',
+    name: 'Gentle Lavender',
+    colors: {
+      primary: '#9ca3af',
+      secondary: '#7c8591',
+      accent: '#b8bfc9',
+      background: '#18181b',
+      backgroundGradient: 'linear-gradient(135deg, #18181b 0%, #27272a 50%, #18181b 100%)',
+      glow1: 'rgba(156, 163, 175, 0.12)',
+      glow2: 'rgba(124, 133, 145, 0.12)',
+      glow3: 'rgba(184, 191, 201, 0.12)',
     },
   },
 ];
