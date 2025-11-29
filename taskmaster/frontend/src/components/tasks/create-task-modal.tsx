@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Task } from './task-modal';
 
 interface CreateTaskModalProps {
@@ -190,14 +191,15 @@ export function CreateTaskModal({
             <label className="text-sm text-gray-400 flex items-center gap-2">
               <Calendar className="w-4 h-4" /> Due Date *
             </label>
-            <Input
-              type="date"
+            <DatePicker
               value={task.dueDate}
-              onChange={(e) => {
-                setTask({ ...task, dueDate: e.target.value });
+              onChange={(value) => {
+                setTask({ ...task, dueDate: value });
                 if (errors.dueDate) setErrors({ ...errors, dueDate: '' });
               }}
-              className={errors.dueDate ? 'border-status-error' : ''}
+              placeholder="Select date..."
+              error={!!errors.dueDate}
+              locale="en"
             />
             {errors.dueDate && (
               <p className="text-sm text-status-error">{errors.dueDate}</p>

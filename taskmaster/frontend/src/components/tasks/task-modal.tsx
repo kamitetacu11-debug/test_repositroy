@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
 import { getPriorityColor, getStatusColor } from '@/lib/utils';
 
@@ -290,14 +291,15 @@ export function TaskModal({
                 <Calendar className="w-4 h-4" /> Due Date
               </label>
               {isEditing ? (
-                <Input
-                  type="date"
+                <DatePicker
                   value={editedTask?.dueDate || ''}
-                  onChange={(e) =>
+                  onChange={(value) =>
                     setEditedTask((prev) =>
-                      prev ? { ...prev, dueDate: e.target.value } : null
+                      prev ? { ...prev, dueDate: value } : null
                     )
                   }
+                  placeholder="Select date..."
+                  locale="en"
                 />
               ) : (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-glass-light">
