@@ -20,6 +20,7 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  _hasHydrated: boolean;
 
   login: (email: string, password: string) => Promise<void>;
   register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<void>;
@@ -27,6 +28,7 @@ interface AuthState {
   fetchUser: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
   updateAvatar: (avatarData: string) => Promise<void>;
+  setHasHydrated: (state: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -36,6 +38,11 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isLoading: false,
       isAuthenticated: false,
+      _hasHydrated: false,
+
+      setHasHydrated: (state) => {
+        set({ _hasHydrated: state });
+      },
 
       login: async (email, password) => {
         set({ isLoading: true });
@@ -145,8 +152,23 @@ export const useAuthStore = create<AuthState>()(
       name: 'auth-storage',
       partialize: (state) => ({
         token: state.token,
-        user: state.user ? { ...state.user } : null, // Persist full user including avatar
+        user: state.user ? { ...state.user } : null,
+        isAuthenticated: state.isAuthenticated, // Also persist isAuthenticated
       }),
+      onRehydrateStorage: () => (state) => {
+        // Called after hydration is complete
+        state?.setHasHydrated(true);
+
+        // If we have a token but not authenticated, set authenticated
+        if (state?.token && state?.user && !state?.isAuthenticated) {
+          useAuthStore.setState({ isAuthenticated: true });
+        }
+      },
     }
   )
 );
+
+// Hook to wait for hydration
+export const useAuthHydration = () => {
+  return useAuthStore((state) => state._hasHydrated);
+};

@@ -29,10 +29,11 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore, useAuthHydration } from '@/stores/auth.store';
 import { useSettingsStore } from '@/stores/settings.store';
 import { cn, getRankColor, getInitials } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
+import { Loader2 } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -93,9 +94,22 @@ const mockNotifications: Notification[] = [
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const hasHydrated = useAuthHydration();
   const { getCurrentTheme } = useSettingsStore();
   const currentTheme = getCurrentTheme();
   const t = useTranslation();
+
+  // Show loading state until auth store is hydrated
+  if (!hasHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-cosmic-purple" />
+          <span className="text-muted-foreground text-sm">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   const navigation = [
     { name: t.nav.dashboard, href: '/dashboard', icon: LayoutDashboard },

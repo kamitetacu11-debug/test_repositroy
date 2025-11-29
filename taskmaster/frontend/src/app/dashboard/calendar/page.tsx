@@ -1364,69 +1364,68 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 pt-3 border-t border-glass-border">
-              {/* Action buttons row - responsive */}
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-col gap-2 pt-3 border-t border-glass-border">
+              {/* Points and action buttons */}
+              <div className="flex items-center justify-between">
                 <span className="text-cosmic-purple font-medium text-sm">
                   +{selectedTask.basePoints} pts
                 </span>
-                <div className="flex flex-wrap items-center gap-1">
-                  {selectedTask.status !== 'COMPLETED' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-green-500 hover:text-green-600 hover:bg-green-500/10 px-2 h-8"
-                      onClick={handleMarkCompleted}
-                      title={t.calendar.markComplete || 'Complete'}
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span className="hidden sm:inline ml-1">{t.calendar.markComplete || 'Complete'}</span>
-                    </Button>
-                  )}
+              </div>
+
+              {/* Action buttons - always wrap to fit */}
+              <div className="flex flex-wrap gap-1.5">
+                {selectedTask.status !== 'COMPLETED' && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10 px-2 h-8"
-                    onClick={handleRemoveFromCalendar}
-                    title={t.calendar.removeFromCalendar || 'Remove'}
+                    className="text-green-500 hover:text-green-600 hover:bg-green-500/10 h-8 text-xs px-2"
+                    onClick={handleMarkCompleted}
                   >
-                    <CalendarX className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">{t.calendar.removeFromCalendar || 'Remove'}</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    {t.calendar.markComplete || 'Complete'}
                   </Button>
-                  {!showDeleteConfirm ? (
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10 h-8 text-xs px-2"
+                  onClick={handleRemoveFromCalendar}
+                >
+                  <CalendarX className="w-3.5 h-3.5 mr-1" />
+                  {t.calendar.removeFromCalendar || 'Remove'}
+                </Button>
+                {!showDeleteConfirm ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-600 hover:bg-red-500/10 h-8 text-xs px-2"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1" />
+                    {t.calendar.deleteTask || 'Delete'}
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-1 p-1 rounded-lg bg-red-500/10">
+                    <span className="text-xs text-red-500 px-1">{t.calendar.confirmDelete || 'Confirm?'}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-red-500 hover:text-red-600 hover:bg-red-500/10 px-2 h-8"
-                      onClick={() => setShowDeleteConfirm(true)}
-                      title={t.calendar.deleteTask || 'Delete'}
+                      className="h-6 px-2 text-xs"
+                      onClick={() => setShowDeleteConfirm(false)}
                     >
-                      <Trash2 className="w-4 h-4" />
-                      <span className="hidden sm:inline ml-1">{t.calendar.deleteTask || 'Delete'}</span>
+                      {t.ai.cancel}
                     </Button>
-                  ) : (
-                    <div className="flex items-center gap-1 ml-2 p-1 rounded-lg bg-red-500/10">
-                      <span className="text-xs text-red-500 px-1">{t.calendar.confirmDelete || 'Confirm?'}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setShowDeleteConfirm(false)}
-                      >
-                        {t.ai.cancel}
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={handleDeleteTask}
-                        disabled={deleting}
-                      >
-                        {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={handleDeleteTask}
+                      disabled={deleting}
+                    >
+                      {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
