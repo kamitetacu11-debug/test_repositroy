@@ -194,8 +194,8 @@ export default function CalendarPage() {
   ];
 
   const fullDayNames = [
-    t.days.sunday, t.days.monday, t.days.tuesday, t.days.wednesday,
-    t.days.thursday, t.days.friday, t.days.saturday
+    t.leaderboard.sunday, t.leaderboard.monday, t.leaderboard.tuesday, t.leaderboard.wednesday,
+    t.leaderboard.thursday, t.leaderboard.friday, t.leaderboard.saturday
   ];
 
   useEffect(() => {
