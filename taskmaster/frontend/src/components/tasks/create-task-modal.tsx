@@ -46,11 +46,25 @@ const mockUsers = [
   { id: 'USR-005', name: 'Mike Wilson', team: 'DevOps Team' },
 ];
 
-const defaultTask = {
+type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED';
+type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+interface NewTask {
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: string;
+  points: number;
+  assignee: string;
+  assigneeId: string;
+}
+
+const defaultTask: NewTask = {
   title: '',
   description: '',
-  status: 'TODO' as const,
-  priority: 'MEDIUM' as const,
+  status: 'TODO',
+  priority: 'MEDIUM',
   dueDate: '',
   points: 20,
   assignee: '',
@@ -62,7 +76,7 @@ export function CreateTaskModal({
   onClose,
   onCreate,
 }: CreateTaskModalProps) {
-  const [task, setTask] = useState(defaultTask);
+  const [task, setTask] = useState<NewTask>(defaultTask);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
@@ -165,7 +179,7 @@ export function CreateTaskModal({
             <Select
               value={task.status}
               onChange={(e) =>
-                setTask({ ...task, status: e.target.value as Task['status'] })
+                setTask({ ...task, status: e.target.value as TaskStatus })
               }
               options={statusOptions}
             />
@@ -178,7 +192,7 @@ export function CreateTaskModal({
             <Select
               value={task.priority}
               onChange={(e) =>
-                setTask({ ...task, priority: e.target.value as Task['priority'] })
+                setTask({ ...task, priority: e.target.value as TaskPriority })
               }
               options={priorityOptions}
             />
