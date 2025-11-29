@@ -16,6 +16,8 @@ import {
   GripVertical,
   Calendar as CalendarIcon,
   LayoutGrid,
+  Trash2,
+  UserPlus,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,6 +59,11 @@ interface Task {
     firstName: string;
     lastName: string;
   } | null;
+  creator: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
 }
 
 interface DayTasks {
@@ -78,6 +85,7 @@ const generateDemoTasks = (): Task[] => {
       dueDate: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
       basePoints: 40,
       assignee: { id: '1', firstName: 'John', lastName: 'Doe' },
+      creator: { id: '4', firstName: 'Alex', lastName: 'Manager' },
     },
     {
       id: 'demo-2',
@@ -88,6 +96,7 @@ const generateDemoTasks = (): Task[] => {
       dueDate: new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       basePoints: 50,
       assignee: { id: '2', firstName: 'Jane', lastName: 'Smith' },
+      creator: { id: '4', firstName: 'Alex', lastName: 'Manager' },
     },
     {
       id: 'demo-3',
@@ -98,6 +107,7 @@ const generateDemoTasks = (): Task[] => {
       dueDate: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
       basePoints: 30,
       assignee: { id: '2', firstName: 'Jane', lastName: 'Smith' },
+      creator: { id: '1', firstName: 'John', lastName: 'Doe' },
     },
     {
       id: 'demo-4',
@@ -108,6 +118,7 @@ const generateDemoTasks = (): Task[] => {
       dueDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       basePoints: 20,
       assignee: { id: '3', firstName: 'Bob', lastName: 'Johnson' },
+      creator: { id: '2', firstName: 'Jane', lastName: 'Smith' },
     },
     {
       id: 'demo-5',
@@ -118,6 +129,7 @@ const generateDemoTasks = (): Task[] => {
       dueDate: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
       basePoints: 60,
       assignee: null,
+      creator: { id: '4', firstName: 'Alex', lastName: 'Manager' },
     },
     {
       id: 'demo-6',
@@ -128,6 +140,7 @@ const generateDemoTasks = (): Task[] => {
       dueDate: new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
       basePoints: 15,
       assignee: { id: '1', firstName: 'John', lastName: 'Doe' },
+      creator: { id: '2', firstName: 'Jane', lastName: 'Smith' },
     },
     {
       id: 'demo-7',
@@ -138,6 +151,7 @@ const generateDemoTasks = (): Task[] => {
       dueDate: new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(),
       basePoints: 45,
       assignee: { id: '2', firstName: 'Jane', lastName: 'Smith' },
+      creator: { id: '4', firstName: 'Alex', lastName: 'Manager' },
     },
     {
       id: 'demo-8',
@@ -148,6 +162,7 @@ const generateDemoTasks = (): Task[] => {
       dueDate: new Date(today.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(),
       basePoints: 35,
       assignee: { id: '3', firstName: 'Bob', lastName: 'Johnson' },
+      creator: { id: '1', firstName: 'John', lastName: 'Doe' },
     },
   ];
   return tasks;
@@ -181,6 +196,8 @@ export default function CalendarPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [taskForm, setTaskForm] = useState<TaskFormData>(initialTaskForm);
   const [submitting, setSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const monthNames = [
     t.calendar.january, t.calendar.february, t.calendar.march, t.calendar.april,
@@ -427,6 +444,7 @@ export default function CalendarPage() {
       dueDate: taskForm.dueDate ? `${taskForm.dueDate}T23:59:59.000Z` : null,
       basePoints: 25,
       assignee: null,
+      creator: { id: 'current-user', firstName: 'You', lastName: '' },
     };
 
     // Try to create on server
@@ -461,6 +479,34 @@ export default function CalendarPage() {
     setSubmitting(false);
     setShowCreateDialog(false);
     setTaskForm(initialTaskForm);
+  };
+
+  const handleDeleteTask = async () => {
+    if (!selectedTask) return;
+
+    setDeleting(true);
+
+    // Remove from local state
+    setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
+
+    // Try to delete on server (skip for demo tasks)
+    if (!selectedTask.id.startsWith('demo-')) {
+      try {
+        await fetch(`/api/v1/tasks/${selectedTask.id}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to delete task:', error);
+      }
+    }
+
+    setDeleting(false);
+    setShowDeleteConfirm(false);
+    setShowTaskModal(false);
+    setSelectedTask(null);
   };
 
   const getStatusIcon = (status: string) => {
@@ -577,8 +623,14 @@ export default function CalendarPage() {
                       {getStatusIcon(task.status)}
                       <span className="text-sm font-medium truncate flex-1">{task.title}</span>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1 ml-5">
-                      {new Date(task.dueDate!).toLocaleDateString()}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 ml-5">
+                      <span>{new Date(task.dueDate!).toLocaleDateString()}</span>
+                      {task.assignee && (
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {task.assignee.firstName}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))
@@ -615,8 +667,14 @@ export default function CalendarPage() {
                       {getStatusIcon(task.status)}
                       <span className="text-sm font-medium truncate flex-1">{task.title}</span>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1 ml-5">
-                      {new Date(task.dueDate!).toLocaleDateString()}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 ml-5">
+                      <span>{new Date(task.dueDate!).toLocaleDateString()}</span>
+                      {task.assignee && (
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {task.assignee.firstName}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))
@@ -857,7 +915,10 @@ export default function CalendarPage() {
       {/* Task Detail Modal */}
       <Modal
         isOpen={showTaskModal}
-        onClose={() => setShowTaskModal(false)}
+        onClose={() => {
+          setShowTaskModal(false);
+          setShowDeleteConfirm(false);
+        }}
         title={t.calendar.taskDetails}
         size="md"
       >
@@ -915,17 +976,59 @@ export default function CalendarPage() {
                     : '-'}
                 </p>
               </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t.calendar.creator || 'Created by'}</p>
+                <p className="font-medium mt-1 flex items-center gap-1">
+                  <UserPlus className="w-4 h-4" />
+                  {selectedTask.creator
+                    ? `${selectedTask.creator.firstName} ${selectedTask.creator.lastName}`
+                    : '-'}
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-glass-border">
               <span className="text-cosmic-purple font-medium">
                 +{selectedTask.basePoints} pts
               </span>
+              {!showDeleteConfirm ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  {t.calendar.deleteTask || 'Delete'}
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-red-500">{t.calendar.confirmDelete || 'Confirm?'}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    {t.ai.cancel}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteTask}
+                    disabled={deleting}
+                  >
+                    {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : t.calendar.deleteTask || 'Delete'}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
         <ModalFooter>
-          <Button variant="ghost" onClick={() => setShowTaskModal(false)}>
+          <Button variant="ghost" onClick={() => {
+            setShowTaskModal(false);
+            setShowDeleteConfirm(false);
+          }}>
             {t.ai.close}
           </Button>
         </ModalFooter>

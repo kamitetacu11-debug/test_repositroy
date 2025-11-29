@@ -482,6 +482,9 @@ export const translations = {
       completed: 'Completed',
       inProgress: 'In Progress',
       todo: 'To Do',
+      creator: 'Created by',
+      deleteTask: 'Delete',
+      confirmDelete: 'Confirm delete?',
     },
 
     // CRM
@@ -1107,6 +1110,9 @@ export const translations = {
       completed: 'Завершено',
       inProgress: 'В процессе',
       todo: 'К выполнению',
+      creator: 'Создал',
+      deleteTask: 'Удалить',
+      confirmDelete: 'Подтвердить удаление?',
     },
 
     // CRM
@@ -1732,6 +1738,9 @@ export const translations = {
       completed: '已完成',
       inProgress: '进行中',
       todo: '待办',
+      creator: '创建者',
+      deleteTask: '删除',
+      confirmDelete: '确认删除？',
     },
 
     // CRM
