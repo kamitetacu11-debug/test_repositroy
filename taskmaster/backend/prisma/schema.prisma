@@ -1,0 +1,453 @@
+// TaskMaster Database Schema
+// AI-Powered Business Task Management with Gamification
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  firstName       String
+  lastName        String
+  avatar          String?
+  role            UserRole  @default(EMPLOYEE)
+  status          UserStatus @default(ACTIVE)
+
+  // Gamification
+  totalPoints     Int       @default(0)
+  currentLevel    Int       @default(1)
+  currentRank     Rank      @default(ROOKIE)
+  experiencePoints Int      @default(0)
+  streak          Int       @default(0)
+  lastActiveAt    DateTime?
+
+  // Relations
+  teamId          String?
+  team            Team?     @relation(fields: [teamId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+
+  // Created content
+  tasksCreated    Task[]    @relation("TaskCreator")
+  tasksAssigned   Task[]    @relation("TaskAssignee")
+  pointsHistory   PointTransaction[]
+  achievements    UserAchievement[]
+  notifications   Notification[]
+  activityLogs    ActivityLog[]
+  questProgress   QuestProgress[]
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([email])
+  @@index([teamId])
+  @@index([totalPoints])
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  TEAM_LEAD
+  EMPLOYEE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum Rank {
+  ROOKIE
+  APPRENTICE
+  SPECIALIST
+  EXPERT
+  MASTER
+  GRANDMASTER
+  LEGEND
+  MYTHIC
+}
+
+// ============================================
+// TASKS
+// ============================================
+
+model Task {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  status          TaskStatus @default(TODO)
+  priority        TaskPriority @default(MEDIUM)
+
+  // Points & Gamification
+  basePoints      Int       @default(10)
+  bonusPoints     Int       @default(0)
+  difficultyLevel Int       @default(1)
+
+  // AI-generated fields
+  aiPriority      Float?
+  aiEstimatedTime Int?      // minutes
+  aiTags          String[]
+  aiSuggestions   Json?
+
+  // Dates
+  dueDate         DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+
+  // Relations
+  creatorId       String
+  creator         User      @relation("TaskCreator", fields: [creatorId], references: [id])
+  assigneeId      String?
+  assignee        User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  teamId          String?
+  team            Team?     @relation(fields: [teamId], references: [id])
+  projectId       String?
+  project         Project?  @relation(fields: [projectId], references: [id])
+
+  parentTaskId    String?
+  parentTask      Task?     @relation("SubTasks", fields: [parentTaskId], references: [id])
+  subTasks        Task[]    @relation("SubTasks")
+
+  comments        Comment[]
+  attachments     Attachment[]
+  tags            TaskTag[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status])
+  @@index([assigneeId])
+  @@index([dueDate])
+  @@index([priority])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  BLOCKED
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  filename  String
+  url       String
+  mimeType  String
+  size      Int
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  color     String    @default("#6366f1")
+  tasks     TaskTag[]
+}
+
+model TaskTag {
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+}
+
+// ============================================
+// TEAMS & DEPARTMENTS
+// ============================================
+
+model Team {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  avatar          String?
+  totalPoints     Int      @default(0)
+  weeklyPoints    Int      @default(0)
+  monthlyPoints   Int      @default(0)
+
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+
+  members         User[]
+  tasks           Task[]
+  competitions    TeamCompetition[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([totalPoints])
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  teams       Team[]
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+  startDate   DateTime?
+  endDate     DateTime?
+  tasks       Task[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
+}
+
+// ============================================
+// GAMIFICATION
+// ============================================
+
+model PointTransaction {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  points      Int
+  type        PointType
+  reason      String
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum PointType {
+  TASK_COMPLETED
+  BONUS
+  STREAK
+  ACHIEVEMENT
+  QUEST
+  COMPETITION
+  REFERRAL
+  PENALTY
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  icon        String
+  rarity      AchievementRarity @default(COMMON)
+  points      Int      @default(100)
+  condition   Json     // { type: "tasks_completed", value: 100 }
+  users       UserAchievement[]
+  createdAt   DateTime @default(now())
+}
+
+enum AchievementRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+model UserAchievement {
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  unlockedAt    DateTime    @default(now())
+
+  @@id([userId, achievementId])
+}
+
+model Quest {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  type        QuestType
+  target      Int
+  reward      Int      // points
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  progress    QuestProgress[]
+  createdAt   DateTime @default(now())
+}
+
+enum QuestType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  SPECIAL
+}
+
+model QuestProgress {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  questId   String
+  quest     Quest    @relation(fields: [questId], references: [id])
+  progress  Int      @default(0)
+  completed Boolean  @default(false)
+
+  @@id([userId, questId])
+}
+
+model TeamCompetition {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  prize       String?
+  teams       Team[]
+  createdAt   DateTime @default(now())
+}
+
+model LeaderboardSnapshot {
+  id        String   @id @default(cuid())
+  type      LeaderboardType
+  period    String   // "2024-W01", "2024-01", "2024"
+  data      Json     // [{ userId, rank, points }]
+  createdAt DateTime @default(now())
+
+  @@unique([type, period])
+}
+
+enum LeaderboardType {
+  INDIVIDUAL_DAILY
+  INDIVIDUAL_WEEKLY
+  INDIVIDUAL_MONTHLY
+  TEAM_WEEKLY
+  TEAM_MONTHLY
+  DEPARTMENT_MONTHLY
+}
+
+// ============================================
+// NOTIFICATIONS & LOGS
+// ============================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_COMPLETED
+  TASK_DUE_SOON
+  ACHIEVEMENT_UNLOCKED
+  LEVEL_UP
+  RANK_UP
+  QUEST_COMPLETED
+  TEAM_COMPETITION
+  MENTION
+  SYSTEM
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ============================================
+// AI & ANALYTICS
+// ============================================
+
+model AIAnalysis {
+  id            String   @id @default(cuid())
+  type          AIAnalysisType
+  entityType    String
+  entityId      String
+  result        Json
+  confidence    Float?
+  modelVersion  String
+  processingTime Int     // milliseconds
+  createdAt     DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+enum AIAnalysisType {
+  TASK_PRIORITY
+  WORKLOAD_PREDICTION
+  ANOMALY_DETECTION
+  RECOMMENDATION
+  SENTIMENT
+  PERFORMANCE_FORECAST
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String?
+  properties Json?
+  timestamp DateTime @default(now())
+
+  @@index([name])
+  @@index([timestamp])
+}
