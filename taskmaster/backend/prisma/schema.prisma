@@ -47,6 +47,12 @@ model User {
   activityLogs    ActivityLog[]
   questProgress   QuestProgress[]
 
+  // CRM Relations
+  customersAssigned Customer[]  @relation("CustomerAssignee")
+  dealsAssigned    Deal[]       @relation("DealAssignee")
+  activitiesCreated Activity[]  @relation("ActivityCreator")
+  activitiesAssigned Activity[] @relation("ActivityAssignee")
+
   // Timestamps
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -450,4 +456,220 @@ model AnalyticsEvent {
 
   @@index([name])
   @@index([timestamp])
+}
+
+// ============================================
+// CRM MODULE
+// ============================================
+
+model Customer {
+  id              String       @id @default(cuid())
+  type            CustomerType @default(COMPANY)
+  name            String
+  legalName       String?
+  email           String?
+  phone           String?
+  website         String?
+  industry        String?
+  taxId           String?
+
+  // Address
+  address         String?
+  city            String?
+  state           String?
+  country         String?
+  postalCode      String?
+
+  // Business info
+  annualRevenue   Float?
+  employeeCount   Int?
+  source          String?      // Where lead came from
+
+  // Relations
+  assignedToId    String?
+  assignedTo      User?        @relation("CustomerAssignee", fields: [assignedToId], references: [id])
+  contacts        Contact[]
+  deals           Deal[]
+  activities      Activity[]
+
+  // Metadata
+  tags            String[]
+  customFields    Json?
+  notes           String?
+
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([name])
+  @@index([email])
+  @@index([assignedToId])
+  @@index([type])
+}
+
+enum CustomerType {
+  COMPANY
+  INDIVIDUAL
+}
+
+model Contact {
+  id              String   @id @default(cuid())
+  firstName       String
+  lastName        String?
+  email           String?
+  phone           String?
+  mobile          String?
+  position        String?  // Job title
+  department      String?
+
+  // Relations
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  deals           Deal[]
+  activities      Activity[]
+
+  isPrimary       Boolean  @default(false)
+  isActive        Boolean  @default(true)
+
+  linkedIn        String?
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([email])
+}
+
+model Pipeline {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  isDefault   Boolean         @default(false)
+  isActive    Boolean         @default(true)
+
+  stages      PipelineStage[]
+  deals       Deal[]
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model PipelineStage {
+  id              String   @id @default(cuid())
+  name            String
+  color           String   @default("#6366f1")
+  sortOrder       Int
+  winProbability  Int      @default(0) // 0-100%
+
+  pipelineId      String
+  pipeline        Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals           Deal[]
+
+  isClosed        Boolean  @default(false)
+  isWon           Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+
+  @@index([pipelineId, sortOrder])
+}
+
+model Deal {
+  id              String     @id @default(cuid())
+  title           String
+  description     String?
+
+  // Money
+  amount          Float?
+  currency        String     @default("USD")
+
+  // Probability & dates
+  probability     Int?       // 0-100
+  expectedCloseDate DateTime?
+  actualCloseDate DateTime?
+
+  // Status
+  status          DealStatus @default(OPEN)
+  lostReason      String?
+
+  // Relations
+  customerId      String
+  customer        Customer   @relation(fields: [customerId], references: [id])
+  contactId       String?
+  contact         Contact?   @relation(fields: [contactId], references: [id])
+  pipelineId      String
+  pipeline        Pipeline   @relation(fields: [pipelineId], references: [id])
+  stageId         String
+  stage           PipelineStage @relation(fields: [stageId], references: [id])
+  assignedToId    String?
+  assignedTo      User?      @relation("DealAssignee", fields: [assignedToId], references: [id])
+
+  activities      Activity[]
+
+  // Metadata
+  tags            String[]
+  customFields    Json?
+  source          String?
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([customerId])
+  @@index([stageId])
+  @@index([status])
+  @@index([assignedToId])
+  @@index([expectedCloseDate])
+}
+
+enum DealStatus {
+  OPEN
+  WON
+  LOST
+}
+
+model Activity {
+  id              String       @id @default(cuid())
+  type            ActivityType
+  subject         String
+  description     String?
+
+  // Scheduling
+  scheduledAt     DateTime?
+  completedAt     DateTime?
+  durationMinutes Int?
+
+  // Outcome
+  outcome         String?
+
+  // Relations - polymorphic
+  customerId      String?
+  customer        Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  contactId       String?
+  contact         Contact?     @relation(fields: [contactId], references: [id])
+  dealId          String?
+  deal            Deal?        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  // Creator
+  createdById     String
+  createdBy       User         @relation("ActivityCreator", fields: [createdById], references: [id])
+  assignedToId    String?
+  assignedTo      User?        @relation("ActivityAssignee", fields: [assignedToId], references: [id])
+
+  isCompleted     Boolean      @default(false)
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([customerId])
+  @@index([dealId])
+  @@index([scheduledAt])
+  @@index([type])
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  MEETING
+  NOTE
+  TASK
 }

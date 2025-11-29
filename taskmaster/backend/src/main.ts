@@ -22,6 +22,7 @@ import { leaderboardRoutes } from './modules/leaderboard/leaderboard.routes.js';
 import { gamificationRoutes } from './modules/gamification/gamification.routes.js';
 import { aiRoutes } from './modules/ai/ai.routes.js';
 import { notificationRoutes } from './modules/notifications/notification.routes.js';
+import { crmRoutes } from './modules/crm/crm.routes.js';
 
 // WebSocket
 import { setupWebSocket } from './modules/notifications/websocket.js';
@@ -121,6 +122,7 @@ async function bootstrap() {
     await app.register(gamificationRoutes, { prefix: '/api/v1/gamification' });
     await app.register(aiRoutes, { prefix: '/api/v1/ai' });
     await app.register(notificationRoutes, { prefix: '/api/v1/notifications' });
+    await app.register(crmRoutes, { prefix: '/api/v1/crm' });
 
     // Global error handler
     app.setErrorHandler((error, request, reply) => {

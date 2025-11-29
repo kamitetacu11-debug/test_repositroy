@@ -25,6 +25,7 @@ import {
   Zap,
   Clock,
   Check,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth.store';
@@ -99,6 +100,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: t.nav.dashboard, href: '/dashboard', icon: LayoutDashboard },
     { name: t.nav.tasks, href: '/dashboard/tasks', icon: Target },
     { name: t.nav.teams, href: '/dashboard/teams', icon: Users },
+    { name: 'CRM', href: '/dashboard/crm', icon: Building2 },
     { name: t.nav.leaderboard, href: '/dashboard/leaderboard', icon: Trophy },
     { name: t.nav.analytics, href: '/dashboard/analytics', icon: BarChart3 },
     { name: t.nav.aiInsights, href: '/dashboard/ai', icon: Sparkles },
