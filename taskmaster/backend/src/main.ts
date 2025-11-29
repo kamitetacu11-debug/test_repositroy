@@ -59,6 +59,18 @@ async function bootstrap() {
       sign: { expiresIn: '7d' }
     });
 
+    // Auth decorator
+    app.decorate('authenticate', async (request: any, reply: any) => {
+      try {
+        await request.jwtVerify();
+      } catch {
+        reply.status(401).send({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Invalid or expired token' }
+        });
+      }
+    });
+
     // WebSocket
     await app.register(websocket);
     setupWebSocket(app);
