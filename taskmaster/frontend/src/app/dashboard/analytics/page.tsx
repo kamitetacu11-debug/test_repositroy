@@ -12,7 +12,7 @@ import {
   X,
   Calendar,
   Zap,
-  ArrowRight,
+  FolderOpen,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
@@ -94,12 +94,43 @@ const categoryColors: Record<string, string> = {
   Testing: 'bg-status-success',
 };
 
+const categoryColorValues: Record<string, string> = {
+  Development: '#7c3aed',
+  Design: '#06b6d4',
+  Documentation: '#eab308',
+  Testing: '#10b981',
+};
+
+// Get all tasks grouped by category
+const getAllTasksByCategory = () => {
+  const allTasks: { id: string; title: string; points: number; completedAt: string; category: string; day: string }[] = [];
+  Object.entries(tasksData).forEach(([day, tasks]) => {
+    tasks.forEach(task => {
+      allTasks.push({ ...task, day });
+    });
+  });
+  return allTasks;
+};
+
+const categoriesData = [
+  { label: 'Development', count: 24, percentage: 45, color: 'bg-cosmic-purple' },
+  { label: 'Design', count: 12, percentage: 22, color: 'bg-cosmic-cyan' },
+  { label: 'Documentation', count: 8, percentage: 15, color: 'bg-yellow-500' },
+  { label: 'Testing', count: 10, percentage: 18, color: 'bg-status-success' },
+];
+
 export default function AnalyticsPage() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const selectedDayData = selectedDay ? weeklyData.find(d => d.day === selectedDay) : null;
   const selectedDayTasks = selectedDay ? tasksData[selectedDay] || [] : [];
+
+  const allTasks = getAllTasksByCategory();
+  const categoryTasks = selectedCategory
+    ? allTasks.filter(task => task.category === selectedCategory)
+    : [];
 
   return (
     <DashboardLayout>
@@ -252,24 +283,30 @@ export default function AnalyticsPage() {
         >
           <Card className="glass">
             <CardHeader>
-              <CardTitle>Task Distribution by Category</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span>Task Distribution by Category</span>
+                <span className="text-sm font-normal text-gray-400">
+                  Click on a category to view tasks
+                </span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: 'Development', count: 24, percentage: 45, color: 'bg-cosmic-purple' },
-                  { label: 'Design', count: 12, percentage: 22, color: 'bg-cosmic-cyan' },
-                  { label: 'Documentation', count: 8, percentage: 15, color: 'bg-yellow-500' },
-                  { label: 'Testing', count: 10, percentage: 18, color: 'bg-status-success' },
-                ].map((category, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-glass-light hover:bg-glass-medium transition-colors cursor-pointer">
+                {categoriesData.map((category, i) => (
+                  <motion.div
+                    key={i}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSelectedCategory(category.label)}
+                    className="p-4 rounded-xl bg-glass-light hover:bg-glass-medium transition-all cursor-pointer border-2 border-transparent hover:border-glass-border"
+                  >
                     <div className="flex items-center gap-2 mb-2">
                       <div className={`w-3 h-3 rounded-full ${category.color}`} />
                       <span className="text-sm text-gray-400">{category.label}</span>
                     </div>
                     <p className="text-2xl font-bold">{category.count}</p>
                     <p className="text-sm text-gray-400">{category.percentage}% of total</p>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </CardContent>
@@ -386,6 +423,116 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
                 <Button variant="ghost" onClick={() => setSelectedDay(null)}>
+                  Close
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Category Details Modal */}
+      <AnimatePresence>
+        {selectedCategory && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setSelectedCategory(null)}
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-glass-border">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: `${categoryColorValues[selectedCategory]}20` }}
+                  >
+                    <FolderOpen className="w-6 h-6" style={{ color: categoryColorValues[selectedCategory] }} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">{selectedCategory}</h2>
+                    <p className="text-sm text-gray-400">
+                      {categoryTasks.length} tasks · {categoryTasks.reduce((sum, t) => sum + t.points, 0)} total points
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className="p-2 rounded-lg hover:bg-glass-light transition"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              {/* Tasks List */}
+              <div className="p-6 overflow-y-auto max-h-[calc(80vh-180px)]">
+                <div className="space-y-3">
+                  {categoryTasks.map((task, index) => (
+                    <motion.div
+                      key={task.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="flex items-center gap-4 p-4 rounded-xl bg-glass-light hover:bg-glass-medium transition-colors"
+                    >
+                      <div
+                        className="w-1 h-12 rounded-full"
+                        style={{ backgroundColor: categoryColorValues[selectedCategory] }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-status-success flex-shrink-0" />
+                          <p className="font-medium truncate">{task.title}</p>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-sm text-gray-400">
+                          <span>#{task.id}</span>
+                          <span>·</span>
+                          <span>{task.day}</span>
+                          <span>·</span>
+                          <span>Completed at {task.completedAt}</span>
+                        </div>
+                      </div>
+                      <div
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg"
+                        style={{
+                          backgroundColor: `${categoryColorValues[selectedCategory]}20`,
+                          color: categoryColorValues[selectedCategory],
+                        }}
+                      >
+                        <Zap className="w-4 h-4" />
+                        <span className="font-medium">+{task.points}</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between p-6 border-t border-glass-border bg-glass-light/30">
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: categoryColorValues[selectedCategory] }}
+                  />
+                  <span>All {selectedCategory.toLowerCase()} tasks from this week</span>
+                </div>
+                <Button variant="ghost" onClick={() => setSelectedCategory(null)}>
                   Close
                 </Button>
               </div>

@@ -8,18 +8,31 @@ import {
   Bell,
   Shield,
   Palette,
-  Globe,
   Save,
   Camera,
+  Check,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore, themes, Theme } from '@/stores/settings.store';
+import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
+  const {
+    theme,
+    compactMode,
+    animations,
+    glassOpacity,
+    setTheme,
+    setCompactMode,
+    setAnimations,
+    setGlassOpacity,
+  } = useSettingsStore();
+
   const [activeTab, setActiveTab] = useState('profile');
 
   const tabs = [
@@ -198,36 +211,109 @@ export default function SettingsPage() {
                 <CardHeader>
                   <CardTitle>Appearance Settings</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
+                <CardContent className="space-y-6">
+                  {/* Theme Selection */}
+                  <div className="space-y-4">
                     <div>
-                      <p className="font-medium">Theme</p>
-                      <p className="text-sm text-gray-400">Choose your preferred theme</p>
+                      <p className="font-medium mb-1">Theme</p>
+                      <p className="text-sm text-gray-400 mb-4">Choose your preferred color theme</p>
                     </div>
-                    <select className="px-4 py-2 rounded-xl bg-glass-light border border-glass-border text-white">
-                      <option value="dark" className="bg-cosmic-dark">Cosmic Dark</option>
-                      <option value="light" className="bg-cosmic-dark">Light (Coming Soon)</option>
-                    </select>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {themes.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setTheme(t.id as Theme)}
+                          className={cn(
+                            'relative p-4 rounded-xl border-2 transition-all',
+                            theme === t.id
+                              ? 'border-cosmic-purple bg-cosmic-purple/10'
+                              : 'border-glass-border hover:border-glass-medium bg-glass-light'
+                          )}
+                        >
+                          {/* Theme preview colors */}
+                          <div className="flex gap-2 mb-3">
+                            <div
+                              className="w-6 h-6 rounded-full"
+                              style={{ backgroundColor: t.colors.primary }}
+                            />
+                            <div
+                              className="w-6 h-6 rounded-full"
+                              style={{ backgroundColor: t.colors.secondary }}
+                            />
+                            <div
+                              className="w-6 h-6 rounded-full"
+                              style={{ backgroundColor: t.colors.accent }}
+                            />
+                          </div>
+                          <p className="text-sm font-medium text-left">{t.name}</p>
+                          {theme === t.id && (
+                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-cosmic-purple flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
+                  {/* Glass Transparency Slider */}
+                  <div className="p-4 rounded-xl bg-glass-light space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Glass Transparency</p>
+                        <p className="text-sm text-gray-400">Adjust the liquid glass effect intensity</p>
+                      </div>
+                      <span className="text-sm font-medium text-cosmic-purple">{glassOpacity}%</span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={glassOpacity}
+                        onChange={(e) => setGlassOpacity(parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider-thumb"
+                        style={{
+                          background: `linear-gradient(to right, #7c3aed ${glassOpacity}%, #4b5563 ${glassOpacity}%)`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Transparent</span>
+                      <span>Opaque</span>
+                    </div>
+                  </div>
+
+                  {/* Animations Toggle */}
                   <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
                     <div>
                       <p className="font-medium">Animations</p>
                       <p className="text-sm text-gray-400">Enable or disable UI animations</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" defaultChecked className="sr-only peer" />
+                      <input
+                        type="checkbox"
+                        checked={animations}
+                        onChange={(e) => setAnimations(e.target.checked)}
+                        className="sr-only peer"
+                      />
                       <div className="w-11 h-6 bg-gray-600 peer-focus:ring-2 peer-focus:ring-cosmic-purple rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cosmic-purple"></div>
                     </label>
                   </div>
 
+                  {/* Compact Mode Toggle */}
                   <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
                     <div>
                       <p className="font-medium">Compact Mode</p>
-                      <p className="text-sm text-gray-400">Reduce spacing and padding</p>
+                      <p className="text-sm text-gray-400">Reduce spacing and padding for denser layout</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" />
+                      <input
+                        type="checkbox"
+                        checked={compactMode}
+                        onChange={(e) => setCompactMode(e.target.checked)}
+                        className="sr-only peer"
+                      />
                       <div className="w-11 h-6 bg-gray-600 peer-focus:ring-2 peer-focus:ring-cosmic-purple rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cosmic-purple"></div>
                     </label>
                   </div>
