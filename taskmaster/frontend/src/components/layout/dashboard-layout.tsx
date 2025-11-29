@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSettingsStore } from '@/stores/settings.store';
 import { cn, getRankColor, getInitials } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -87,20 +88,21 @@ const mockNotifications: Notification[] = [
   },
 ];
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Tasks', href: '/dashboard/tasks', icon: Target },
-  { name: 'Teams', href: '/dashboard/teams', icon: Users },
-  { name: 'Leaderboard', href: '/dashboard/leaderboard', icon: Trophy },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'AI Insights', href: '/dashboard/ai', icon: Sparkles },
-];
-
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const { getCurrentTheme } = useSettingsStore();
   const currentTheme = getCurrentTheme();
+  const t = useTranslation();
+
+  const navigation = [
+    { name: t.nav.dashboard, href: '/dashboard', icon: LayoutDashboard },
+    { name: t.nav.tasks, href: '/dashboard/tasks', icon: Target },
+    { name: t.nav.teams, href: '/dashboard/teams', icon: Users },
+    { name: t.nav.leaderboard, href: '/dashboard/leaderboard', icon: Trophy },
+    { name: t.nav.analytics, href: '/dashboard/analytics', icon: BarChart3 },
+    { name: t.nav.aiInsights, href: '/dashboard/ai', icon: Sparkles },
+  ];
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
@@ -249,7 +251,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <Link href="/dashboard/settings" className="flex-1">
                 <Button variant="ghost" size="sm" className="w-full justify-start">
                   <Settings className="w-4 h-4 mr-2" />
-                  Settings
+                  {t.nav.settings}
                 </Button>
               </Link>
               <Button
@@ -308,7 +310,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       <div className="flex items-center justify-between p-4 border-b border-glass-border">
                         <div className="flex items-center gap-2">
                           <Bell className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
-                          <h3 className="font-semibold">Notifications</h3>
+                          <h3 className="font-semibold">{t.nav.notifications}</h3>
                           {unreadCount > 0 && (
                             <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-status-error text-white">
                               {unreadCount}
@@ -321,7 +323,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                             className="text-sm hover:opacity-80 transition"
                             style={{ color: currentTheme.colors.primary }}
                           >
-                            Mark all read
+                            {t.common.markAllRead}
                           </button>
                         )}
                       </div>
@@ -331,8 +333,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         {notifications.length === 0 ? (
                           <div className="p-8 text-center">
                             <Bell className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                            <p className="text-gray-400">No notifications</p>
-                            <p className="text-sm text-gray-500 mt-1">You're all caught up!</p>
+                            <p className="text-gray-400">{t.notificationsPage.noNotifications}</p>
+                            <p className="text-sm text-gray-500 mt-1">{t.notificationsPage.allCaughtUp}</p>
                           </div>
                         ) : (
                           notifications.map((notification) => (
@@ -386,7 +388,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                             style={{ color: currentTheme.colors.primary }}
                             onClick={() => setNotificationsOpen(false)}
                           >
-                            View all notifications
+                            {t.notificationsPage.viewAllNotifications}
                           </Link>
                         </div>
                       )}

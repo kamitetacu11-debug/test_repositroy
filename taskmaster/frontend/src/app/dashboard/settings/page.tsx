@@ -21,6 +21,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSettingsStore, themes, Theme, languages, Language } from '@/stores/settings.store';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -38,14 +39,15 @@ export default function SettingsPage() {
     setGlassOpacity,
     setStarBrightness,
   } = useSettingsStore();
+  const t = useTranslation();
 
   const [activeTab, setActiveTab] = useState('profile');
 
   const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'security', label: 'Security', icon: Shield },
-    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'profile', label: t.settings.tabs.profile, icon: User },
+    { id: 'notifications', label: t.settings.tabs.notifications, icon: Bell },
+    { id: 'security', label: t.settings.tabs.security, icon: Shield },
+    { id: 'appearance', label: t.settings.tabs.appearance, icon: Palette },
   ];
 
   return (
@@ -58,9 +60,9 @@ export default function SettingsPage() {
         >
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Settings className="w-8 h-8 text-cosmic-purple" />
-            Settings
+            {t.settings.title}
           </h1>
-          <p className="text-gray-400 mt-1">Manage your account preferences</p>
+          <p className="text-gray-400 mt-1">{t.settings.subtitle}</p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -100,7 +102,7 @@ export default function SettingsPage() {
             {activeTab === 'profile' && (
               <Card className="glass">
                 <CardHeader>
-                  <CardTitle>Profile Settings</CardTitle>
+                  <CardTitle>{t.settings.profile.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Avatar */}
@@ -122,22 +124,22 @@ export default function SettingsPage() {
                   {/* Form */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm text-gray-400">First Name</label>
+                      <label className="text-sm text-gray-400">{t.settings.profile.firstName}</label>
                       <Input defaultValue={user?.firstName} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm text-gray-400">Last Name</label>
+                      <label className="text-sm text-gray-400">{t.settings.profile.lastName}</label>
                       <Input defaultValue={user?.lastName} />
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm text-gray-400">Email</label>
+                      <label className="text-sm text-gray-400">{t.settings.profile.email}</label>
                       <Input defaultValue={user?.email} type="email" />
                     </div>
                   </div>
 
                   <Button className="bg-cosmic-purple hover:bg-cosmic-purple/80">
                     <Save className="mr-2 w-4 h-4" />
-                    Save Changes
+                    {t.settings.profile.saveChanges}
                   </Button>
                 </CardContent>
               </Card>
@@ -146,15 +148,15 @@ export default function SettingsPage() {
             {activeTab === 'notifications' && (
               <Card className="glass">
                 <CardHeader>
-                  <CardTitle>Notification Preferences</CardTitle>
+                  <CardTitle>{t.settings.notifications.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {[
-                    { label: 'Task Assignments', description: 'Get notified when tasks are assigned to you' },
-                    { label: 'Task Completions', description: 'Get notified when your tasks are completed' },
-                    { label: 'Achievement Unlocked', description: 'Get notified when you unlock achievements' },
-                    { label: 'Team Updates', description: 'Get updates about your team activities' },
-                    { label: 'Weekly Digest', description: 'Receive weekly summary emails' },
+                    { label: t.settings.notifications.taskAssignments, description: t.settings.notifications.taskAssignmentsDesc },
+                    { label: t.settings.notifications.taskCompletions, description: t.settings.notifications.taskCompletionsDesc },
+                    { label: t.settings.notifications.achievementUnlocked, description: t.settings.notifications.achievementUnlockedDesc },
+                    { label: t.settings.notifications.teamUpdates, description: t.settings.notifications.teamUpdatesDesc },
+                    { label: t.settings.notifications.weeklyDigest, description: t.settings.notifications.weeklyDigestDesc },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
                       <div>
@@ -174,38 +176,38 @@ export default function SettingsPage() {
             {activeTab === 'security' && (
               <Card className="glass">
                 <CardHeader>
-                  <CardTitle>Security Settings</CardTitle>
+                  <CardTitle>{t.settings.security.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
-                    <h3 className="font-medium">Change Password</h3>
+                    <h3 className="font-medium">{t.settings.security.changePassword}</h3>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <label className="text-sm text-gray-400">Current Password</label>
+                        <label className="text-sm text-gray-400">{t.settings.security.currentPassword}</label>
                         <Input type="password" placeholder="••••••••" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm text-gray-400">New Password</label>
+                        <label className="text-sm text-gray-400">{t.settings.security.newPassword}</label>
                         <Input type="password" placeholder="••••••••" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm text-gray-400">Confirm New Password</label>
+                        <label className="text-sm text-gray-400">{t.settings.security.confirmPassword}</label>
                         <Input type="password" placeholder="••••••••" />
                       </div>
                     </div>
                     <Button className="bg-cosmic-purple hover:bg-cosmic-purple/80">
-                      Update Password
+                      {t.settings.security.updatePassword}
                     </Button>
                   </div>
 
                   <div className="border-t border-glass-border pt-6">
-                    <h3 className="font-medium mb-4">Two-Factor Authentication</h3>
+                    <h3 className="font-medium mb-4">{t.settings.security.twoFactor}</h3>
                     <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
                       <div>
-                        <p className="font-medium">2FA Status</p>
-                        <p className="text-sm text-gray-400">Add extra security to your account</p>
+                        <p className="font-medium">{t.settings.security.twoFactorStatus}</p>
+                        <p className="text-sm text-gray-400">{t.settings.security.twoFactorDesc}</p>
                       </div>
-                      <Button variant="outline">Enable 2FA</Button>
+                      <Button variant="outline">{t.settings.security.enable2fa}</Button>
                     </div>
                   </div>
                 </CardContent>
@@ -215,23 +217,23 @@ export default function SettingsPage() {
             {activeTab === 'appearance' && (
               <Card className="glass">
                 <CardHeader>
-                  <CardTitle>Appearance Settings</CardTitle>
+                  <CardTitle>{t.settings.appearance.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Theme Selection */}
                   <div className="space-y-4">
                     <div>
-                      <p className="font-medium mb-1">Theme</p>
-                      <p className="text-sm text-gray-400 mb-4">Choose your preferred color theme</p>
+                      <p className="font-medium mb-1">{t.settings.appearance.theme}</p>
+                      <p className="text-sm text-gray-400 mb-4">{t.settings.appearance.themeDesc}</p>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {themes.map((t) => (
+                      {themes.map((themeItem) => (
                         <button
-                          key={t.id}
-                          onClick={() => setTheme(t.id as Theme)}
+                          key={themeItem.id}
+                          onClick={() => setTheme(themeItem.id as Theme)}
                           className={cn(
                             'relative p-4 rounded-xl border-2 transition-all',
-                            theme === t.id
+                            theme === themeItem.id
                               ? 'border-cosmic-purple bg-cosmic-purple/10'
                               : 'border-glass-border hover:border-glass-medium bg-glass-light'
                           )}
@@ -240,19 +242,19 @@ export default function SettingsPage() {
                           <div className="flex gap-2 mb-3">
                             <div
                               className="w-6 h-6 rounded-full"
-                              style={{ backgroundColor: t.colors.primary }}
+                              style={{ backgroundColor: themeItem.colors.primary }}
                             />
                             <div
                               className="w-6 h-6 rounded-full"
-                              style={{ backgroundColor: t.colors.secondary }}
+                              style={{ backgroundColor: themeItem.colors.secondary }}
                             />
                             <div
                               className="w-6 h-6 rounded-full"
-                              style={{ backgroundColor: t.colors.accent }}
+                              style={{ backgroundColor: themeItem.colors.accent }}
                             />
                           </div>
-                          <p className="text-sm font-medium text-left">{t.name}</p>
-                          {theme === t.id && (
+                          <p className="text-sm font-medium text-left">{themeItem.name}</p>
+                          {theme === themeItem.id && (
                             <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-cosmic-purple flex items-center justify-center">
                               <Check className="w-3 h-3 text-white" />
                             </div>
@@ -266,8 +268,8 @@ export default function SettingsPage() {
                   <div className="p-4 rounded-xl bg-glass-light space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium">Glass Transparency</p>
-                        <p className="text-sm text-gray-400">Adjust the liquid glass effect intensity</p>
+                        <p className="font-medium">{t.settings.appearance.glassTransparency}</p>
+                        <p className="text-sm text-gray-400">{t.settings.appearance.glassTransparencyDesc}</p>
                       </div>
                       <span className="text-sm font-medium text-cosmic-purple">{glassOpacity}%</span>
                     </div>
@@ -285,8 +287,8 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div className="flex justify-between text-xs text-gray-500">
-                      <span>Transparent</span>
-                      <span>Opaque</span>
+                      <span>{t.settings.appearance.transparent}</span>
+                      <span>{t.settings.appearance.opaque}</span>
                     </div>
                   </div>
 
@@ -296,8 +298,8 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2">
                         <Star className="w-5 h-5 text-yellow-400" />
                         <div>
-                          <p className="font-medium">Star Brightness</p>
-                          <p className="text-sm text-gray-400">Adjust the twinkling stars visibility</p>
+                          <p className="font-medium">{t.settings.appearance.starBrightness}</p>
+                          <p className="text-sm text-gray-400">{t.settings.appearance.starBrightnessDesc}</p>
                         </div>
                       </div>
                       <span className="text-sm font-medium text-cosmic-purple">{starBrightness}%</span>
@@ -317,8 +319,8 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div className="flex justify-between text-xs text-gray-500">
-                      <span>Hidden</span>
-                      <span>Bright</span>
+                      <span>{t.settings.appearance.hidden}</span>
+                      <span>{t.settings.appearance.bright}</span>
                     </div>
                   </div>
 
@@ -327,8 +329,8 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-2 mb-3">
                       <Globe className="w-5 h-5 text-cosmic-cyan" />
                       <div>
-                        <p className="font-medium">Language</p>
-                        <p className="text-sm text-gray-400">Select your preferred language</p>
+                        <p className="font-medium">{t.settings.appearance.language}</p>
+                        <p className="text-sm text-gray-400">{t.settings.appearance.languageDesc}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
@@ -358,8 +360,8 @@ export default function SettingsPage() {
                   {/* Animations Toggle */}
                   <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
                     <div>
-                      <p className="font-medium">Animations</p>
-                      <p className="text-sm text-gray-400">Enable or disable UI animations</p>
+                      <p className="font-medium">{t.settings.appearance.animations}</p>
+                      <p className="text-sm text-gray-400">{t.settings.appearance.animationsDesc}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -375,8 +377,8 @@ export default function SettingsPage() {
                   {/* Compact Mode Toggle */}
                   <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
                     <div>
-                      <p className="font-medium">Compact Mode</p>
-                      <p className="text-sm text-gray-400">Reduce spacing and padding for denser layout</p>
+                      <p className="font-medium">{t.settings.appearance.compactMode}</p>
+                      <p className="text-sm text-gray-400">{t.settings.appearance.compactModeDesc}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input

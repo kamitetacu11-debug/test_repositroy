@@ -26,6 +26,7 @@ import { TaskModal, Task } from '@/components/tasks/task-modal';
 import { CreateTaskModal } from '@/components/tasks/create-task-modal';
 import { useToast } from '@/components/ui/toast';
 import { formatNumber, getRankColor } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // Mock data for demo
 const mockStats = {
@@ -61,6 +62,7 @@ const mockAchievements = [
 export default function DashboardPage() {
   const { user, fetchUser } = useAuthStore();
   const { addToast } = useToast();
+  const t = useTranslation();
 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -137,16 +139,16 @@ export default function DashboardPage() {
         >
           <div>
             <h1 className="text-3xl font-bold">
-              Welcome back, <span className="gradient-text">{user?.firstName || 'User'}</span>
+              {t.dashboard.welcome}, <span className="gradient-text">{user?.firstName || 'User'}</span>
             </h1>
-            <p className="text-gray-400 mt-1">Here&apos;s what&apos;s happening with your tasks today.</p>
+            <p className="text-gray-400 mt-1">{t.dashboard.todayProgress}</p>
           </div>
           <Button
             className="bg-cosmic-purple hover:bg-cosmic-purple/80"
             onClick={() => setIsCreateModalOpen(true)}
           >
             <Target className="mr-2 w-4 h-4" />
-            New Task
+            {t.tasks.newTask}
           </Button>
         </motion.div>
 
@@ -170,24 +172,24 @@ export default function DashboardPage() {
                   className="gap-2"
                 >
                   <Plus className="w-4 h-4" />
-                  New Task
+                  {t.tasks.newTask}
                 </Button>
                 <Link href="/dashboard/tasks">
                   <Button variant="outline" size="sm" className="gap-2">
                     <Target className="w-4 h-4" />
-                    My Tasks
+                    {t.tasks.myTasks}
                   </Button>
                 </Link>
                 <Link href="/dashboard/teams">
                   <Button variant="outline" size="sm" className="gap-2">
                     <Users className="w-4 h-4" />
-                    My Team
+                    {t.teams.title}
                   </Button>
                 </Link>
                 <Link href="/dashboard/analytics">
                   <Button variant="outline" size="sm" className="gap-2">
                     <BarChart3 className="w-4 h-4" />
-                    Analytics
+                    {t.analytics.title}
                   </Button>
                 </Link>
               </div>
@@ -207,7 +209,7 @@ export default function DashboardPage() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm">Tasks Completed</p>
+                    <p className="text-gray-400 text-sm">{t.leaderboard.tasksCompleted}</p>
                     <p className="text-3xl font-bold mt-1">{mockStats.tasksCompleted}</p>
                   </div>
                   <div className="w-12 h-12 rounded-xl bg-status-success/20 flex items-center justify-center">
@@ -228,7 +230,7 @@ export default function DashboardPage() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm">Total Points</p>
+                    <p className="text-gray-400 text-sm">{t.dashboard.totalPoints}</p>
                     <p className="text-3xl font-bold mt-1">{formatNumber(mockStats.totalPoints)}</p>
                   </div>
                   <div className="w-12 h-12 rounded-xl bg-cosmic-purple/20 flex items-center justify-center">
@@ -295,10 +297,10 @@ export default function DashboardPage() {
           >
             <Card className="glass">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Active Tasks</CardTitle>
+                <CardTitle>{t.dashboard.recentTasks}</CardTitle>
                 <Link href="/dashboard/tasks">
                   <Button variant="ghost" size="sm" className="gap-1">
-                    View All
+                    {t.common.viewAll}
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
@@ -375,7 +377,7 @@ export default function DashboardPage() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Trophy className="w-5 h-5 text-yellow-500" />
-                  Leaderboard
+                  {t.leaderboard.title}
                 </CardTitle>
                 <Link href="/dashboard/leaderboard">
                   <Button variant="ghost" size="sm">
@@ -411,7 +413,7 @@ export default function DashboardPage() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Star className="w-5 h-5 text-cosmic-purple" />
-                  Achievements
+                  {t.profilePage.achievements}
                 </CardTitle>
                 <Link href="/dashboard/profile">
                   <Button variant="ghost" size="sm">
