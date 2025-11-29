@@ -20,6 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { formatNumber, getRankColor } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface UserTask {
   id: string;
@@ -274,6 +275,7 @@ export default function LeaderboardPage() {
   const [tab, setTab] = useState<Tab>('users');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const t = useTranslation();
 
   const sortedUsers = useMemo(() => {
     return [...mockUsers].sort((a, b) => {
@@ -324,11 +326,22 @@ export default function LeaderboardPage() {
   const getPeriodLabel = () => {
     switch (period) {
       case 'weekly':
-        return 'This Week';
+        return t.leaderboard.thisWeek;
       case 'monthly':
-        return 'This Month';
+        return t.leaderboard.thisMonth;
       default:
-        return 'All Time';
+        return t.leaderboard.allTime;
+    }
+  };
+
+  const getPeriodButtonLabel = (p: Period) => {
+    switch (p) {
+      case 'weekly':
+        return t.leaderboard.weekly;
+      case 'monthly':
+        return t.leaderboard.monthly;
+      default:
+        return t.leaderboard.allTime;
     }
   };
 
@@ -344,9 +357,9 @@ export default function LeaderboardPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Trophy className="w-8 h-8 text-yellow-500" />
-              Leaderboard
+              {t.leaderboard.title}
             </h1>
-            <p className="text-gray-400 mt-1">See who's leading the pack</p>
+            <p className="text-gray-400 mt-1">{t.leaderboard.subtitle}</p>
           </div>
 
           {/* Period Filter */}
@@ -358,7 +371,7 @@ export default function LeaderboardPage() {
                 onClick={() => setPeriod(p)}
                 className={period === p ? 'bg-cosmic-purple' : ''}
               >
-                {p === 'all' ? 'All Time' : p.charAt(0).toUpperCase() + p.slice(1)}
+                {getPeriodButtonLabel(p)}
               </Button>
             ))}
           </div>
@@ -386,7 +399,7 @@ export default function LeaderboardPage() {
               {tab === 'users' ? sortedUsers[1]?.name : sortedTeams[1]?.name}
             </p>
             <p className="text-gray-400 text-sm">
-              {formatNumber(tab === 'users' ? getPoints(sortedUsers[1]) : getPoints(sortedTeams[1]))} pts
+              {formatNumber(tab === 'users' ? getPoints(sortedUsers[1]) : getPoints(sortedTeams[1]))} {t.leaderboard.points}
             </p>
             <div className="w-full h-24 bg-gray-400/20 rounded-t-xl mt-2 flex items-center justify-center">
               <Medal className="w-8 h-8 text-gray-400" />
@@ -409,7 +422,7 @@ export default function LeaderboardPage() {
               {tab === 'users' ? sortedUsers[0]?.name : sortedTeams[0]?.name}
             </p>
             <p className="text-yellow-500 font-bold">
-              {formatNumber(tab === 'users' ? getPoints(sortedUsers[0]) : getPoints(sortedTeams[0]))} pts
+              {formatNumber(tab === 'users' ? getPoints(sortedUsers[0]) : getPoints(sortedTeams[0]))} {t.leaderboard.points}
             </p>
             <div className="w-full h-32 bg-yellow-500/20 rounded-t-xl mt-2 flex items-center justify-center">
               <Trophy className="w-10 h-10 text-yellow-500" />
@@ -431,7 +444,7 @@ export default function LeaderboardPage() {
               {tab === 'users' ? sortedUsers[2]?.name : sortedTeams[2]?.name}
             </p>
             <p className="text-gray-400 text-sm">
-              {formatNumber(tab === 'users' ? getPoints(sortedUsers[2]) : getPoints(sortedTeams[2]))} pts
+              {formatNumber(tab === 'users' ? getPoints(sortedUsers[2]) : getPoints(sortedTeams[2]))} {t.leaderboard.points}
             </p>
             <div className="w-full h-20 bg-amber-600/20 rounded-t-xl mt-2 flex items-center justify-center">
               <Medal className="w-8 h-8 text-amber-600" />
@@ -452,7 +465,7 @@ export default function LeaderboardPage() {
             className={tab === 'users' ? 'bg-cosmic-purple' : ''}
           >
             <Star className="mr-2 w-4 h-4" />
-            Individuals
+            {t.leaderboard.individuals}
           </Button>
           <Button
             variant={tab === 'teams' ? 'default' : 'outline'}
@@ -460,7 +473,7 @@ export default function LeaderboardPage() {
             className={tab === 'teams' ? 'bg-cosmic-purple' : ''}
           >
             <Users className="mr-2 w-4 h-4" />
-            Teams
+            {t.leaderboard.teamsTab}
           </Button>
         </motion.div>
 
@@ -512,7 +525,7 @@ export default function LeaderboardPage() {
 
                       <div className="text-right">
                         <p className="font-bold text-cosmic-purple">{formatNumber(getPoints(user))}</p>
-                        <p className="text-xs text-gray-400">points</p>
+                        <p className="text-xs text-gray-400">{t.leaderboard.points}</p>
                       </div>
                     </motion.div>
                   ))
@@ -536,23 +549,23 @@ export default function LeaderboardPage() {
 
                       <div className="flex-1">
                         <p className="font-medium">{team.name}</p>
-                        <p className="text-sm text-gray-400">{team.members} members</p>
+                        <p className="text-sm text-gray-400">{team.members} {t.leaderboard.members}</p>
                       </div>
 
                       <div className="hidden md:flex items-center gap-4">
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           <CheckCircle2 className="w-4 h-4 text-status-success" />
-                          <span>{team.completedTasks} done</span>
+                          <span>{team.completedTasks} {t.leaderboard.done}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Clock className="w-4 h-4 text-cosmic-cyan" />
-                          <span>{team.inProgressTasks} active</span>
+                          <span>{team.inProgressTasks} {t.leaderboard.active}</span>
                         </div>
                       </div>
 
                       <div className="text-right">
                         <p className="font-bold text-cosmic-purple">{formatNumber(getPoints(team))}</p>
-                        <p className="text-xs text-gray-400">points</p>
+                        <p className="text-xs text-gray-400">{t.leaderboard.points}</p>
                       </div>
                     </motion.div>
                   ))
@@ -608,9 +621,9 @@ export default function LeaderboardPage() {
                         >
                           {selectedUser.rank}
                         </div>
-                        <span className="text-xs text-gray-400">Level {selectedUser.level}</span>
+                        <span className="text-xs text-gray-400">{t.leaderboard.level} {selectedUser.level}</span>
                         <span className="text-xs text-gray-400">·</span>
-                        <span className="text-xs text-gray-400">Joined {selectedUser.joinedDate}</span>
+                        <span className="text-xs text-gray-400">{t.leaderboard.joined} {selectedUser.joinedDate}</span>
                       </div>
                     </div>
                   </div>
@@ -627,22 +640,22 @@ export default function LeaderboardPage() {
                   <div className="text-center p-3 rounded-xl bg-glass-light">
                     <Zap className="w-5 h-5 text-cosmic-purple mx-auto mb-1" />
                     <p className="text-lg font-bold">{formatNumber(selectedUser.points)}</p>
-                    <p className="text-xs text-gray-400">Total Points</p>
+                    <p className="text-xs text-gray-400">{t.leaderboard.totalPoints}</p>
                   </div>
                   <div className="text-center p-3 rounded-xl bg-glass-light">
                     <CheckCircle2 className="w-5 h-5 text-status-success mx-auto mb-1" />
                     <p className="text-lg font-bold">{selectedUser.completedTasks}</p>
-                    <p className="text-xs text-gray-400">Completed</p>
+                    <p className="text-xs text-gray-400">{t.leaderboard.completed}</p>
                   </div>
                   <div className="text-center p-3 rounded-xl bg-glass-light">
                     <Clock className="w-5 h-5 text-cosmic-cyan mx-auto mb-1" />
                     <p className="text-lg font-bold">{selectedUser.inProgressTasks}</p>
-                    <p className="text-xs text-gray-400">In Progress</p>
+                    <p className="text-xs text-gray-400">{t.leaderboard.inProgress}</p>
                   </div>
                   <div className="text-center p-3 rounded-xl bg-glass-light">
                     <Flame className="w-5 h-5 text-orange-500 mx-auto mb-1" />
                     <p className="text-lg font-bold">{selectedUser.streak}d</p>
-                    <p className="text-xs text-gray-400">Streak</p>
+                    <p className="text-xs text-gray-400">{t.leaderboard.streak}</p>
                   </div>
                 </div>
               </div>
@@ -652,7 +665,7 @@ export default function LeaderboardPage() {
                 {/* Achievements */}
                 {selectedUser.achievements.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="text-sm font-medium text-gray-400 mb-3">Achievements</h3>
+                    <h3 className="text-sm font-medium text-gray-400 mb-3">{t.leaderboard.achievements}</h3>
                     <div className="flex flex-wrap gap-2">
                       {selectedUser.achievements.map((achievement, idx) => (
                         <div
@@ -669,7 +682,7 @@ export default function LeaderboardPage() {
 
                 {/* Tasks */}
                 <div>
-                  <h3 className="text-sm font-medium text-gray-400 mb-3">Recent Tasks</h3>
+                  <h3 className="text-sm font-medium text-gray-400 mb-3">{t.leaderboard.recentTasks}</h3>
                   <div className="space-y-2">
                     {selectedUser.tasks.map((task, idx) => (
                       <motion.div
@@ -699,7 +712,7 @@ export default function LeaderboardPage() {
                               : 'bg-cosmic-cyan/20 text-cosmic-cyan'
                           }`}
                         >
-                          {task.status === 'completed' ? 'Done' : 'In Progress'}
+                          {task.status === 'completed' ? t.leaderboard.taskDone : t.leaderboard.taskInProgress}
                         </span>
                       </motion.div>
                     ))}
@@ -712,10 +725,10 @@ export default function LeaderboardPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm text-gray-400">
                     <TrendingUp className="w-4 h-4 text-status-success" />
-                    <span>{getPeriodLabel()}: {formatNumber(getPoints(selectedUser))} points</span>
+                    <span>{getPeriodLabel()}: {formatNumber(getPoints(selectedUser))} {t.leaderboard.points}</span>
                   </div>
                   <Button variant="ghost" onClick={() => setSelectedUser(null)}>
-                    Close
+                    {t.leaderboard.close}
                   </Button>
                 </div>
               </div>
@@ -775,22 +788,22 @@ export default function LeaderboardPage() {
                   <div className="text-center p-3 rounded-xl bg-glass-light">
                     <Zap className="w-5 h-5 text-cosmic-purple mx-auto mb-1" />
                     <p className="text-lg font-bold">{formatNumber(selectedTeam.points)}</p>
-                    <p className="text-xs text-gray-400">Total Points</p>
+                    <p className="text-xs text-gray-400">{t.leaderboard.totalPoints}</p>
                   </div>
                   <div className="text-center p-3 rounded-xl bg-glass-light">
                     <Target className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
                     <p className="text-lg font-bold">{formatNumber(selectedTeam.weeklyPoints)}</p>
-                    <p className="text-xs text-gray-400">This Week</p>
+                    <p className="text-xs text-gray-400">{t.leaderboard.thisWeek}</p>
                   </div>
                   <div className="text-center p-3 rounded-xl bg-glass-light">
                     <CheckCircle2 className="w-5 h-5 text-status-success mx-auto mb-1" />
                     <p className="text-lg font-bold">{selectedTeam.completedTasks}</p>
-                    <p className="text-xs text-gray-400">Completed</p>
+                    <p className="text-xs text-gray-400">{t.leaderboard.completed}</p>
                   </div>
                   <div className="text-center p-3 rounded-xl bg-glass-light">
                     <Clock className="w-5 h-5 text-cosmic-cyan mx-auto mb-1" />
                     <p className="text-lg font-bold">{selectedTeam.inProgressTasks}</p>
-                    <p className="text-xs text-gray-400">In Progress</p>
+                    <p className="text-xs text-gray-400">{t.leaderboard.inProgress}</p>
                   </div>
                 </div>
               </div>
@@ -799,7 +812,7 @@ export default function LeaderboardPage() {
               <div className="p-6 overflow-y-auto max-h-[calc(85vh-280px)]">
                 {/* Team Members */}
                 <div>
-                  <h3 className="text-sm font-medium text-gray-400 mb-3">Team Members</h3>
+                  <h3 className="text-sm font-medium text-gray-400 mb-3">{t.leaderboard.teamMembers}</h3>
                   <div className="space-y-2">
                     {selectedTeam.membersList.map((memberName, idx) => {
                       const member = mockUsers.find(u => u.name === memberName);
@@ -841,7 +854,7 @@ export default function LeaderboardPage() {
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-cosmic-purple">{formatNumber(member.points)}</p>
-                              <p className="text-xs text-gray-400">points</p>
+                              <p className="text-xs text-gray-400">{t.leaderboard.points}</p>
                             </div>
                           </div>
                         </motion.div>
@@ -856,10 +869,10 @@ export default function LeaderboardPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm text-gray-400">
                     <TrendingUp className="w-4 h-4 text-status-success" />
-                    <span>{getPeriodLabel()}: {formatNumber(getPoints(selectedTeam))} points</span>
+                    <span>{getPeriodLabel()}: {formatNumber(getPoints(selectedTeam))} {t.leaderboard.points}</span>
                   </div>
                   <Button variant="ghost" onClick={() => setSelectedTeam(null)}>
-                    Close
+                    {t.leaderboard.close}
                   </Button>
                 </div>
               </div>

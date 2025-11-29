@@ -40,6 +40,7 @@ import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/dropdow
 import { useToast } from '@/components/ui/toast';
 import { useSettingsStore } from '@/stores/settings.store';
 import { formatNumber, getRankColor } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface TeamMember {
   id: string;
@@ -106,6 +107,7 @@ export default function TeamsPage() {
   const { addToast } = useToast();
   const { getCurrentTheme } = useSettingsStore();
   const currentTheme = getCurrentTheme();
+  const t = useTranslation();
   const [teams, setTeams] = useState<Team[]>(mockTeams);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -246,15 +248,15 @@ export default function TeamsPage() {
           className="flex items-center justify-between"
         >
           <div>
-            <h1 className="text-3xl font-bold">Teams</h1>
-            <p className="text-gray-400 mt-1">Manage teams and track performance</p>
+            <h1 className="text-3xl font-bold">{t.teams.title}</h1>
+            <p className="text-gray-400 mt-1">{t.teams.subtitle}</p>
           </div>
           <Button
             className="bg-cosmic-purple hover:bg-cosmic-purple/80"
             onClick={() => setShowCreateModal(true)}
           >
             <Plus className="mr-2 w-4 h-4" />
-            Create Team
+            {t.teams.createTeam}
           </Button>
         </motion.div>
 
@@ -266,9 +268,9 @@ export default function TeamsPage() {
           className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
           {[
-            { label: 'Total Teams', value: teams.length, icon: Users, color: 'text-cosmic-purple' },
-            { label: 'Total Members', value: teams.reduce((acc, t) => acc + t.members.length, 0), icon: Target, color: 'text-cosmic-blue' },
-            { label: 'Weekly Points', value: formatNumber(teams.reduce((acc, t) => acc + t.weeklyPoints, 0)), icon: TrendingUp, color: 'text-status-success' },
+            { label: t.teams.totalTeams, value: teams.length, icon: Users, color: 'text-cosmic-purple' },
+            { label: t.teams.totalMembers, value: teams.reduce((acc, tm) => acc + tm.members.length, 0), icon: Target, color: 'text-cosmic-blue' },
+            { label: t.teams.weeklyPoints, value: formatNumber(teams.reduce((acc, tm) => acc + tm.weeklyPoints, 0)), icon: TrendingUp, color: 'text-status-success' },
           ].map((stat, i) => (
             <Card key={i} className="glass">
               <CardContent className="pt-6">
@@ -328,7 +330,7 @@ export default function TeamsPage() {
                         setShowEditModal(true);
                       }}
                     >
-                      Edit Team
+                      {t.teams.editTeam}
                     </DropdownItem>
                     <DropdownItem
                       icon={<UserPlus className="w-4 h-4" />}
@@ -337,7 +339,7 @@ export default function TeamsPage() {
                         setShowAddMemberModal(true);
                       }}
                     >
-                      Add Member
+                      {t.teams.addMember}
                     </DropdownItem>
                     <DropdownItem
                       icon={<Settings className="w-4 h-4" />}
@@ -346,7 +348,7 @@ export default function TeamsPage() {
                         setShowSettingsModal(true);
                       }}
                     >
-                      Team Settings
+                      {t.teams.teamSettings}
                     </DropdownItem>
                     <DropdownDivider />
                     <DropdownItem
@@ -354,7 +356,7 @@ export default function TeamsPage() {
                       variant="danger"
                       onClick={() => handleDeleteTeam(team)}
                     >
-                      Delete Team
+                      {t.teams.deleteTeam}
                     </DropdownItem>
                   </Dropdown>
                 </CardHeader>
@@ -364,25 +366,25 @@ export default function TeamsPage() {
                   <div className="grid grid-cols-3 gap-4 mb-4 p-3 rounded-xl bg-glass-light">
                     <div className="text-center">
                       <p className="text-xl font-bold text-cosmic-purple">{formatNumber(team.totalPoints)}</p>
-                      <p className="text-xs text-gray-400">Total Points</p>
+                      <p className="text-xs text-gray-400">{t.teams.totalPoints}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-xl font-bold text-status-success">+{team.weeklyPoints}</p>
-                      <p className="text-xs text-gray-400">This Week</p>
+                      <p className="text-xs text-gray-400">{t.teams.thisWeek}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-xl font-bold text-cosmic-cyan">{team.tasksCompleted}</p>
-                      <p className="text-xs text-gray-400">Tasks Done</p>
+                      <p className="text-xs text-gray-400">{t.teams.tasksDone}</p>
                     </div>
                   </div>
 
                   {/* Members */}
                   <div className="space-y-2">
-                    <p className="text-sm text-gray-400 mb-2">Members ({team.members.length})</p>
+                    <p className="text-sm text-gray-400 mb-2">{t.teams.members} ({team.members.length})</p>
                     {team.members.length === 0 ? (
                       <div className="text-center py-4 text-gray-500">
                         <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No members yet</p>
+                        <p className="text-sm">{t.teams.noMembersYet}</p>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -393,7 +395,7 @@ export default function TeamsPage() {
                           }}
                         >
                           <UserPlus className="w-4 h-4 mr-2" />
-                          Add First Member
+                          {t.teams.addFirstMember}
                         </Button>
                       </div>
                     ) : (
@@ -462,7 +464,7 @@ export default function TeamsPage() {
                   >
                     <Users className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
                   </div>
-                  <h2 className="text-xl font-semibold">Create New Team</h2>
+                  <h2 className="text-xl font-semibold">{t.teams.createNewTeam}</h2>
                 </div>
                 <button
                   onClick={() => setShowCreateModal(false)}
@@ -474,7 +476,7 @@ export default function TeamsPage() {
 
               <div className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-400">Team Name *</label>
+                  <label className="text-sm text-gray-400">{t.teams.teamName} *</label>
                   <Input
                     value={newTeam.name}
                     onChange={(e) => {
@@ -488,7 +490,7 @@ export default function TeamsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-400">Description *</label>
+                  <label className="text-sm text-gray-400">{t.teams.description} *</label>
                   <Textarea
                     value={newTeam.description}
                     onChange={(e) => {
@@ -504,11 +506,11 @@ export default function TeamsPage() {
 
               <div className="flex items-center justify-end gap-3 p-6 border-t border-glass-border">
                 <Button variant="ghost" onClick={() => setShowCreateModal(false)}>
-                  Cancel
+                  {t.teams.cancel}
                 </Button>
                 <Button onClick={handleCreateTeam}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Create Team
+                  {t.teams.createTeam}
                 </Button>
               </div>
             </motion.div>
@@ -544,7 +546,7 @@ export default function TeamsPage() {
                   >
                     <Edit className="w-5 h-5" style={{ color: currentTheme.colors.secondary }} />
                   </div>
-                  <h2 className="text-xl font-semibold">Edit Team</h2>
+                  <h2 className="text-xl font-semibold">{t.teams.editTeam}</h2>
                 </div>
                 <button
                   onClick={() => setShowEditModal(false)}
@@ -556,7 +558,7 @@ export default function TeamsPage() {
 
               <div className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-400">Team Name</label>
+                  <label className="text-sm text-gray-400">{t.teams.teamName}</label>
                   <Input
                     value={selectedTeam.name}
                     onChange={(e) => setSelectedTeam({ ...selectedTeam, name: e.target.value })}
@@ -564,7 +566,7 @@ export default function TeamsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-400">Description</label>
+                  <label className="text-sm text-gray-400">{t.teams.description}</label>
                   <Textarea
                     value={selectedTeam.description}
                     onChange={(e) => setSelectedTeam({ ...selectedTeam, description: e.target.value })}
@@ -574,10 +576,10 @@ export default function TeamsPage() {
 
               <div className="flex items-center justify-end gap-3 p-6 border-t border-glass-border">
                 <Button variant="ghost" onClick={() => setShowEditModal(false)}>
-                  Cancel
+                  {t.teams.cancel}
                 </Button>
                 <Button onClick={handleEditTeam}>
-                  Save Changes
+                  {t.common.save}
                 </Button>
               </div>
             </motion.div>
@@ -611,8 +613,8 @@ export default function TeamsPage() {
                     <UserPlus className="w-5 h-5 text-status-success" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold">Add Member</h2>
-                    <p className="text-sm text-gray-400">to {selectedTeam.name}</p>
+                    <h2 className="text-xl font-semibold">{t.teams.addMember}</h2>
+                    <p className="text-sm text-gray-400">{t.teams.to} {selectedTeam.name}</p>
                   </div>
                 </div>
                 <button
@@ -625,7 +627,7 @@ export default function TeamsPage() {
 
               <div className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-400">Full Name *</label>
+                  <label className="text-sm text-gray-400">{t.teams.fullName} *</label>
                   <Input
                     value={newMember.name}
                     onChange={(e) => {
@@ -639,7 +641,7 @@ export default function TeamsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-400">Email *</label>
+                  <label className="text-sm text-gray-400">{t.teams.email} *</label>
                   <Input
                     type="email"
                     value={newMember.email}
@@ -654,7 +656,7 @@ export default function TeamsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-400">Role</label>
+                  <label className="text-sm text-gray-400">{t.teams.role}</label>
                   <Input
                     value={newMember.role}
                     onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
@@ -665,11 +667,11 @@ export default function TeamsPage() {
 
               <div className="flex items-center justify-end gap-3 p-6 border-t border-glass-border">
                 <Button variant="ghost" onClick={() => setShowAddMemberModal(false)}>
-                  Cancel
+                  {t.teams.cancel}
                 </Button>
                 <Button onClick={handleAddMember}>
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Add Member
+                  {t.teams.addMember}
                 </Button>
               </div>
             </motion.div>
@@ -732,14 +734,14 @@ export default function TeamsPage() {
                       <Zap className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
                       <span className="text-2xl font-bold" style={{ color: currentTheme.colors.primary }}>{formatNumber(selectedMember.points)}</span>
                     </div>
-                    <p className="text-sm text-gray-400">Total Points</p>
+                    <p className="text-sm text-gray-400">{t.teams.totalPoints}</p>
                   </div>
                   <div className="p-4 rounded-xl bg-glass-light text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <CheckCircle2 className="w-5 h-5 text-status-success" />
                       <span className="text-2xl font-bold text-status-success">{selectedMember.tasksCompleted}</span>
                     </div>
-                    <p className="text-sm text-gray-400">Tasks Completed</p>
+                    <p className="text-sm text-gray-400">{t.teams.tasksCompleted}</p>
                   </div>
                 </div>
 
@@ -751,14 +753,14 @@ export default function TeamsPage() {
                       <p className="font-medium" style={{ color: getRankColor(selectedMember.rank) }}>
                         {selectedMember.rank}
                       </p>
-                      <p className="text-xs text-gray-400">Current Rank</p>
+                      <p className="text-xs text-gray-400">{t.teams.currentRank}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-gray-400" />
                     <div className="text-right">
                       <p className="font-medium">{new Date(selectedMember.joinedDate).toLocaleDateString()}</p>
-                      <p className="text-xs text-gray-400">Joined Date</p>
+                      <p className="text-xs text-gray-400">{t.teams.joinedDate}</p>
                     </div>
                   </div>
                 </div>
@@ -766,19 +768,19 @@ export default function TeamsPage() {
 
               <div className="flex items-center justify-end gap-3 p-6 border-t border-glass-border">
                 <Button variant="ghost" onClick={() => setShowMemberModal(false)}>
-                  Close
+                  {t.teams.close}
                 </Button>
                 <Button
                   onClick={() => {
                     addToast({
                       type: 'info',
-                      title: 'Coming Soon',
-                      message: 'Direct messaging will be available soon.',
+                      title: t.teams.comingSoon,
+                      message: t.teams.messagingComingSoon,
                     });
                   }}
                 >
                   <Mail className="w-4 h-4 mr-2" />
-                  Send Message
+                  {t.teams.sendMessage}
                 </Button>
               </div>
             </motion.div>

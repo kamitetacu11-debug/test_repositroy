@@ -27,6 +27,7 @@ import { TaskModal, Task } from '@/components/tasks/task-modal';
 import { CreateTaskModal } from '@/components/tasks/create-task-modal';
 import { useToast } from '@/components/ui/toast';
 import { getPriorityColor, getStatusColor } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const initialTasks: Task[] = [
   { id: '1', title: 'Design dashboard UI', description: 'Create wireframes and mockups for the new dashboard interface. Include responsive design considerations and dark mode support.', status: 'IN_PROGRESS', priority: 'HIGH', dueDate: '2024-12-02', points: 40, assignee: 'John Doe', assigneeId: 'USR-001' },
@@ -52,6 +53,7 @@ export default function TasksPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { addToast } = useToast();
+  const t = useTranslation();
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -161,15 +163,15 @@ export default function TasksPage() {
           className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
         >
           <div>
-            <h1 className="text-3xl font-bold">Tasks</h1>
-            <p className="text-gray-400 mt-1">Manage and track your tasks</p>
+            <h1 className="text-3xl font-bold">{t.tasks.title}</h1>
+            <p className="text-gray-400 mt-1">{t.tasks.subtitle}</p>
           </div>
           <Button
             className="bg-cosmic-purple hover:bg-cosmic-purple/80"
             onClick={() => setIsCreateModalOpen(true)}
           >
             <Plus className="mr-2 w-4 h-4" />
-            New Task
+            {t.tasks.newTask}
           </Button>
         </motion.div>
 
@@ -183,7 +185,7 @@ export default function TasksPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <Input
-              placeholder="Search tasks..."
+              placeholder={t.tasks.searchTasks}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10"
@@ -219,10 +221,10 @@ export default function TasksPage() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4"
         >
           {[
-            { label: 'Total', value: taskStats.total, color: 'text-white' },
-            { label: 'To Do', value: taskStats.todo, color: 'text-gray-400' },
-            { label: 'In Progress', value: taskStats.inProgress, color: 'text-cosmic-blue' },
-            { label: 'Completed', value: taskStats.completed, color: 'text-status-success' },
+            { label: t.tasks.total, value: taskStats.total, color: 'text-white' },
+            { label: t.tasks.toDo, value: taskStats.todo, color: 'text-gray-400' },
+            { label: t.tasks.inProgress, value: taskStats.inProgress, color: 'text-cosmic-blue' },
+            { label: t.tasks.completed, value: taskStats.completed, color: 'text-status-success' },
           ].map((stat, i) => (
             <Card key={i} className="glass">
               <CardContent className="pt-4 pb-4 text-center">
@@ -247,9 +249,9 @@ export default function TasksPage() {
                     <div className="w-16 h-16 rounded-full bg-glass-light flex items-center justify-center mx-auto mb-4">
                       <Search className="w-8 h-8 text-gray-400" />
                     </div>
-                    <p className="text-gray-400">No tasks found</p>
+                    <p className="text-gray-400">{t.tasks.noTasks}</p>
                     <p className="text-sm text-gray-500 mt-1">
-                      Try adjusting your search or filters
+                      {t.tasks.tryAdjusting}
                     </p>
                   </div>
                 ) : (
@@ -308,7 +310,7 @@ export default function TasksPage() {
                             icon={<Eye className="w-4 h-4" />}
                             onClick={() => handleTaskClick(task)}
                           >
-                            View Details
+                            {t.tasks.viewDetails}
                           </DropdownItem>
                           <DropdownItem
                             icon={<Edit3 className="w-4 h-4" />}
@@ -317,13 +319,13 @@ export default function TasksPage() {
                               setIsTaskModalOpen(true);
                             }}
                           >
-                            Edit Task
+                            {t.tasks.editTask}
                           </DropdownItem>
                           <DropdownItem
                             icon={<Copy className="w-4 h-4" />}
                             onClick={() => handleDuplicateTask(task)}
                           >
-                            Duplicate
+                            {t.tasks.duplicate}
                           </DropdownItem>
                           <DropdownItem
                             icon={<UserPlus className="w-4 h-4" />}
@@ -332,7 +334,7 @@ export default function TasksPage() {
                               setIsTaskModalOpen(true);
                             }}
                           >
-                            Reassign
+                            {t.tasks.reassign}
                           </DropdownItem>
 
                           <DropdownDivider />
@@ -342,7 +344,7 @@ export default function TasksPage() {
                               icon={<CheckCircle2 className="w-4 h-4" />}
                               onClick={() => handleStatusChange(task.id, 'COMPLETED')}
                             >
-                              Mark Complete
+                              {t.tasks.markComplete}
                             </DropdownItem>
                           )}
 
@@ -351,7 +353,7 @@ export default function TasksPage() {
                               icon={<ArrowRight className="w-4 h-4" />}
                               onClick={() => handleStatusChange(task.id, 'IN_PROGRESS')}
                             >
-                              Start Working
+                              {t.tasks.startWorking}
                             </DropdownItem>
                           )}
 
@@ -362,7 +364,7 @@ export default function TasksPage() {
                             variant="danger"
                             onClick={() => handleDeleteTask(task.id)}
                           >
-                            Delete
+                            {t.tasks.delete}
                           </DropdownItem>
                         </Dropdown>
                       </div>

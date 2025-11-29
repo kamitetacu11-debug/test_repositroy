@@ -19,6 +19,7 @@ import { Select } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Task } from './task-modal';
 import { useSettingsStore } from '@/stores/settings.store';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -26,17 +27,6 @@ interface CreateTaskModalProps {
   onCreate: (task: Omit<Task, 'id'>) => void;
 }
 
-const statusOptions = [
-  { value: 'TODO', label: 'To Do' },
-  { value: 'IN_PROGRESS', label: 'In Progress' },
-];
-
-const priorityOptions = [
-  { value: 'LOW', label: 'Low' },
-  { value: 'MEDIUM', label: 'Medium' },
-  { value: 'HIGH', label: 'High' },
-  { value: 'CRITICAL', label: 'Critical' },
-];
 
 // Mock users for assignee selection
 const mockUsers = [
@@ -77,8 +67,9 @@ export function CreateTaskModal({
   onClose,
   onCreate,
 }: CreateTaskModalProps) {
-  const { getCurrentTheme } = useSettingsStore();
+  const { getCurrentTheme, language } = useSettingsStore();
   const currentTheme = getCurrentTheme();
+  const t = useTranslation();
   const [task, setTask] = useState<NewTask>(defaultTask);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [assigneeSearch, setAssigneeSearch] = useState('');
@@ -94,16 +85,16 @@ export function CreateTaskModal({
     const newErrors: Record<string, string> = {};
 
     if (!task.title.trim()) {
-      newErrors.title = 'Title is required';
+      newErrors.title = t.tasks.titleRequired;
     }
     if (!task.dueDate) {
-      newErrors.dueDate = 'Due date is required';
+      newErrors.dueDate = t.tasks.dueDateRequired;
     }
     if (!task.assignee) {
-      newErrors.assignee = 'Assignee is required';
+      newErrors.assignee = t.tasks.assigneeRequired;
     }
     if (task.points < 0) {
-      newErrors.points = 'Points must be positive';
+      newErrors.points = t.tasks.pointsMustBePositive;
     }
 
     setErrors(newErrors);
@@ -133,19 +124,31 @@ export function CreateTaskModal({
     setErrors({ ...errors, assignee: '' });
   };
 
+  const statusOptions = [
+    { value: 'TODO', label: t.tasks.toDo },
+    { value: 'IN_PROGRESS', label: t.tasks.inProgress },
+  ];
+
+  const priorityOptions = [
+    { value: 'LOW', label: t.tasks.low },
+    { value: 'MEDIUM', label: t.tasks.medium },
+    { value: 'HIGH', label: t.tasks.high },
+    { value: 'CRITICAL', label: t.tasks.critical },
+  ];
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create New Task"
-      description="Fill in the details to create a new task"
+      title={t.tasks.createNewTask}
+      description={t.tasks.fillDetails}
       size="lg"
     >
       <div className="space-y-5">
         {/* Title */}
         <div className="space-y-2">
           <label className="text-sm text-gray-400 flex items-center gap-2">
-            <Tag className="w-4 h-4" /> Title *
+            <Tag className="w-4 h-4" /> {t.tasks.titleLabel} *
           </label>
           <Input
             value={task.title}
@@ -153,7 +156,7 @@ export function CreateTaskModal({
               setTask({ ...task, title: e.target.value });
               if (errors.title) setErrors({ ...errors, title: '' });
             }}
-            placeholder="Enter task title..."
+            placeholder={t.tasks.enterTaskTitle}
             className={errors.title ? 'border-status-error' : ''}
           />
           {errors.title && (
@@ -164,12 +167,12 @@ export function CreateTaskModal({
         {/* Description */}
         <div className="space-y-2">
           <label className="text-sm text-gray-400 flex items-center gap-2">
-            <Tag className="w-4 h-4" /> Description
+            <Tag className="w-4 h-4" /> {t.tasks.description}
           </label>
           <Textarea
             value={task.description}
             onChange={(e) => setTask({ ...task, description: e.target.value })}
-            placeholder="Describe the task in detail..."
+            placeholder={t.tasks.describeTask}
           />
         </div>
 
@@ -177,7 +180,7 @@ export function CreateTaskModal({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm text-gray-400 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> Status
+              <CheckCircle2 className="w-4 h-4" /> {t.tasks.status}
             </label>
             <Select
               value={task.status}
@@ -190,7 +193,7 @@ export function CreateTaskModal({
 
           <div className="space-y-2">
             <label className="text-sm text-gray-400 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> Priority
+              <AlertCircle className="w-4 h-4" /> {t.tasks.priority}
             </label>
             <Select
               value={task.priority}
@@ -206,7 +209,7 @@ export function CreateTaskModal({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm text-gray-400 flex items-center gap-2">
-              <Calendar className="w-4 h-4" /> Due Date *
+              <Calendar className="w-4 h-4" /> {t.tasks.dueDate} *
             </label>
             <DatePicker
               value={task.dueDate}
@@ -214,9 +217,9 @@ export function CreateTaskModal({
                 setTask({ ...task, dueDate: value });
                 if (errors.dueDate) setErrors({ ...errors, dueDate: '' });
               }}
-              placeholder="Select date..."
+              placeholder={t.tasks.selectDate}
               error={!!errors.dueDate}
-              locale="en"
+              locale={language}
             />
             {errors.dueDate && (
               <p className="text-sm text-status-error">{errors.dueDate}</p>
@@ -225,7 +228,7 @@ export function CreateTaskModal({
 
           <div className="space-y-2">
             <label className="text-sm text-gray-400 flex items-center gap-2">
-              <Zap className="w-4 h-4" /> Points Reward
+              <Zap className="w-4 h-4" /> {t.tasks.pointsReward}
             </label>
             <Input
               type="number"
@@ -247,7 +250,7 @@ export function CreateTaskModal({
         {/* Assignee */}
         <div className="space-y-2">
           <label className="text-sm text-gray-400 flex items-center gap-2">
-            <User className="w-4 h-4" /> Assign To *
+            <User className="w-4 h-4" /> {t.tasks.assignTo} *
           </label>
 
           {/* Selected Assignee */}
@@ -278,7 +281,7 @@ export function CreateTaskModal({
                   setShowAssigneeDropdown(true);
                 }}
               >
-                Change
+                {t.tasks.change}
               </Button>
             </div>
           ) : (
@@ -292,7 +295,7 @@ export function CreateTaskModal({
                     setShowAssigneeDropdown(true);
                   }}
                   onFocus={() => setShowAssigneeDropdown(true)}
-                  placeholder="Search by ID or name..."
+                  placeholder={t.tasks.searchByIdOrName}
                   className={`pl-10 ${errors.assignee ? 'border-status-error' : ''}`}
                 />
               </div>
@@ -333,7 +336,7 @@ export function CreateTaskModal({
                     ))
                   ) : (
                     <div className="p-4 text-center text-gray-400 text-sm">
-                      No users found
+                      {t.tasks.noUsersFound}
                     </div>
                   )}
                 </div>
@@ -348,11 +351,11 @@ export function CreateTaskModal({
 
       <ModalFooter>
         <Button variant="ghost" onClick={handleClose}>
-          Cancel
+          {t.common.cancel}
         </Button>
         <Button onClick={handleSubmit}>
           <Plus className="w-4 h-4 mr-2" />
-          Create Task
+          {t.tasks.createTask}
         </Button>
       </ModalFooter>
     </Modal>

@@ -26,6 +26,8 @@ import { Select } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
 import { getPriorityColor, getStatusColor } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useSettingsStore } from '@/stores/settings.store';
 
 export interface Task {
   id: string;
@@ -58,19 +60,6 @@ interface TaskModalProps {
   onStatusChange?: (taskId: string, status: Task['status']) => void;
 }
 
-const statusOptions = [
-  { value: 'TODO', label: 'To Do' },
-  { value: 'IN_PROGRESS', label: 'In Progress' },
-  { value: 'IN_REVIEW', label: 'In Review' },
-  { value: 'COMPLETED', label: 'Completed' },
-];
-
-const priorityOptions = [
-  { value: 'LOW', label: 'Low' },
-  { value: 'MEDIUM', label: 'Medium' },
-  { value: 'HIGH', label: 'High' },
-  { value: 'CRITICAL', label: 'Critical' },
-];
 
 // Mock comments
 const mockComments: Comment[] = [
@@ -86,11 +75,27 @@ export function TaskModal({
   onDelete,
   onStatusChange,
 }: TaskModalProps) {
+  const t = useTranslation();
+  const { language } = useSettingsStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<Comment[]>(mockComments);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const statusOptions = [
+    { value: 'TODO', label: t.tasks.toDo },
+    { value: 'IN_PROGRESS', label: t.tasks.inProgress },
+    { value: 'IN_REVIEW', label: t.tasks.inReview },
+    { value: 'COMPLETED', label: t.tasks.completed },
+  ];
+
+  const priorityOptions = [
+    { value: 'LOW', label: t.tasks.low },
+    { value: 'MEDIUM', label: t.tasks.medium },
+    { value: 'HIGH', label: t.tasks.high },
+    { value: 'CRITICAL', label: t.tasks.critical },
+  ];
 
   // Initialize edited task when task changes
   useState(() => {
@@ -168,7 +173,7 @@ export function TaskModal({
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={isEditing ? 'Edit Task' : 'Task Details'}
+        title={isEditing ? t.tasks.editTask : t.tasks.taskDetails}
         size="lg"
       >
         <div className="space-y-6">
@@ -201,7 +206,7 @@ export function TaskModal({
           {/* Description */}
           <div className="space-y-2">
             <label className="text-sm text-gray-400 flex items-center gap-2">
-              <Tag className="w-4 h-4" /> Description
+              <Tag className="w-4 h-4" /> {t.tasks.description}
             </label>
             {isEditing ? (
               <Textarea
@@ -211,11 +216,11 @@ export function TaskModal({
                     prev ? { ...prev, description: e.target.value } : null
                   )
                 }
-                placeholder="Task description..."
+                placeholder={t.tasks.describeTask}
               />
             ) : (
               <p className="text-gray-300 bg-glass-light rounded-xl p-4">
-                {currentTask.description || 'No description provided.'}
+                {currentTask.description || t.tasks.noDescription}
               </p>
             )}
           </div>
@@ -225,7 +230,7 @@ export function TaskModal({
             {/* Status */}
             <div className="space-y-2">
               <label className="text-sm text-gray-400 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" /> Status
+                <CheckCircle2 className="w-4 h-4" /> {t.tasks.status}
               </label>
               {isEditing ? (
                 <Select
@@ -258,7 +263,7 @@ export function TaskModal({
             {/* Priority */}
             <div className="space-y-2">
               <label className="text-sm text-gray-400 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" /> Priority
+                <AlertCircle className="w-4 h-4" /> {t.tasks.priority}
               </label>
               {isEditing ? (
                 <Select
@@ -288,7 +293,7 @@ export function TaskModal({
             {/* Due Date */}
             <div className="space-y-2">
               <label className="text-sm text-gray-400 flex items-center gap-2">
-                <Calendar className="w-4 h-4" /> Due Date
+                <Calendar className="w-4 h-4" /> {t.tasks.dueDate}
               </label>
               {isEditing ? (
                 <DatePicker
@@ -298,8 +303,8 @@ export function TaskModal({
                       prev ? { ...prev, dueDate: value } : null
                     )
                   }
-                  placeholder="Select date..."
-                  locale="en"
+                  placeholder={t.tasks.selectDate}
+                  locale={language}
                 />
               ) : (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-glass-light">
@@ -312,7 +317,7 @@ export function TaskModal({
             {/* Points */}
             <div className="space-y-2">
               <label className="text-sm text-gray-400 flex items-center gap-2">
-                <Zap className="w-4 h-4" /> Points Reward
+                <Zap className="w-4 h-4" /> {t.tasks.pointsReward}
               </label>
               {isEditing ? (
                 <Input
@@ -338,7 +343,7 @@ export function TaskModal({
             {/* Assignee */}
             <div className="space-y-2 col-span-2">
               <label className="text-sm text-gray-400 flex items-center gap-2">
-                <User className="w-4 h-4" /> Assignee
+                <User className="w-4 h-4" /> {t.tasks.assignee}
               </label>
               {isEditing ? (
                 <Input
@@ -378,7 +383,7 @@ export function TaskModal({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <label className="text-sm text-gray-400 flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" /> Comments ({comments.length})
+                  <MessageSquare className="w-4 h-4" /> {t.tasks.comments} ({comments.length})
                 </label>
               </div>
 
@@ -387,7 +392,7 @@ export function TaskModal({
                 <Input
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Add a comment..."
+                  placeholder={t.tasks.addComment}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
                 />
                 <Button onClick={handleAddComment} size="icon">
@@ -423,7 +428,7 @@ export function TaskModal({
           {/* Quick Status Change Buttons (when not editing) */}
           {!isEditing && currentTask.status !== 'COMPLETED' && (
             <div className="flex flex-wrap gap-2 pt-2 border-t border-glass-border">
-              <span className="text-sm text-gray-400 w-full mb-2">Quick Actions:</span>
+              <span className="text-sm text-gray-400 w-full mb-2">{t.tasks.quickActions}</span>
               {currentTask.status === 'TODO' && (
                 <Button
                   variant="outline"
@@ -431,7 +436,7 @@ export function TaskModal({
                   onClick={() => handleStatusChange('IN_PROGRESS')}
                 >
                   <Clock className="w-4 h-4 mr-2" />
-                  Start Working
+                  {t.tasks.startWorking}
                 </Button>
               )}
               {currentTask.status === 'IN_PROGRESS' && (
@@ -441,7 +446,7 @@ export function TaskModal({
                   onClick={() => handleStatusChange('IN_REVIEW')}
                 >
                   <AlertCircle className="w-4 h-4 mr-2" />
-                  Submit for Review
+                  {t.tasks.submitForReview}
                 </Button>
               )}
               {(currentTask.status === 'IN_PROGRESS' ||
@@ -452,7 +457,7 @@ export function TaskModal({
                   onClick={() => handleStatusChange('COMPLETED')}
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Mark Complete
+                  {t.tasks.markComplete}
                 </Button>
               )}
             </div>
@@ -464,11 +469,11 @@ export function TaskModal({
           {isEditing ? (
             <>
               <Button variant="ghost" onClick={() => setIsEditing(false)}>
-                Cancel
+                {t.common.cancel}
               </Button>
               <Button onClick={handleSave}>
                 <Save className="w-4 h-4 mr-2" />
-                Save Changes
+                {t.tasks.saveChanges}
               </Button>
             </>
           ) : (
@@ -479,7 +484,7 @@ export function TaskModal({
                 onClick={() => setShowDeleteConfirm(true)}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Delete
+                {t.tasks.delete}
               </Button>
               <Button
                 variant="outline"
@@ -489,9 +494,9 @@ export function TaskModal({
                 }}
               >
                 <Edit3 className="w-4 h-4 mr-2" />
-                Edit
+                {t.tasks.edit}
               </Button>
-              <Button onClick={onClose}>Close</Button>
+              <Button onClick={onClose}>{t.tasks.close}</Button>
             </>
           )}
         </ModalFooter>
@@ -501,7 +506,7 @@ export function TaskModal({
       <Modal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
-        title="Delete Task"
+        title={t.tasks.deleteTask}
         size="sm"
       >
         <div className="text-center py-4">
@@ -509,7 +514,7 @@ export function TaskModal({
             <Trash2 className="w-8 h-8 text-status-error" />
           </div>
           <p className="text-gray-300 mb-2">
-            Are you sure you want to delete this task?
+            {t.tasks.confirmDelete}
           </p>
           <p className="text-sm text-gray-500">
             &quot;{task.title}&quot;
@@ -517,14 +522,14 @@ export function TaskModal({
         </div>
         <ModalFooter className="justify-center">
           <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button
             variant="destructive"
             onClick={handleDelete}
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete Task
+            {t.tasks.deleteTask}
           </Button>
         </ModalFooter>
       </Modal>
