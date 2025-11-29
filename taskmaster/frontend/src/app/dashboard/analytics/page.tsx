@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // Mock tasks data for each day
 const tasksData: Record<string, { id: string; title: string; points: number; completedAt: string; category: string }[]> = {
@@ -120,6 +121,7 @@ const categoriesData = [
 ];
 
 export default function AnalyticsPage() {
+  const t = useTranslation();
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -142,9 +144,9 @@ export default function AnalyticsPage() {
         >
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <BarChart3 className="w-8 h-8 text-cosmic-purple" />
-            Analytics
+            {t.analytics.title}
           </h1>
-          <p className="text-gray-400 mt-1">Track your productivity and performance</p>
+          <p className="text-gray-400 mt-1">{t.analytics.subtitle}</p>
         </motion.div>
 
         {/* Stats Overview */}
@@ -155,10 +157,10 @@ export default function AnalyticsPage() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
           {[
-            { label: 'Tasks This Week', value: 39, change: '+12%', up: true, icon: Target, color: 'text-cosmic-purple' },
-            { label: 'Points Earned', value: '1,010', change: '+8%', up: true, icon: TrendingUp, color: 'text-status-success' },
-            { label: 'Avg. Time/Task', value: '2.5h', change: '-15%', up: true, icon: Clock, color: 'text-cosmic-cyan' },
-            { label: 'Completion Rate', value: '94%', change: '+5%', up: true, icon: CheckCircle2, color: 'text-yellow-500' },
+            { label: t.analytics.tasksThisWeek, value: 39, change: '+12%', up: true, icon: Target, color: 'text-cosmic-purple' },
+            { label: t.analytics.pointsEarned, value: '1,010', change: '+8%', up: true, icon: TrendingUp, color: 'text-status-success' },
+            { label: t.analytics.avgTimePerTask, value: '2.5h', change: '-15%', up: true, icon: Clock, color: 'text-cosmic-cyan' },
+            { label: t.analytics.completionRate, value: '94%', change: '+5%', up: true, icon: CheckCircle2, color: 'text-yellow-500' },
           ].map((stat, i) => (
             <Card key={i} className="glass">
               <CardContent className="pt-6">
@@ -175,7 +177,7 @@ export default function AnalyticsPage() {
                       <span className={stat.up ? 'text-status-success' : 'text-status-error'}>
                         {stat.change}
                       </span>
-                      <span className="text-gray-400 text-sm">vs last week</span>
+                      <span className="text-gray-400 text-sm">{t.analytics.vsLastWeek}</span>
                     </div>
                   </div>
                   <div className="w-12 h-12 rounded-xl bg-glass-light flex items-center justify-center">
@@ -198,9 +200,9 @@ export default function AnalyticsPage() {
             <Card className="glass">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Weekly Activity</span>
+                  <span>{t.analytics.weeklyActivity}</span>
                   <span className="text-sm font-normal text-gray-400">
-                    Click on a bar to view tasks
+                    {t.analytics.clickToViewTasks}
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -246,14 +248,14 @@ export default function AnalyticsPage() {
           >
             <Card className="glass h-full">
               <CardHeader>
-                <CardTitle>Performance</CardTitle>
+                <CardTitle>{t.analytics.performance}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {[
-                  { label: 'Productivity Score', value: 87, color: 'bg-cosmic-purple' },
-                  { label: 'Task Quality', value: 92, color: 'bg-status-success' },
-                  { label: 'Team Collaboration', value: 78, color: 'bg-cosmic-cyan' },
-                  { label: 'Goal Achievement', value: 85, color: 'bg-yellow-500' },
+                  { label: t.analytics.productivityScore, value: 87, color: 'bg-cosmic-purple' },
+                  { label: t.analytics.taskQuality, value: 92, color: 'bg-status-success' },
+                  { label: t.analytics.teamCollaboration, value: 78, color: 'bg-cosmic-cyan' },
+                  { label: t.analytics.goalAchievement, value: 85, color: 'bg-yellow-500' },
                 ].map((metric, i) => (
                   <div key={i}>
                     <div className="flex justify-between mb-1">
@@ -284,9 +286,9 @@ export default function AnalyticsPage() {
           <Card className="glass">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Task Distribution by Category</span>
+                <span>{t.analytics.taskDistribution}</span>
                 <span className="text-sm font-normal text-gray-400">
-                  Click on a category to view tasks
+                  {t.analytics.clickCategoryToView}
                 </span>
               </CardTitle>
             </CardHeader>
@@ -347,16 +349,16 @@ export default function AnalyticsPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold">
-                      {selectedDay === 'Mon' && 'Monday'}
-                      {selectedDay === 'Tue' && 'Tuesday'}
-                      {selectedDay === 'Wed' && 'Wednesday'}
-                      {selectedDay === 'Thu' && 'Thursday'}
-                      {selectedDay === 'Fri' && 'Friday'}
-                      {selectedDay === 'Sat' && 'Saturday'}
-                      {selectedDay === 'Sun' && 'Sunday'}
+                      {selectedDay === 'Mon' && t.analytics.monday}
+                      {selectedDay === 'Tue' && t.analytics.tuesday}
+                      {selectedDay === 'Wed' && t.analytics.wednesday}
+                      {selectedDay === 'Thu' && t.analytics.thursday}
+                      {selectedDay === 'Fri' && t.analytics.friday}
+                      {selectedDay === 'Sat' && t.analytics.saturday}
+                      {selectedDay === 'Sun' && t.analytics.sunday}
                     </h2>
                     <p className="text-sm text-gray-400">
-                      {selectedDayData.tasks} tasks completed · {selectedDayData.points} points earned
+                      {selectedDayData.tasks} {t.analytics.tasksCompleted} · {selectedDayData.points} {t.analytics.pointsEarnedLower}
                     </p>
                   </div>
                 </div>
@@ -390,7 +392,7 @@ export default function AnalyticsPage() {
                           <span>·</span>
                           <span>{task.category}</span>
                           <span>·</span>
-                          <span>Completed at {task.completedAt}</span>
+                          <span>{t.analytics.completedAt} {task.completedAt}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cosmic-purple/20 text-cosmic-purple">
@@ -407,23 +409,23 @@ export default function AnalyticsPage() {
                 <div className="flex items-center gap-4 text-sm text-gray-400">
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-cosmic-purple" />
-                    <span>Development</span>
+                    <span>{t.analytics.development}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-cosmic-cyan" />
-                    <span>Design</span>
+                    <span>{t.analytics.design}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                    <span>Docs</span>
+                    <span>{t.analytics.documentation}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-status-success" />
-                    <span>Testing</span>
+                    <span>{t.analytics.testing}</span>
                   </div>
                 </div>
                 <Button variant="ghost" onClick={() => setSelectedDay(null)}>
-                  Close
+                  {t.analytics.close}
                 </Button>
               </div>
             </motion.div>
@@ -468,7 +470,7 @@ export default function AnalyticsPage() {
                   <div>
                     <h2 className="text-xl font-semibold">{selectedCategory}</h2>
                     <p className="text-sm text-gray-400">
-                      {categoryTasks.length} tasks · {categoryTasks.reduce((sum, t) => sum + t.points, 0)} total points
+                      {categoryTasks.length} {t.tasks.title.toLowerCase()} · {categoryTasks.reduce((sum, task) => sum + task.points, 0)} {t.dashboard.totalPoints.toLowerCase()}
                     </p>
                   </div>
                 </div>
@@ -505,7 +507,7 @@ export default function AnalyticsPage() {
                           <span>·</span>
                           <span>{task.day}</span>
                           <span>·</span>
-                          <span>Completed at {task.completedAt}</span>
+                          <span>{t.analytics.completedAt} {task.completedAt}</span>
                         </div>
                       </div>
                       <div
@@ -530,10 +532,10 @@ export default function AnalyticsPage() {
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: categoryColorValues[selectedCategory] }}
                   />
-                  <span>All {selectedCategory.toLowerCase()} tasks from this week</span>
+                  <span>{t.analytics.allTasksFromWeek}</span>
                 </div>
                 <Button variant="ghost" onClick={() => setSelectedCategory(null)}>
-                  Close
+                  {t.analytics.close}
                 </Button>
               </div>
             </motion.div>

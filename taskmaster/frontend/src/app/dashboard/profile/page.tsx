@@ -19,6 +19,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSettingsStore } from '@/stores/settings.store';
 import { formatNumber, getRankColor } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const achievements = [
   { name: 'Task Master', description: 'Complete 50 tasks', icon: '✅', unlocked: true, date: '2024-11-15' },
@@ -41,6 +42,7 @@ export default function ProfilePage() {
   const { user } = useAuthStore();
   const { getCurrentTheme } = useSettingsStore();
   const currentTheme = getCurrentTheme();
+  const t = useTranslation();
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [isHoveringPhoto, setIsHoveringPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -145,7 +147,7 @@ export default function ProfilePage() {
                     >
                       <div className="flex flex-col items-center text-white">
                         <Camera className="w-6 h-6 mb-1" />
-                        <span className="text-xs">Change</span>
+                        <span className="text-xs">{t.profilePage.change}</span>
                       </div>
                     </motion.div>
                   )}
@@ -173,7 +175,7 @@ export default function ProfilePage() {
                   <p className="text-3xl font-bold" style={{ color: currentTheme.colors.primary }}>
                     {formatNumber(mockUser.totalPoints)}
                   </p>
-                  <p className="text-gray-400">Total Points</p>
+                  <p className="text-gray-400">{t.profilePage.totalPoints}</p>
                 </div>
               </div>
             </CardContent>
@@ -188,10 +190,10 @@ export default function ProfilePage() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4"
         >
           {[
-            { label: 'Tasks Completed', value: mockUser.tasksCompleted, icon: Target, color: 'text-status-success' },
-            { label: 'Current Streak', value: `${mockUser.streak}d`, icon: Flame, color: 'text-orange-500' },
-            { label: 'Achievements', value: achievements.filter(a => a.unlocked).length, icon: Award, color: 'text-yellow-500' },
-            { label: 'Member Since', value: 'Jan 2024', icon: Calendar, color: 'text-cosmic-cyan' },
+            { label: t.profilePage.tasksCompleted, value: mockUser.tasksCompleted, icon: Target, color: 'text-status-success' },
+            { label: t.profilePage.currentStreak, value: `${mockUser.streak}d`, icon: Flame, color: 'text-orange-500' },
+            { label: t.profilePage.achievements, value: achievements.filter(a => a.unlocked).length, icon: Award, color: 'text-yellow-500' },
+            { label: t.profilePage.memberSince, value: 'Jan 2024', icon: Calendar, color: 'text-cosmic-cyan' },
           ].map((stat, i) => (
             <Card key={i} className="glass">
               <CardContent className="pt-4 pb-4">
@@ -220,7 +222,7 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-cosmic-purple" />
-                  Level Progress
+                  {t.profilePage.levelProgress}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -242,10 +244,10 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="mt-6 p-4 rounded-xl bg-glass-light">
-                  <p className="text-sm text-gray-400 mb-2">Next rank unlock at:</p>
+                  <p className="text-sm text-gray-400 mb-2">{t.profilePage.nextRankUnlock}</p>
                   <div className="flex items-center gap-2">
                     <span className="text-xl" style={{ color: getRankColor('GRANDMASTER') }}>GRANDMASTER</span>
-                    <span className="text-gray-400">— 35,000 points</span>
+                    <span className="text-gray-400">— 35,000 {t.leaderboard.points.toLowerCase()}</span>
                   </div>
                 </div>
               </CardContent>
@@ -262,7 +264,7 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Trophy className="w-5 h-5 text-yellow-500" />
-                  Achievements
+                  {t.profilePage.achievements}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -294,7 +296,7 @@ export default function ProfilePage() {
         >
           <Card className="glass">
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
+              <CardTitle>{t.profilePage.activity}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
