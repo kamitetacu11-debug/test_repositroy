@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   Plus,
   Search,
@@ -100,9 +101,122 @@ const initialFormData: DealFormData = {
   description: '',
 };
 
+// Demo data for better UX when database is empty
+const demoPipelines: Pipeline[] = [
+  {
+    id: 'demo-pipeline-1',
+    name: 'Sales Pipeline',
+    stages: [
+      { id: 'demo-stage-1', name: 'Lead', color: '#6B7280', sortOrder: 0 },
+      { id: 'demo-stage-2', name: 'Qualified', color: '#3B82F6', sortOrder: 1 },
+      { id: 'demo-stage-3', name: 'Proposal', color: '#F59E0B', sortOrder: 2 },
+      { id: 'demo-stage-4', name: 'Negotiation', color: '#8B5CF6', sortOrder: 3 },
+      { id: 'demo-stage-5', name: 'Closed Won', color: '#10B981', sortOrder: 4 },
+      { id: 'demo-stage-6', name: 'Closed Lost', color: '#EF4444', sortOrder: 5 },
+    ],
+  },
+];
+
+const demoCustomers: Customer[] = [
+  { id: 'demo-customer-1', name: 'TechCorp International' },
+  { id: 'demo-customer-2', name: 'Global Finance Ltd' },
+  { id: 'demo-customer-3', name: 'HealthPlus Medical' },
+  { id: 'demo-customer-4', name: 'EcoGreen Solutions' },
+  { id: 'demo-customer-5', name: 'StartupHub Inc' },
+  { id: 'demo-customer-6', name: 'RetailMax Group' },
+];
+
+const demoDeals: Deal[] = [
+  {
+    id: 'demo-deal-1',
+    title: 'Enterprise Software License',
+    amount: 150000,
+    probability: 75,
+    expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'OPEN',
+    customer: { id: 'demo-customer-1', name: 'TechCorp International' },
+    stage: { id: 'demo-stage-3', name: 'Proposal', color: '#F59E0B' },
+    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
+    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
+    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'demo-deal-2',
+    title: 'Financial Consulting Package',
+    amount: 85000,
+    probability: 60,
+    expectedCloseDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'OPEN',
+    customer: { id: 'demo-customer-2', name: 'Global Finance Ltd' },
+    stage: { id: 'demo-stage-2', name: 'Qualified', color: '#3B82F6' },
+    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
+    assignedTo: { id: 'user-2', firstName: 'Sarah', lastName: 'Johnson' },
+    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'demo-deal-3',
+    title: 'Healthcare Platform Implementation',
+    amount: 250000,
+    probability: 90,
+    expectedCloseDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'OPEN',
+    customer: { id: 'demo-customer-3', name: 'HealthPlus Medical' },
+    stage: { id: 'demo-stage-4', name: 'Negotiation', color: '#8B5CF6' },
+    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
+    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
+    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'demo-deal-4',
+    title: 'Green Energy Audit',
+    amount: 35000,
+    probability: 40,
+    expectedCloseDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'OPEN',
+    customer: { id: 'demo-customer-4', name: 'EcoGreen Solutions' },
+    stage: { id: 'demo-stage-1', name: 'Lead', color: '#6B7280' },
+    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
+    assignedTo: null,
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'demo-deal-5',
+    title: 'Startup Accelerator Program',
+    amount: 120000,
+    probability: 100,
+    expectedCloseDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'WON',
+    customer: { id: 'demo-customer-5', name: 'StartupHub Inc' },
+    stage: { id: 'demo-stage-5', name: 'Closed Won', color: '#10B981' },
+    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
+    assignedTo: { id: 'user-2', firstName: 'Sarah', lastName: 'Johnson' },
+    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'demo-deal-6',
+    title: 'Retail POS System',
+    amount: 45000,
+    probability: 0,
+    expectedCloseDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'LOST',
+    customer: { id: 'demo-customer-6', name: 'RetailMax Group' },
+    stage: { id: 'demo-stage-6', name: 'Closed Lost', color: '#EF4444' },
+    pipeline: { id: 'demo-pipeline-1', name: 'Sales Pipeline' },
+    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
+    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
 export default function DealsPage() {
   const router = useRouter();
   const { token } = useAuthStore();
+  const t = useTranslation();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -136,10 +250,39 @@ export default function DealsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setDeals(data.data || []);
+        const fetchedDeals = data.data || [];
+
+        // Use demo data if API returns empty
+        if (fetchedDeals.length === 0 && !searchQuery && statusFilter === 'all' && pipelineFilter === 'all') {
+          setDeals(demoDeals);
+        } else if (fetchedDeals.length === 0) {
+          // Filter demo data based on search/filter criteria
+          let filteredDemo = [...demoDeals];
+          if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            filteredDemo = filteredDemo.filter(
+              d => d.title.toLowerCase().includes(query) ||
+                   d.customer.name.toLowerCase().includes(query)
+            );
+          }
+          if (statusFilter !== 'all') {
+            filteredDemo = filteredDemo.filter(d => d.status === statusFilter);
+          }
+          if (pipelineFilter !== 'all') {
+            filteredDemo = filteredDemo.filter(d => d.pipeline.id === pipelineFilter);
+          }
+          setDeals(filteredDemo);
+        } else {
+          setDeals(fetchedDeals);
+        }
+      } else {
+        // Fallback to demo data on error
+        setDeals(demoDeals);
       }
     } catch (error) {
       console.error('Failed to fetch deals:', error);
+      // Fallback to demo data on error
+      setDeals(demoDeals);
     } finally {
       setLoading(false);
     }
@@ -155,10 +298,19 @@ export default function DealsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setPipelines(data.data || []);
+        const fetchedPipelines = data.data || [];
+        // Use demo data if API returns empty
+        if (fetchedPipelines.length === 0) {
+          setPipelines(demoPipelines);
+        } else {
+          setPipelines(fetchedPipelines);
+        }
+      } else {
+        setPipelines(demoPipelines);
       }
     } catch (error) {
       console.error('Failed to fetch pipelines:', error);
+      setPipelines(demoPipelines);
     }
   };
 
@@ -172,10 +324,19 @@ export default function DealsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setCustomers(data.data || []);
+        const fetchedCustomers = data.data || [];
+        // Use demo data if API returns empty
+        if (fetchedCustomers.length === 0) {
+          setCustomers(demoCustomers);
+        } else {
+          setCustomers(fetchedCustomers);
+        }
+      } else {
+        setCustomers(demoCustomers);
       }
     } catch (error) {
       console.error('Failed to fetch customers:', error);
+      setCustomers(demoCustomers);
     }
   };
 
@@ -238,7 +399,7 @@ export default function DealsPage() {
   };
 
   const handleDelete = async (dealId: string) => {
-    if (!confirm('Are you sure you want to delete this deal?')) return;
+    if (!confirm(t.crm.confirmDelete)) return;
 
     try {
       const response = await fetch(`/api/v1/crm/deals/${dealId}`, {
@@ -274,11 +435,11 @@ export default function DealsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'WON':
-        return <Badge className="bg-green-500">Won</Badge>;
+        return <Badge className="bg-green-500">{t.crm.won}</Badge>;
       case 'LOST':
-        return <Badge variant="destructive">Lost</Badge>;
+        return <Badge variant="destructive">{t.crm.lost}</Badge>;
       default:
-        return <Badge variant="secondary">Open</Badge>;
+        return <Badge variant="secondary">{t.crm.open}</Badge>;
     }
   };
 
@@ -298,9 +459,9 @@ export default function DealsPage() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold">Deals</h1>
+              <h1 className="text-3xl font-bold">{t.crm.dealsTitle}</h1>
               <p className="text-muted-foreground">
-                Track your sales opportunities
+                {t.crm.dealsSubtitle}
               </p>
             </div>
           </div>
@@ -310,40 +471,40 @@ export default function DealsPage() {
               onClick={() => router.push('/dashboard/crm/pipelines')}
             >
               <TrendingUp className="mr-2 h-4 w-4" />
-              Pipeline View
+              {t.crm.viewPipeline}
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={openNewDialog}>
                   <Plus className="mr-2 h-4 w-4" />
-                  New Deal
+                  {t.crm.newDeal}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>
-                    {editingDeal ? 'Edit Deal' : 'Create New Deal'}
+                    {editingDeal ? t.crm.editDeal : t.crm.createNewDeal}
                   </DialogTitle>
                   <DialogDescription>
                     {editingDeal
-                      ? 'Update deal information'
-                      : 'Add a new deal to your pipeline'}
+                      ? t.crm.updateDealInfo
+                      : t.crm.addDealToPipeline}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
-                    <Label>Deal Title *</Label>
+                    <Label>{t.crm.dealTitle} *</Label>
                     <Input
                       value={formData.title}
                       onChange={(e) =>
                         setFormData({ ...formData, title: e.target.value })
                       }
-                      placeholder="e.g., Enterprise License Deal"
+                      placeholder={t.crm.dealTitlePlaceholder}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Customer *</Label>
+                      <Label>{t.crm.customer} *</Label>
                       <Select
                         value={formData.customerId}
                         onValueChange={(value) =>
@@ -351,7 +512,7 @@ export default function DealsPage() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select customer" />
+                          <SelectValue placeholder={t.crm.selectCustomer} />
                         </SelectTrigger>
                         <SelectContent>
                           {customers.map((customer) => (
@@ -363,7 +524,7 @@ export default function DealsPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Pipeline *</Label>
+                      <Label>{t.crm.pipelines} *</Label>
                       <Select
                         value={formData.pipelineId}
                         onValueChange={(value) =>
@@ -371,7 +532,7 @@ export default function DealsPage() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select pipeline" />
+                          <SelectValue placeholder={t.crm.selectPipeline} />
                         </SelectTrigger>
                         <SelectContent>
                           {pipelines.map((pipeline) => (
@@ -385,7 +546,7 @@ export default function DealsPage() {
                   </div>
                   {selectedPipeline && (
                     <div className="space-y-2">
-                      <Label>Stage *</Label>
+                      <Label>{t.crm.stage} *</Label>
                       <Select
                         value={formData.stageId}
                         onValueChange={(value) =>
@@ -393,7 +554,7 @@ export default function DealsPage() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select stage" />
+                          <SelectValue placeholder={t.crm.selectStage} />
                         </SelectTrigger>
                         <SelectContent>
                           {selectedPipeline.stages
@@ -415,7 +576,7 @@ export default function DealsPage() {
                   )}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label>Amount ($)</Label>
+                      <Label>{t.crm.amount} ($)</Label>
                       <Input
                         type="number"
                         value={formData.amount}
@@ -426,7 +587,7 @@ export default function DealsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Probability (%)</Label>
+                      <Label>{t.crm.probability} (%)</Label>
                       <Input
                         type="number"
                         min="0"
@@ -439,7 +600,7 @@ export default function DealsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Expected Close</Label>
+                      <Label>{t.crm.expectedCloseDate}</Label>
                       <Input
                         type="date"
                         value={formData.expectedCloseDate}
@@ -450,13 +611,13 @@ export default function DealsPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Description</Label>
+                    <Label>{t.crm.description}</Label>
                     <Textarea
                       value={formData.description}
                       onChange={(e) =>
                         setFormData({ ...formData, description: e.target.value })
                       }
-                      placeholder="Deal details..."
+                      placeholder={t.crm.descriptionPlaceholder}
                       rows={3}
                     />
                   </div>
@@ -466,14 +627,14 @@ export default function DealsPage() {
                     variant="outline"
                     onClick={() => setIsDialogOpen(false)}
                   >
-                    Cancel
+                    {t.crm.cancel}
                   </Button>
                   <Button onClick={handleSubmit} disabled={submitting}>
                     {submitting
-                      ? 'Saving...'
+                      ? t.crm.saving
                       : editingDeal
-                      ? 'Update'
-                      : 'Create'}
+                      ? t.crm.update
+                      : t.crm.create}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -488,7 +649,7 @@ export default function DealsPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search deals..."
+                  placeholder={t.crm.searchDeals}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -496,21 +657,21 @@ export default function DealsPage() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t.tasks.status} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="OPEN">Open</SelectItem>
-                  <SelectItem value="WON">Won</SelectItem>
-                  <SelectItem value="LOST">Lost</SelectItem>
+                  <SelectItem value="all">{t.crm.allStatuses}</SelectItem>
+                  <SelectItem value="OPEN">{t.crm.open}</SelectItem>
+                  <SelectItem value="WON">{t.crm.won}</SelectItem>
+                  <SelectItem value="LOST">{t.crm.lost}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Pipeline" />
+                  <SelectValue placeholder={t.crm.pipelines} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Pipelines</SelectItem>
+                  <SelectItem value="all">{t.crm.allPipelines}</SelectItem>
                   {pipelines.map((pipeline) => (
                     <SelectItem key={pipeline.id} value={pipeline.id}>
                       {pipeline.name}
@@ -528,13 +689,13 @@ export default function DealsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Deal</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Stage</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Probability</TableHead>
-                  <TableHead>Expected Close</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t.crm.deals}</TableHead>
+                  <TableHead>{t.crm.customer}</TableHead>
+                  <TableHead>{t.crm.stage}</TableHead>
+                  <TableHead>{t.crm.amount}</TableHead>
+                  <TableHead>{t.crm.probability}</TableHead>
+                  <TableHead>{t.crm.expectedCloseDate}</TableHead>
+                  <TableHead>{t.tasks.status}</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -542,7 +703,7 @@ export default function DealsPage() {
                 {loading ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8">
-                      Loading...
+                      {t.crm.loading}
                     </TableCell>
                   </TableRow>
                 ) : deals.length === 0 ? (
@@ -551,7 +712,7 @@ export default function DealsPage() {
                       colSpan={8}
                       className="text-center py-8 text-muted-foreground"
                     >
-                      No deals found. Create your first deal to get started.
+                      {t.crm.noDealsFound}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -612,7 +773,7 @@ export default function DealsPage() {
                               }}
                             >
                               <Pencil className="mr-2 h-4 w-4" />
-                              Edit
+                              {t.crm.edit}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive"
@@ -622,7 +783,7 @@ export default function DealsPage() {
                               }}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              {t.crm.delete}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

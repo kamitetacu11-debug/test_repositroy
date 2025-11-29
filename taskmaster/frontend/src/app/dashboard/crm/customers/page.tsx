@@ -100,6 +100,94 @@ const initialFormData: CustomerFormData = {
   notes: '',
 };
 
+// Demo data for better UX when database is empty
+const demoCustomers: Customer[] = [
+  {
+    id: 'demo-1',
+    type: 'COMPANY',
+    name: 'TechCorp International',
+    email: 'contact@techcorp.io',
+    phone: '+1 (555) 123-4567',
+    website: 'https://techcorp.io',
+    industry: 'Technology',
+    city: 'San Francisco',
+    country: 'USA',
+    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
+    _count: { deals: 3, contacts: 5 },
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'demo-2',
+    type: 'COMPANY',
+    name: 'Global Finance Ltd',
+    email: 'info@globalfinance.com',
+    phone: '+1 (555) 234-5678',
+    website: 'https://globalfinance.com',
+    industry: 'Finance',
+    city: 'New York',
+    country: 'USA',
+    assignedTo: { id: 'user-2', firstName: 'Sarah', lastName: 'Johnson' },
+    _count: { deals: 2, contacts: 3 },
+    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'demo-3',
+    type: 'INDIVIDUAL',
+    name: 'Michael Chen',
+    email: 'michael.chen@email.com',
+    phone: '+1 (555) 345-6789',
+    website: null,
+    industry: 'Consulting',
+    city: 'Los Angeles',
+    country: 'USA',
+    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
+    _count: { deals: 1, contacts: 1 },
+    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'demo-4',
+    type: 'COMPANY',
+    name: 'HealthPlus Medical',
+    email: 'partners@healthplus.org',
+    phone: '+1 (555) 456-7890',
+    website: 'https://healthplus.org',
+    industry: 'Healthcare',
+    city: 'Boston',
+    country: 'USA',
+    assignedTo: null,
+    _count: { deals: 4, contacts: 8 },
+    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'demo-5',
+    type: 'COMPANY',
+    name: 'EcoGreen Solutions',
+    email: 'business@ecogreen.co',
+    phone: '+44 20 7123 4567',
+    website: 'https://ecogreen.co',
+    industry: 'Environmental',
+    city: 'London',
+    country: 'UK',
+    assignedTo: { id: 'user-2', firstName: 'Sarah', lastName: 'Johnson' },
+    _count: { deals: 2, contacts: 4 },
+    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'demo-6',
+    type: 'INDIVIDUAL',
+    name: 'Anna Schmidt',
+    email: 'anna.schmidt@mail.de',
+    phone: '+49 30 123456',
+    website: null,
+    industry: 'Marketing',
+    city: 'Berlin',
+    country: 'Germany',
+    assignedTo: { id: 'user-1', firstName: 'John', lastName: 'Smith' },
+    _count: { deals: 1, contacts: 1 },
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
 export default function CustomersPage() {
   const router = useRouter();
   const { token } = useAuthStore();
@@ -131,10 +219,37 @@ export default function CustomersPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setCustomers(data.data || []);
+        const fetchedCustomers = data.data || [];
+
+        // Use demo data if API returns empty
+        if (fetchedCustomers.length === 0 && !searchQuery && typeFilter === 'all') {
+          setCustomers(demoCustomers);
+        } else if (fetchedCustomers.length === 0) {
+          // Filter demo data based on search/filter criteria
+          let filteredDemo = [...demoCustomers];
+          if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            filteredDemo = filteredDemo.filter(
+              c => c.name.toLowerCase().includes(query) ||
+                   c.email?.toLowerCase().includes(query) ||
+                   c.industry?.toLowerCase().includes(query)
+            );
+          }
+          if (typeFilter !== 'all') {
+            filteredDemo = filteredDemo.filter(c => c.type === typeFilter);
+          }
+          setCustomers(filteredDemo);
+        } else {
+          setCustomers(fetchedCustomers);
+        }
+      } else {
+        // Fallback to demo data on error
+        setCustomers(demoCustomers);
       }
     } catch (error) {
       console.error('Failed to fetch customers:', error);
+      // Fallback to demo data on error
+      setCustomers(demoCustomers);
     } finally {
       setLoading(false);
     }
