@@ -9,7 +9,6 @@ import {
   Image,
   Video,
   FileText,
-  Smile,
   Search,
   MoreVertical,
   Users,
@@ -18,19 +17,15 @@ import {
   BellOff,
   Bell,
   Trash2,
-  Edit3,
-  Reply,
   Check,
   CheckCheck,
   ChevronLeft,
-  Phone,
-  VideoIcon,
   Settings,
   UserPlus,
-  LogOut,
   Shield,
   Lock,
   File,
+  PinOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -94,11 +89,13 @@ export function Messenger() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [groupName, setGroupName] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showChatMenu, setShowChatMenu] = useState<string | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [swipeStates, setSwipeStates] = useState<Record<string, number>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -227,6 +224,45 @@ export function Messenger() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  // Swipe handlers
+  const handleSwipeStart = (chatId: string, startX: number) => {
+    setSwipeStates((prev) => ({ ...prev, [`${chatId}_start`]: startX }));
+  };
+
+  const handleSwipeMove = (chatId: string, currentX: number) => {
+    const startX = swipeStates[`${chatId}_start`] || 0;
+    const diff = currentX - startX;
+    // Limit swipe distance
+    const clampedDiff = Math.max(-100, Math.min(100, diff));
+    setSwipeStates((prev) => ({ ...prev, [chatId]: clampedDiff }));
+  };
+
+  const handleSwipeEnd = (chatId: string, chat: Chat) => {
+    const swipeDistance = swipeStates[chatId] || 0;
+
+    if (swipeDistance < -60) {
+      // Swipe left - Pin/Unpin
+      if (chat.isPinned) {
+        unpinChat(chatId);
+      } else {
+        pinChat(chatId);
+      }
+    } else if (swipeDistance > 60) {
+      // Swipe right - Delete
+      if (confirm('Delete this conversation?')) {
+        deleteChat(chatId);
+      }
+    }
+
+    // Reset swipe state
+    setSwipeStates((prev) => {
+      const newState = { ...prev };
+      delete newState[chatId];
+      delete newState[`${chatId}_start`];
+      return newState;
+    });
+  };
+
   if (!isMessengerOpen) return null;
 
   return (
@@ -310,139 +346,115 @@ export function Messenger() {
                     ? chat.participants.find((p) => p.id !== currentUserId)
                     : null;
                 const lastMsg = messages.filter((m) => m.chatId === chat.id).slice(-1)[0];
+                const swipeOffset = swipeStates[chat.id] || 0;
 
                 return (
-                  <div
-                    key={chat.id}
-                    className={cn(
-                      'relative flex items-center gap-3 p-3 cursor-pointer transition-all hover:bg-glass-light',
-                      activeChatId === chat.id && 'bg-glass-light'
-                    )}
-                    onClick={() => setActiveChat(chat.id)}
-                  >
-                    {/* Avatar */}
-                    <div className="relative">
+                  <div key={chat.id} className="relative overflow-hidden">
+                    {/* Swipe action backgrounds */}
+                    <div className="absolute inset-0 flex">
+                      {/* Left side - Pin (swipe left reveals this) */}
                       <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center font-medium"
-                        style={{ backgroundColor: `${theme.colors.primary}30` }}
+                        className="flex-1 flex items-center justify-end pr-4"
+                        style={{ backgroundColor: theme.colors.primary }}
                       >
-                        {chat.type === 'group' ? (
-                          <Users className="w-6 h-6" />
-                        ) : otherUser?.avatar ? (
-                          <img
-                            src={otherUser.avatar}
-                            alt={chatName}
-                            className="w-full h-full rounded-full object-cover"
-                          />
+                        {chat.isPinned ? (
+                          <PinOff className="w-6 h-6 text-white" />
                         ) : (
-                          getInitials(
-                            otherUser?.firstName || '',
-                            otherUser?.lastName || ''
-                          )
+                          <Pin className="w-6 h-6 text-white" />
                         )}
                       </div>
-                      {otherUser && (
+                      {/* Right side - Delete (swipe right reveals this) */}
+                      <div className="flex-1 flex items-center justify-start pl-4 bg-red-500">
+                        <Trash2 className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+
+                    {/* Chat item */}
+                    <motion.div
+                      className={cn(
+                        'relative flex items-center gap-3 p-3 cursor-pointer hover:bg-glass-light',
+                        activeChatId === chat.id && 'bg-glass-light'
+                      )}
+                      style={{
+                        backgroundColor: theme.colors.background,
+                        x: swipeOffset,
+                      }}
+                      animate={{ x: swipeOffset }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      onClick={() => !swipeOffset && setActiveChat(chat.id)}
+                      onTouchStart={(e) => handleSwipeStart(chat.id, e.touches[0].clientX)}
+                      onTouchMove={(e) => handleSwipeMove(chat.id, e.touches[0].clientX)}
+                      onTouchEnd={() => handleSwipeEnd(chat.id, chat)}
+                      onMouseDown={(e) => handleSwipeStart(chat.id, e.clientX)}
+                      onMouseMove={(e) => e.buttons === 1 && handleSwipeMove(chat.id, e.clientX)}
+                      onMouseUp={() => handleSwipeEnd(chat.id, chat)}
+                      onMouseLeave={() => swipeStates[chat.id] && handleSwipeEnd(chat.id, chat)}
+                    >
+                      {/* Avatar */}
+                      <div className="relative flex-shrink-0">
                         <div
-                          className={cn(
-                            'absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background',
-                            getStatusColor(otherUser.status)
+                          className="w-12 h-12 rounded-full flex items-center justify-center font-medium"
+                          style={{ backgroundColor: `${theme.colors.primary}30` }}
+                        >
+                          {chat.type === 'group' ? (
+                            <Users className="w-6 h-6" />
+                          ) : otherUser?.avatar ? (
+                            <img
+                              src={otherUser.avatar}
+                              alt={chatName}
+                              className="w-full h-full rounded-full object-cover"
+                            />
+                          ) : (
+                            getInitials(
+                              otherUser?.firstName || '',
+                              otherUser?.lastName || ''
+                            )
                           )}
-                        />
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium truncate flex items-center gap-1">
-                          {chat.isPinned && (
-                            <Pin className="w-3 h-3" style={{ color: theme.colors.primary }} />
-                          )}
-                          {chatName}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {lastMsg ? formatTime(lastMsg.createdAt) : ''}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-gray-500 truncate">
-                          {lastMsg?.isDeleted
-                            ? 'Message deleted'
-                            : lastMsg?.decryptedContent || lastMsg?.content || 'No messages yet'}
-                        </p>
-                        {chat.unreadCount > 0 && (
-                          <span
-                            className="px-2 py-0.5 text-xs rounded-full text-white"
-                            style={{ backgroundColor: theme.colors.primary }}
-                          >
-                            {chat.unreadCount}
-                          </span>
-                        )}
-                        {chat.isMuted && <BellOff className="w-4 h-4 text-gray-500" />}
-                      </div>
-                    </div>
-
-                    {/* Menu */}
-                    <div className="relative" ref={showChatMenu === chat.id ? chatMenuRef : null}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover:opacity-100 h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowChatMenu(showChatMenu === chat.id ? null : chat.id);
-                        }}
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-
-                      {showChatMenu === chat.id && (
-                        <div className="absolute right-0 top-full mt-1 w-48 rounded-xl border border-glass-border bg-glass-heavy shadow-lg z-10">
-                          <button
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-glass-light rounded-t-xl"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              chat.isPinned ? unpinChat(chat.id) : pinChat(chat.id);
-                              setShowChatMenu(null);
-                            }}
-                          >
-                            <Pin className="w-4 h-4" />
-                            {chat.isPinned ? 'Unpin' : 'Pin'}
-                          </button>
-                          <button
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-glass-light"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              chat.isMuted ? unmuteChat(chat.id) : muteChat(chat.id);
-                              setShowChatMenu(null);
-                            }}
-                          >
-                            {chat.isMuted ? (
-                              <>
-                                <Bell className="w-4 h-4" /> Unmute
-                              </>
-                            ) : (
-                              <>
-                                <BellOff className="w-4 h-4" /> Mute
-                              </>
-                            )}
-                          </button>
-                          <button
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-glass-light text-red-400 rounded-b-xl"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (confirm('Delete this conversation?')) {
-                                deleteChat(chat.id);
-                              }
-                              setShowChatMenu(null);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
-                          </button>
                         </div>
-                      )}
-                    </div>
+                        {otherUser && (
+                          <div
+                            className={cn(
+                              'absolute bottom-0 right-0 w-3 h-3 rounded-full border-2',
+                              getStatusColor(otherUser.status)
+                            )}
+                            style={{ borderColor: theme.colors.background }}
+                          />
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium truncate flex items-center gap-1">
+                            {chat.isPinned && (
+                              <Pin className="w-3 h-3 flex-shrink-0" style={{ color: theme.colors.primary }} />
+                            )}
+                            {chatName}
+                          </span>
+                          <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                            {lastMsg ? formatTime(lastMsg.createdAt) : ''}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm text-gray-500 truncate">
+                            {lastMsg?.isDeleted
+                              ? 'Message deleted'
+                              : lastMsg?.decryptedContent || lastMsg?.content || 'No messages yet'}
+                          </p>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {chat.unreadCount > 0 && (
+                              <span
+                                className="px-2 py-0.5 text-xs rounded-full text-white"
+                                style={{ backgroundColor: theme.colors.primary }}
+                              >
+                                {chat.unreadCount}
+                              </span>
+                            )}
+                            {chat.isMuted && <BellOff className="w-4 h-4 text-gray-500" />}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
                   </div>
                 );
               })
@@ -471,8 +483,9 @@ export function Messenger() {
                       <ChevronLeft className="w-5 h-5" />
                     </Button>
                   )}
+                  {/* Avatar - separated from close button with gap */}
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-medium"
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-medium flex-shrink-0"
                     style={{ backgroundColor: `${theme.colors.primary}30` }}
                   >
                     {activeChat.type === 'group' ? (
@@ -484,8 +497,8 @@ export function Messenger() {
                       )
                     )}
                   </div>
-                  <div>
-                    <h3 className="font-semibold">{getChatName(activeChat)}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold truncate">{getChatName(activeChat)}</h3>
                     <p className="text-xs text-gray-500">
                       {activeChat.type === 'group'
                         ? `${activeChat.participants.length} members`
@@ -494,17 +507,16 @@ export function Messenger() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" title="Voice Call">
-                    <Phone className="w-5 h-5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" title="Video Call">
-                    <VideoIcon className="w-5 h-5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" title="Settings">
-                    <Settings className="w-5 h-5" />
-                  </Button>
-                </div>
+                {/* Settings button only */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Chat Settings"
+                  onClick={() => setShowSettingsModal(true)}
+                  className="flex-shrink-0 ml-2"
+                >
+                  <Settings className="w-5 h-5" />
+                </Button>
               </div>
 
               {/* Messages */}
@@ -842,6 +854,129 @@ export function Messenger() {
                   >
                     Create
                   </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Chat Settings Modal */}
+        <AnimatePresence>
+          {showSettingsModal && activeChat && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50 flex items-center justify-center z-20"
+              onClick={() => setShowSettingsModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="w-80 rounded-2xl border border-glass-border p-4"
+                style={{ backgroundColor: theme.colors.background }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Chat Settings</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowSettingsModal(false)}
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                {/* Chat info */}
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-glass-light mb-4">
+                  <div
+                    className="w-14 h-14 rounded-full flex items-center justify-center font-medium text-lg"
+                    style={{ backgroundColor: `${theme.colors.primary}30` }}
+                  >
+                    {activeChat.type === 'group' ? (
+                      <Users className="w-7 h-7" />
+                    ) : (
+                      getInitials(
+                        activeChat.participants.find((p) => p.id !== currentUserId)?.firstName || '',
+                        activeChat.participants.find((p) => p.id !== currentUserId)?.lastName || ''
+                      )
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{getChatName(activeChat)}</p>
+                    <p className="text-sm text-gray-500">
+                      {activeChat.type === 'group'
+                        ? `${activeChat.participants.length} members`
+                        : activeChat.participants.find((p) => p.id !== currentUserId)?.email || 'Private chat'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Settings options */}
+                <div className="space-y-1">
+                  <button
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-glass-light transition text-left"
+                    onClick={() => {
+                      activeChat.isPinned ? unpinChat(activeChat.id) : pinChat(activeChat.id);
+                    }}
+                  >
+                    {activeChat.isPinned ? (
+                      <PinOff className="w-5 h-5" style={{ color: theme.colors.primary }} />
+                    ) : (
+                      <Pin className="w-5 h-5" style={{ color: theme.colors.primary }} />
+                    )}
+                    <span>{activeChat.isPinned ? 'Unpin conversation' : 'Pin conversation'}</span>
+                  </button>
+
+                  <button
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-glass-light transition text-left"
+                    onClick={() => {
+                      activeChat.isMuted ? unmuteChat(activeChat.id) : muteChat(activeChat.id);
+                    }}
+                  >
+                    {activeChat.isMuted ? (
+                      <Bell className="w-5 h-5" style={{ color: theme.colors.primary }} />
+                    ) : (
+                      <BellOff className="w-5 h-5" style={{ color: theme.colors.primary }} />
+                    )}
+                    <span>{activeChat.isMuted ? 'Unmute notifications' : 'Mute notifications'}</span>
+                  </button>
+
+                  {activeChat.type === 'group' && (
+                    <button
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-glass-light transition text-left"
+                      onClick={() => {
+                        // Show participants
+                      }}
+                    >
+                      <Users className="w-5 h-5" style={{ color: theme.colors.primary }} />
+                      <span>View members ({activeChat.participants.length})</span>
+                    </button>
+                  )}
+
+                  <div className="border-t border-glass-border my-2" />
+
+                  <button
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 transition text-left text-red-400"
+                    onClick={() => {
+                      if (confirm('Delete this conversation? This action cannot be undone.')) {
+                        deleteChat(activeChat.id);
+                        setShowSettingsModal(false);
+                        setActiveChat(null);
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    <span>Delete conversation</span>
+                  </button>
+                </div>
+
+                {/* Encryption badge */}
+                <div className="mt-4 p-3 rounded-xl bg-green-500/10 flex items-center gap-2 text-green-400 text-sm">
+                  <Shield className="w-4 h-4" />
+                  <span>End-to-end encrypted</span>
                 </div>
               </motion.div>
             </motion.div>
