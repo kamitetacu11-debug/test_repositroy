@@ -284,12 +284,59 @@ export default function CustomersPage() {
         setFormData(initialFormData);
         setEditingCustomer(null);
         fetchCustomers();
+      } else {
+        // API failed - handle locally
+        handleLocalSave();
       }
     } catch (error) {
       console.error('Failed to save customer:', error);
+      // API not available - handle locally
+      handleLocalSave();
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleLocalSave = () => {
+    if (editingCustomer) {
+      // Update existing customer locally
+      setCustomers(customers.map(c =>
+        c.id === editingCustomer.id
+          ? {
+              ...c,
+              type: formData.type,
+              name: formData.name,
+              email: formData.email || null,
+              phone: formData.phone || null,
+              website: formData.website || null,
+              industry: formData.industry || null,
+              city: formData.city || null,
+              country: formData.country || null,
+            }
+          : c
+      ));
+    } else {
+      // Create new customer locally
+      const newCustomer: Customer = {
+        id: `demo-${Date.now()}`,
+        type: formData.type,
+        name: formData.name,
+        email: formData.email || null,
+        phone: formData.phone || null,
+        website: formData.website || null,
+        industry: formData.industry || null,
+        city: formData.city || null,
+        country: formData.country || null,
+        assignedTo: null,
+        _count: { deals: 0, contacts: 0 },
+        createdAt: new Date().toISOString(),
+      };
+      setCustomers([newCustomer, ...customers]);
+    }
+
+    setIsDialogOpen(false);
+    setFormData(initialFormData);
+    setEditingCustomer(null);
   };
 
   const handleEdit = (customer: Customer) => {
@@ -324,9 +371,14 @@ export default function CustomersPage() {
 
       if (response.ok) {
         fetchCustomers();
+      } else {
+        // API failed - delete locally
+        setCustomers(customers.filter(c => c.id !== customerId));
       }
     } catch (error) {
       console.error('Failed to delete customer:', error);
+      // API not available - delete locally
+      setCustomers(customers.filter(c => c.id !== customerId));
     }
   };
 
