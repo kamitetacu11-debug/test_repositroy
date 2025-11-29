@@ -229,6 +229,29 @@ export default function DealsPage() {
   const [formData, setFormData] = useState<DealFormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
 
+  // Function to filter demo data based on current filters
+  const filterDemoDeals = (data: Deal[]) => {
+    let filtered = [...data];
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        d => d.title.toLowerCase().includes(query) ||
+             d.customer.name.toLowerCase().includes(query)
+      );
+    }
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(d => d.status === statusFilter);
+    }
+
+    if (pipelineFilter !== 'all') {
+      filtered = filtered.filter(d => d.pipeline.id === pipelineFilter);
+    }
+
+    return filtered;
+  };
+
   useEffect(() => {
     fetchDeals();
     fetchPipelines();
@@ -253,36 +276,20 @@ export default function DealsPage() {
         const fetchedDeals = data.data || [];
 
         // Use demo data if API returns empty
-        if (fetchedDeals.length === 0 && !searchQuery && statusFilter === 'all' && pipelineFilter === 'all') {
-          setDeals(demoDeals);
-        } else if (fetchedDeals.length === 0) {
-          // Filter demo data based on search/filter criteria
-          let filteredDemo = [...demoDeals];
-          if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filteredDemo = filteredDemo.filter(
-              d => d.title.toLowerCase().includes(query) ||
-                   d.customer.name.toLowerCase().includes(query)
-            );
-          }
-          if (statusFilter !== 'all') {
-            filteredDemo = filteredDemo.filter(d => d.status === statusFilter);
-          }
-          if (pipelineFilter !== 'all') {
-            filteredDemo = filteredDemo.filter(d => d.pipeline.id === pipelineFilter);
-          }
-          setDeals(filteredDemo);
+        if (fetchedDeals.length === 0) {
+          // Always filter demo data based on current filters
+          setDeals(filterDemoDeals(demoDeals));
         } else {
           setDeals(fetchedDeals);
         }
       } else {
-        // Fallback to demo data on error
-        setDeals(demoDeals);
+        // Fallback to filtered demo data on error
+        setDeals(filterDemoDeals(demoDeals));
       }
     } catch (error) {
       console.error('Failed to fetch deals:', error);
-      // Fallback to demo data on error
-      setDeals(demoDeals);
+      // Fallback to filtered demo data on error
+      setDeals(filterDemoDeals(demoDeals));
     } finally {
       setLoading(false);
     }

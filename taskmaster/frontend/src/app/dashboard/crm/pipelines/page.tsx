@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,10 +15,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   Plus,
   ArrowLeft,
@@ -26,6 +34,9 @@ import {
   DollarSign,
   MoreHorizontal,
   GripVertical,
+  ChevronLeft,
+  ChevronRight,
+  Grip,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -33,6 +44,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 interface PipelineStage {
   id: string;
@@ -129,6 +141,7 @@ const demoDeals: Deal[] = [
 export default function PipelinesPage() {
   const router = useRouter();
   const { token } = useAuthStore();
+  const t = useTranslation();
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
@@ -137,6 +150,12 @@ export default function PipelinesPage() {
   const [newPipelineName, setNewPipelineName] = useState('');
   const [newPipelineDescription, setNewPipelineDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Drag-to-scroll state
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   useEffect(() => {
     fetchPipelines();
@@ -249,25 +268,6 @@ export default function PipelinesPage() {
     }
   };
 
-  const handleMoveDeal = async (dealId: string, newStageId: string) => {
-    try {
-      const response = await fetch(`/api/v1/crm/deals/${dealId}/move`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ stageId: newStageId }),
-      });
-
-      if (response.ok && selectedPipeline) {
-        fetchDeals(selectedPipeline.id);
-      }
-    } catch (error) {
-      console.error('Failed to move deal:', error);
-    }
-  };
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -288,98 +288,192 @@ export default function PipelinesPage() {
     );
   };
 
+  // Drag-to-scroll handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+    setScrollLeft(scrollContainerRef.current.scrollLeft);
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5; // Scroll speed multiplier
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
+  }, [isDragging, startX, scrollLeft]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Scroll navigation buttons
+  const scrollToDirection = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
+    const scrollAmount = 340; // Slightly larger than card width
+    scrollContainerRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
+
+  const handlePipelineChange = (pipelineId: string) => {
+    const pipeline = pipelines.find((p) => p.id === pipelineId);
+    if (pipeline) {
+      setSelectedPipeline(pipeline);
+    }
+  };
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header - responsive */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => router.push('/dashboard/crm')}
+              className="shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold">Sales Pipelines</h1>
-              <p className="text-muted-foreground">
-                Manage your sales pipeline stages
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{t.crm.pipelinesTitle}</h1>
+              <p className="text-sm text-muted-foreground hidden sm:block">
+                {t.crm.pipelinesSubtitle}
               </p>
             </div>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
-                New Pipeline
+                {t.crm.createPipeline}
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-[95vw] sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>Create New Pipeline</DialogTitle>
+                <DialogTitle>{t.crm.createNewPipeline}</DialogTitle>
                 <DialogDescription>
-                  Create a new sales pipeline to track your deals
+                  {t.crm.addDealToPipeline}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
-                  <Label>Pipeline Name *</Label>
+                  <Label>{t.crm.pipelineName} *</Label>
                   <Input
                     value={newPipelineName}
                     onChange={(e) => setNewPipelineName(e.target.value)}
-                    placeholder="e.g., Enterprise Sales"
+                    placeholder={t.crm.pipelineNamePlaceholder}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t.crm.description}</Label>
                   <Textarea
                     value={newPipelineDescription}
                     onChange={(e) => setNewPipelineDescription(e.target.value)}
-                    placeholder="Pipeline description..."
+                    placeholder={t.crm.pipelineDescriptionPlaceholder}
                     rows={3}
                   />
                 </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="flex-col sm:flex-row gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
+                  className="w-full sm:w-auto"
                 >
-                  Cancel
+                  {t.crm.cancel}
                 </Button>
-                <Button onClick={handleCreatePipeline} disabled={submitting}>
-                  {submitting ? 'Creating...' : 'Create'}
+                <Button onClick={handleCreatePipeline} disabled={submitting} className="w-full sm:w-auto">
+                  {submitting ? t.crm.saving : t.crm.create}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
 
-        {/* Pipeline Selector */}
+        {/* Pipeline Selector - using Select dropdown */}
         {pipelines.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
-            {pipelines.map((pipeline) => (
-              <Button
-                key={pipeline.id}
-                variant={selectedPipeline?.id === pipeline.id ? 'default' : 'outline'}
-                onClick={() => setSelectedPipeline(pipeline)}
-              >
-                {pipeline.name}
-                {pipeline.isDefault && (
-                  <Badge variant="secondary" className="ml-2">
-                    Default
-                  </Badge>
-                )}
-              </Button>
-            ))}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <Label className="text-sm text-muted-foreground shrink-0">{t.crm.pipelines}:</Label>
+            <Select
+              value={selectedPipeline?.id || ''}
+              onValueChange={handlePipelineChange}
+            >
+              <SelectTrigger className="w-full sm:w-[280px]">
+                <SelectValue placeholder={t.crm.selectPipeline} />
+              </SelectTrigger>
+              <SelectContent>
+                {pipelines.map((pipeline) => (
+                  <SelectItem key={pipeline.id} value={pipeline.id}>
+                    <div className="flex items-center gap-2">
+                      <span>{pipeline.name}</span>
+                      {pipeline.isDefault && (
+                        <Badge variant="secondary" className="text-xs">
+                          {t.crm.defaultPipeline}
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {pipelines.length > 1 && (
+              <span className="text-xs text-muted-foreground">
+                {pipelines.length} {t.crm.stages}
+              </span>
+            )}
           </div>
         )}
 
-        {/* Pipeline Board */}
+        {/* Pipeline Board with drag-to-scroll */}
         {selectedPipeline ? (
-          <div className="overflow-x-auto pb-4">
-            <div className="flex gap-4 min-w-max">
+          <div className="relative">
+            {/* Scroll navigation buttons - hidden on mobile */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm shadow-md hidden lg:flex"
+              onClick={() => scrollToDirection('left')}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm shadow-md hidden lg:flex"
+              onClick={() => scrollToDirection('right')}
+            >
+              <ChevronRight className="h-6 w-6" />
+            </Button>
+
+            {/* Drag hint */}
+            <div className="flex items-center justify-center gap-2 mb-2 text-xs text-muted-foreground">
+              <Grip className="h-3 w-3" />
+              <span className="hidden sm:inline">{t.calendar.dragToMove || 'Hold and drag to scroll'}</span>
+              <span className="sm:hidden">Swipe to scroll</span>
+            </div>
+
+            {/* Scrollable container */}
+            <div
+              ref={scrollContainerRef}
+              className={cn(
+                "flex gap-3 sm:gap-4 pb-4 px-0 lg:px-8 overflow-x-auto scrollbar-hide",
+                isDragging ? "cursor-grabbing select-none" : "cursor-grab"
+              )}
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+            >
               {selectedPipeline.stages
                 .sort((a, b) => a.sortOrder - b.sortOrder)
                 .map((stage) => {
@@ -389,68 +483,70 @@ export default function PipelinesPage() {
                   return (
                     <div
                       key={stage.id}
-                      className="w-[320px] flex-shrink-0"
+                      className="w-[280px] sm:w-[300px] lg:w-[320px] flex-shrink-0"
                     >
-                      <Card>
-                        <CardHeader className="pb-3">
+                      <Card className="glass h-full">
+                        <CardHeader className="pb-2 sm:pb-3">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <div
-                                className="w-3 h-3 rounded-full"
+                                className="w-3 h-3 rounded-full shrink-0"
                                 style={{ backgroundColor: stage.color }}
                               />
-                              <CardTitle className="text-base">
+                              <CardTitle className="text-sm sm:text-base truncate">
                                 {stage.name}
                               </CardTitle>
-                              <Badge variant="secondary" className="text-xs">
+                              <Badge variant="secondary" className="text-xs shrink-0">
                                 {stageDeals.length}
                               </Badge>
                             </div>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem>
                                   <Settings className="mr-2 h-4 w-4" />
-                                  Edit Stage
+                                  {t.crm.edit}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
-                          <div className="text-sm text-muted-foreground flex items-center gap-1">
+                          <div className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
                             <DollarSign className="h-3 w-3" />
                             {formatCurrency(stageTotal)}
                           </div>
                         </CardHeader>
-                        <CardContent className="space-y-3 max-h-[500px] overflow-y-auto">
+                        <CardContent className="space-y-2 sm:space-y-3 max-h-[400px] sm:max-h-[500px] overflow-y-auto">
                           {stageDeals.length === 0 ? (
-                            <div className="text-center text-muted-foreground py-8 text-sm">
-                              No deals in this stage
+                            <div className="text-center text-muted-foreground py-6 sm:py-8 text-xs sm:text-sm">
+                              {t.crm.noDealsYet}
                             </div>
                           ) : (
                             stageDeals.map((deal) => (
                               <Card
                                 key={deal.id}
-                                className="cursor-pointer hover:shadow-md transition-shadow"
-                                onClick={() =>
-                                  router.push(`/dashboard/crm/deals/${deal.id}`)
-                                }
+                                className="cursor-pointer hover:shadow-md transition-shadow bg-glass-light/30"
+                                onClick={(e) => {
+                                  if (!isDragging) {
+                                    router.push(`/dashboard/crm/deals/${deal.id}`);
+                                  }
+                                }}
                               >
-                                <CardContent className="p-3">
+                                <CardContent className="p-2 sm:p-3">
                                   <div className="flex items-start gap-2">
-                                    <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 cursor-grab" />
+                                    <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 cursor-grab shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                      <div className="font-medium truncate">
+                                      <div className="font-medium text-sm truncate">
                                         {deal.title}
                                       </div>
-                                      <div className="text-sm text-muted-foreground truncate">
+                                      <div className="text-xs text-muted-foreground truncate">
                                         {deal.customer.name}
                                       </div>
                                       {deal.amount && (
-                                        <div className="text-sm font-semibold mt-1">
+                                        <div className="text-xs sm:text-sm font-semibold mt-1 text-cosmic-purple">
                                           {formatCurrency(deal.amount)}
                                         </div>
                                       )}
@@ -462,13 +558,16 @@ export default function PipelinesPage() {
                           )}
                           <Button
                             variant="ghost"
-                            className="w-full border-dashed border"
-                            onClick={() => {
-                              router.push('/dashboard/crm/deals');
+                            className="w-full border-dashed border text-xs sm:text-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isDragging) {
+                                router.push('/dashboard/crm/deals');
+                              }
                             }}
                           >
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Deal
+                            <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            {t.crm.newDeal}
                           </Button>
                         </CardContent>
                       </Card>
@@ -478,20 +577,20 @@ export default function PipelinesPage() {
             </div>
           </div>
         ) : loading ? (
-          <Card>
+          <Card className="glass">
             <CardContent className="py-8 text-center">
-              Loading pipelines...
+              {t.crm.loading}
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="glass">
             <CardContent className="py-8 text-center">
               <p className="text-muted-foreground mb-4">
-                No pipelines yet. Create your first pipeline to start tracking deals.
+                {t.crm.noPipelinesFound}
               </p>
               <Button onClick={() => setIsDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Create Pipeline
+                {t.crm.createPipeline}
               </Button>
             </CardContent>
           </Card>
