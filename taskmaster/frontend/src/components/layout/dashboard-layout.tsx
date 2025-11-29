@@ -27,6 +27,7 @@ import {
   Check,
   Building2,
   CalendarDays,
+  MessagesSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore, useAuthHydration } from '@/stores/auth.store';
@@ -34,6 +35,8 @@ import { useSettingsStore } from '@/stores/settings.store';
 import { cn, getRankColor, getInitials } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Loader2 } from 'lucide-react';
+import { Messenger } from '@/components/messenger/messenger';
+import { useMessengerStore } from '@/stores/messenger.store';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -99,6 +102,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { getCurrentTheme } = useSettingsStore();
   const currentTheme = getCurrentTheme();
   const t = useTranslation();
+
+  // Messenger store
+  const { toggleMessenger, getUnreadCount: getMessengerUnread } = useMessengerStore();
+  const messengerUnreadCount = getMessengerUnread();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -309,6 +316,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex-1 min-w-0" />
 
           <div className="fixed top-3 right-4 sm:right-6 z-50 flex items-center gap-2 sm:gap-4 bg-glass-heavy/80 backdrop-blur-sm rounded-xl px-2 py-1">
+            {/* Messenger */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={toggleMessenger}
+              title="Messages"
+            >
+              <MessagesSquare className="w-5 h-5" />
+              {messengerUnreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-status-error rounded-full" />
+              )}
+            </Button>
+
             {/* Notifications */}
             <div className="relative" ref={notificationsRef}>
               <Button
@@ -439,6 +460,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {children}
         </main>
       </div>
+
+      {/* Messenger Component */}
+      <Messenger />
     </div>
   );
 }

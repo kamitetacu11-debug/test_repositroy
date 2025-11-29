@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
+import { useCRMStore, useCRMHydration } from '@/stores/crm.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   ArrowLeft,
@@ -178,6 +179,10 @@ export default function DealDetailPage() {
   const t = useTranslation();
   const dealId = params.id as string;
 
+  // CRM Store for demo deals
+  const { deals: storeDeals, pipelines: storePipelines, updateDeal: storeUpdateDeal, moveDealToStage, deleteDeal: storeDeleteDeal } = useCRMStore();
+  const hasHydrated = useCRMHydration();
+
   const [deal, setDeal] = useState<Deal | null>(null);
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
   const [loading, setLoading] = useState(true);
@@ -193,14 +198,54 @@ export default function DealDetailPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchDeal();
-  }, [dealId]);
+    if (hasHydrated) {
+      fetchDeal();
+    }
+  }, [dealId, hasHydrated]);
 
   const fetchDeal = async () => {
     setLoading(true);
 
-    // Check if it's a demo deal
-    if (dealId.startsWith('demo-')) {
+    // Check if it's a demo deal - use CRM store
+    if (dealId.startsWith('demo-') || storeDeals.some(d => d.id === dealId)) {
+      const storeDeal = storeDeals.find(d => d.id === dealId);
+      const storePipeline = storePipelines.find(p => p.id === (storeDeal?.pipeline.id || 'demo-pipeline-1'));
+
+      if (storeDeal) {
+        // Convert store deal to page Deal type
+        const convertedDeal: Deal = {
+          ...storeDeal,
+          description: storeDeal.notes,
+          customer: {
+            ...storeDeal.customer,
+            email: undefined,
+            phone: undefined,
+          },
+        };
+        setDeal(convertedDeal);
+        setPipeline(storePipeline ? {
+          id: storePipeline.id,
+          name: storePipeline.name,
+          stages: storePipeline.stages.map(s => ({
+            id: s.id,
+            name: s.name,
+            color: s.color,
+            sortOrder: s.sortOrder,
+          })),
+        } : demoPipeline);
+        setEditForm({
+          title: storeDeal.title,
+          amount: storeDeal.amount?.toString() || '',
+          probability: storeDeal.probability?.toString() || '',
+          expectedCloseDate: storeDeal.expectedCloseDate?.split('T')[0] || '',
+          description: storeDeal.notes || '',
+          stageId: storeDeal.stage.id,
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Fallback to static demo data if not in store
       const demoDeal = demoDeals[dealId];
       if (demoDeal) {
         setDeal(demoDeal);
@@ -258,17 +303,30 @@ export default function DealDetailPage() {
   };
 
   const handleUpdateDeal = async () => {
-    if (dealId.startsWith('demo-')) {
-      // For demo deals, just update local state
-      if (deal) {
-        const updatedDeal = {
+    // For demo deals or store deals, update via CRM store
+    if (dealId.startsWith('demo-') || storeDeals.some(d => d.id === dealId)) {
+      if (deal && pipeline) {
+        const newStage = pipeline.stages.find(s => s.id === editForm.stageId);
+
+        // Update in store
+        storeUpdateDeal(dealId, {
+          title: editForm.title,
+          amount: editForm.amount ? parseFloat(editForm.amount) : null,
+          probability: editForm.probability ? parseInt(editForm.probability) : (newStage ? storePipelines.find(p => p.id === deal.pipeline.id)?.stages.find(s => s.id === editForm.stageId)?.winProbability || 0 : deal.probability || 0),
+          expectedCloseDate: editForm.expectedCloseDate || null,
+          notes: editForm.description,
+          stage: newStage ? { id: newStage.id, name: newStage.name, color: newStage.color } : deal.stage,
+        });
+
+        // Update local state
+        const updatedDeal: Deal = {
           ...deal,
           title: editForm.title,
           amount: editForm.amount ? parseFloat(editForm.amount) : null,
           probability: editForm.probability ? parseInt(editForm.probability) : null,
           expectedCloseDate: editForm.expectedCloseDate || null,
           description: editForm.description,
-          stage: pipeline?.stages.find(s => s.id === editForm.stageId) || deal.stage,
+          stage: newStage || deal.stage,
         };
         setDeal(updatedDeal);
       }
@@ -308,7 +366,9 @@ export default function DealDetailPage() {
   const handleDelete = async () => {
     if (!confirm(t.crm.confirmDelete)) return;
 
-    if (dealId.startsWith('demo-')) {
+    // For demo deals or store deals, delete via CRM store
+    if (dealId.startsWith('demo-') || storeDeals.some(d => d.id === dealId)) {
+      storeDeleteDeal(dealId);
       router.push('/dashboard/crm/deals');
       return;
     }
@@ -328,10 +388,14 @@ export default function DealDetailPage() {
   };
 
   const handleStageChange = async (newStageId: string) => {
-    if (dealId.startsWith('demo-')) {
+    // For demo deals or store deals, update via CRM store
+    if (dealId.startsWith('demo-') || storeDeals.some(d => d.id === dealId)) {
       if (deal && pipeline) {
         const newStage = pipeline.stages.find(s => s.id === newStageId);
         if (newStage) {
+          // Update in store using moveDealToStage for proper status/probability updates
+          moveDealToStage(dealId, newStageId, deal.pipeline.id);
+          // Update local state
           setDeal({ ...deal, stage: newStage });
         }
       }

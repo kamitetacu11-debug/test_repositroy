@@ -24,7 +24,8 @@ const SelectTrigger = React.forwardRef<
       "hover:bg-glass-light/70 hover:border-cosmic-purple/50",
       "focus:outline-none focus:ring-2 focus:ring-cosmic-purple/50 focus:border-cosmic-purple",
       "disabled:cursor-not-allowed disabled:opacity-50",
-      "transition-all duration-200",
+      // Fixed: use specific transitions instead of transition-all to prevent dropdown jumping
+      "transition-colors transition-shadow duration-200",
       "[&>span]:line-clamp-1",
       className
     )}
