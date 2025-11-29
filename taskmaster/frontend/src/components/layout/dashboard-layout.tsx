@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -101,8 +101,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const notificationsRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Close notifications when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+      }
+    };
+
+    if (notificationsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [notificationsOpen]);
 
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
@@ -254,7 +272,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <div className="flex items-center gap-4">
             {/* Notifications */}
-            <div className="relative">
+            <div className="relative" ref={notificationsRef}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -270,20 +288,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               {/* Notifications Dropdown */}
               <AnimatePresence>
                 {notificationsOpen && (
-                  <>
-                    {/* Backdrop */}
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setNotificationsOpen(false)}
-                    />
-
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl backdrop-blur-sm z-50 overflow-hidden"
-                    >
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl backdrop-blur-sm z-50 overflow-hidden"
+                  >
                       {/* Header */}
                       <div className="flex items-center justify-between p-4 border-b border-glass-border">
                         <div className="flex items-center gap-2">
@@ -366,7 +377,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         </div>
                       )}
                     </motion.div>
-                  </>
                 )}
               </AnimatePresence>
             </div>
