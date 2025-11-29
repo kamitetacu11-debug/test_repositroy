@@ -176,7 +176,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar */}
       <motion.aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 glass-heavy transform lg:translate-x-0 lg:static lg:flex lg:flex-col',
+          'fixed inset-y-0 left-0 z-50 w-64 glass-heavy transform lg:translate-x-0 lg:flex lg:flex-col',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -268,7 +268,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </motion.aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen lg:ml-64">
         {/* Top bar */}
         <header className="sticky top-0 z-30 glass h-16 flex items-center justify-between px-6">
           <button
