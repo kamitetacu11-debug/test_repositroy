@@ -296,19 +296,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </motion.aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen lg:ml-64">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 glass h-16 flex items-center justify-between px-6">
+      <div className="flex-1 flex flex-col min-h-screen lg:ml-64 min-w-0">
+        {/* Top bar - fixed to ensure always visible */}
+        <header className="fixed top-0 right-0 left-0 lg:left-64 z-30 glass h-16 flex items-center justify-between px-4 sm:px-6">
           <button
-            className="lg:hidden p-2 rounded-lg hover:bg-glass-light"
+            className="lg:hidden p-2 rounded-lg hover:bg-glass-light shrink-0"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="flex-1" />
+          <div className="flex-1 min-w-0" />
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {/* Notifications */}
             <div className="relative" ref={notificationsRef}>
               <Button
@@ -434,8 +434,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 p-6 overflow-auto">
+        {/* Page content - pt-16 accounts for fixed header height */}
+        <main className="flex-1 p-6 pt-20 overflow-auto">
           {children}
         </main>
       </div>

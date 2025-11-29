@@ -364,6 +364,16 @@ export default function PipelinesPage() {
 
   return (
     <DashboardLayout>
+      {/* Fixed floating Create Pipeline button - always visible */}
+      <button
+        onClick={() => setIsDialogOpen(true)}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-cosmic-purple hover:bg-cosmic-purple/90 text-white shadow-lg transition-all hover:scale-105"
+        style={{ boxShadow: '0 4px 20px rgba(139, 92, 246, 0.4)' }}
+      >
+        <Plus className="h-5 w-5" />
+        <span className="font-medium hidden sm:inline">{t.crm.createPipeline}</span>
+      </button>
+
       <div className="space-y-4 sm:space-y-6">
         {/* Header - responsive */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -475,21 +485,19 @@ export default function PipelinesPage() {
               <span>{t.crm.holdAndDragToScroll || 'Hold and drag to scroll'}</span>
             </div>
 
-            {/* Scrollable container with fixed add button */}
-            <div className="relative">
-              {/* Scrollable stages container - drag to scroll only */}
-              <div
-                ref={scrollContainerRef}
-                className={cn(
-                  "flex gap-3 sm:gap-4 pb-4 pr-[100px] overflow-x-scroll",
-                  isDragging ? "cursor-grabbing select-none" : "cursor-grab",
-                  "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                )}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseLeave}
-              >
+            {/* Scrollable stages container - drag to scroll only */}
+            <div
+              ref={scrollContainerRef}
+              className={cn(
+                "flex gap-3 sm:gap-4 pb-4 overflow-x-scroll",
+                isDragging ? "cursor-grabbing select-none" : "cursor-grab",
+                "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              )}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+            >
               {selectedPipeline.stages
                 .sort((a, b) => a.sortOrder - b.sortOrder)
                 .map((stage) => {
@@ -591,22 +599,6 @@ export default function PipelinesPage() {
                   );
                 })}
               </div>
-
-              {/* Fixed Create Pipeline button - always visible */}
-              <div className="absolute right-0 top-0 bottom-4 w-[90px] flex items-start pt-0 pointer-events-none">
-                <Card
-                  className="glass w-full h-[200px] flex items-center justify-center cursor-pointer hover:bg-glass-light/50 transition-colors pointer-events-auto"
-                  onClick={() => setIsDialogOpen(true)}
-                >
-                  <CardContent className="p-4 flex flex-col items-center justify-center gap-2 text-center">
-                    <div className="w-10 h-10 rounded-full bg-cosmic-purple/20 flex items-center justify-center">
-                      <Plus className="h-5 w-5 text-cosmic-purple" />
-                    </div>
-                    <span className="text-xs text-muted-foreground">{t.crm.createPipeline}</span>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
           </div>
         ) : loading ? (
           <Card className="glass">
