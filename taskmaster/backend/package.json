@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "TaskMaster AI-Powered Business Task Management API",
   "main": "dist/main.js",
+  "type": "module",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc",
