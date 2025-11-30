@@ -32,6 +32,7 @@ import { Captcha } from '@/components/security/Captcha';
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean().optional(),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -159,15 +160,29 @@ export default function LoginPage() {
 
   const [captchaToken, setLocalCaptchaToken] = useState<string | null>(null);
   const [showCaptcha, setShowCaptcha] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const {
     register,
     handleSubmit,
-    getValues,
+    setValue,
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
+
+  // Load remembered email on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedRememberMe = localStorage.getItem('rememberMe') === 'true';
+      const savedEmail = localStorage.getItem('rememberedEmail');
+
+      if (savedRememberMe && savedEmail) {
+        setValue('email', savedEmail);
+        setRememberMe(true);
+      }
+    }
+  }, [setValue]);
 
   // Show CAPTCHA when required
   useEffect(() => {
@@ -191,9 +206,9 @@ export default function LoginPage() {
       setLocalCaptchaToken(null);
       setShowCaptcha(false);
     } else {
-      await login({ email: data.email, password: data.password });
+      await login({ email: data.email, password: data.password, rememberMe });
     }
-  }, [login, loginWithCaptcha, captchaToken, clearError]);
+  }, [login, loginWithCaptcha, captchaToken, clearError, rememberMe]);
 
   // Handle lockout expiry
   const handleLockoutExpire = useCallback(() => {
@@ -329,9 +344,42 @@ export default function LoginPage() {
 
                     {/* Remember Me & Forgot Password */}
                     <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 text-sm text-gray-400">
-                        <input type="checkbox" className="rounded" disabled={isFormDisabled} />
-                        Remember me
+                      <label className="group flex items-center gap-3 text-sm text-gray-400 cursor-pointer select-none">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                            disabled={isFormDisabled}
+                            className="peer sr-only"
+                          />
+                          <div className="w-5 h-5 rounded-md border-2 border-gray-600 bg-cosmic-dark/50
+                            peer-checked:bg-cosmic-purple peer-checked:border-cosmic-purple
+                            peer-focus:ring-2 peer-focus:ring-cosmic-purple/50 peer-focus:ring-offset-2 peer-focus:ring-offset-cosmic-darker
+                            peer-disabled:opacity-50 peer-disabled:cursor-not-allowed
+                            transition-all duration-200 ease-in-out
+                            group-hover:border-cosmic-purple/70"
+                          >
+                            <motion.svg
+                              className="w-full h-full text-white p-0.5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              initial={false}
+                              animate={{
+                                opacity: rememberMe ? 1 : 0,
+                                scale: rememberMe ? 1 : 0.5
+                              }}
+                              transition={{ duration: 0.15 }}
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </motion.svg>
+                          </div>
+                        </div>
+                        <span className="group-hover:text-gray-300 transition-colors">Remember me</span>
                       </label>
                       <Link
                         href="/auth/forgot-password"

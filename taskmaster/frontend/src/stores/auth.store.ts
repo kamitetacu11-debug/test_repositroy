@@ -22,7 +22,7 @@ interface AuthState {
   isAuthenticated: boolean;
   _hasHydrated: boolean;
 
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<void>;
   logout: () => void;
   fetchUser: () => Promise<void>;
@@ -44,13 +44,22 @@ export const useAuthStore = create<AuthState>()(
         set({ _hasHydrated: state });
       },
 
-      login: async (email, password) => {
+      login: async (email, password, rememberMe = false) => {
         set({ isLoading: true });
         try {
           const response = await authApi.login(email, password);
           const { user, token } = response.data.data;
 
           localStorage.setItem('token', token);
+
+          // Save remember me preference
+          if (rememberMe) {
+            localStorage.setItem('rememberMe', 'true');
+            localStorage.setItem('rememberedEmail', email);
+          } else {
+            localStorage.removeItem('rememberMe');
+            localStorage.removeItem('rememberedEmail');
+          }
 
           set({
             user,
@@ -86,11 +95,16 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('rememberMe');
         set({
           user: null,
           token: null,
           isAuthenticated: false,
         });
+        // Redirect to login page
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth/login';
+        }
       },
 
       fetchUser: async () => {

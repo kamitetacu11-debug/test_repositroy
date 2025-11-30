@@ -25,6 +25,7 @@ export interface LoginCredentials {
   email: string;
   password: string;
   captchaToken?: string;
+  rememberMe?: boolean;
 }
 
 export interface LoginState {
@@ -169,6 +170,15 @@ export function useSecureLogin(): UseSecureLoginReturn {
 
       // Clear captcha token after successful login
       captchaTokenRef.current = null;
+
+      // Handle remember me
+      if (credentials.rememberMe) {
+        localStorage.setItem('rememberMe', 'true');
+        localStorage.setItem('rememberedEmail', credentials.email);
+      } else {
+        localStorage.removeItem('rememberMe');
+        localStorage.removeItem('rememberedEmail');
+      }
 
       // Update auth store
       setAuth.setUser(user, token);
