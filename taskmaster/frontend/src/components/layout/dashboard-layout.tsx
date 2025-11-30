@@ -253,20 +253,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         damping: 30,
                       }}
                     >
-                      {/* Breathing glow effect - more pronounced */}
+                      {/* Breathing glow effect - soft and contained */}
                       <motion.div
-                        className="absolute -inset-1 rounded-r-full"
+                        className="absolute inset-0 rounded-r-full overflow-hidden"
                         style={{
-                          background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.8) 0%, transparent 70%)',
+                          background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.6) 0%, transparent 80%)',
                         }}
                         animate={{
                           boxShadow: [
-                            '0 0 10px 2px rgba(139, 92, 246, 0.3), 0 0 20px 4px rgba(139, 92, 246, 0.2)',
-                            '0 0 25px 8px rgba(139, 92, 246, 0.8), 0 0 50px 15px rgba(168, 85, 247, 0.5)',
-                            '0 0 10px 2px rgba(139, 92, 246, 0.3), 0 0 20px 4px rgba(139, 92, 246, 0.2)',
+                            '0 0 4px 1px rgba(139, 92, 246, 0.3)',
+                            '0 0 8px 2px rgba(139, 92, 246, 0.5)',
+                            '0 0 4px 1px rgba(139, 92, 246, 0.3)',
                           ],
-                          scale: [1, 1.3, 1],
-                          opacity: [0.5, 1, 0.5],
+                          opacity: [0.6, 1, 0.6],
                         }}
                         transition={{
                           duration: 2.5,
