@@ -806,15 +806,6 @@ export function Messenger() {
           <div className="p-4 border-b border-glass-border">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={closeMessenger}
-                  title="Закрыть чат"
-                  className="h-8 w-8"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
                 <Lock className="w-5 h-5" style={{ color: theme.colors.primary }} />
                 <h2 className="text-lg font-semibold">Messages</h2>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 flex items-center gap-1">
@@ -827,7 +818,8 @@ export function Messenger() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowGroupModal(true)}
-                  title="Create Group"
+                  title="Создать группу"
+                  className="h-9 w-9"
                 >
                   <Users className="w-5 h-5" />
                 </Button>
@@ -835,7 +827,8 @@ export function Messenger() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowNewChatModal(true)}
-                  title="New Chat"
+                  title="Новый чат"
+                  className="h-9 w-9"
                 >
                   <Plus className="w-5 h-5" />
                 </Button>
@@ -844,12 +837,22 @@ export function Messenger() {
                   size="icon"
                   onClick={() => setIsExpanded(!isExpanded)}
                   title={isExpanded ? "Свернуть" : "Развернуть"}
+                  className="h-9 w-9"
                 >
                   {isExpanded ? (
                     <Minimize2 className="w-5 h-5" />
                   ) : (
                     <Maximize2 className="w-5 h-5" />
                   )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={closeMessenger}
+                  title="Закрыть мессенджер"
+                  className="h-9 w-9"
+                >
+                  <X className="w-5 h-5" />
                 </Button>
               </div>
             </div>
@@ -982,13 +985,13 @@ export function Messenger() {
               {/* Chat Header */}
               <div className="p-4 border-b border-glass-border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {/* Back/Close button - always visible for navigation */}
+                  {/* Back button - returns to chat list */}
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setActiveChat(null)}
-                    className="flex-shrink-0"
-                    title="Back to chats"
+                    className="flex-shrink-0 h-9 w-9"
+                    title="Назад к списку"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </Button>
@@ -1022,16 +1025,43 @@ export function Messenger() {
                     </p>
                   </div>
                 </div>
-                {/* Settings button */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  title="Chat Settings"
-                  onClick={() => setShowSettingsModal(true)}
-                  className="flex-shrink-0"
-                >
-                  <Settings className="w-5 h-5" />
-                </Button>
+                {/* Action buttons */}
+                <div className="flex items-center gap-1">
+                  {/* Expand/Collapse button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="flex-shrink-0 h-9 w-9"
+                    title={isExpanded ? "Свернуть" : "Развернуть"}
+                  >
+                    {isExpanded ? (
+                      <Minimize2 className="w-5 h-5" />
+                    ) : (
+                      <Maximize2 className="w-5 h-5" />
+                    )}
+                  </Button>
+                  {/* Settings button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Настройки чата"
+                    onClick={() => setShowSettingsModal(true)}
+                    className="flex-shrink-0 h-9 w-9"
+                  >
+                    <Settings className="w-5 h-5" />
+                  </Button>
+                  {/* Close messenger button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={closeMessenger}
+                    className="flex-shrink-0 h-9 w-9"
+                    title="Закрыть мессенджер"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
 
               {/* Messages */}
