@@ -7,6 +7,23 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
+  // Clean up existing data (for re-runs) - order matters due to foreign keys
+  console.log('🧹 Cleaning existing seed data...');
+  await prisma.activity.deleteMany({});
+  await prisma.deal.deleteMany({});
+  await prisma.pipelineStage.deleteMany({});
+  await prisma.pipeline.deleteMany({});
+  await prisma.contact.deleteMany({});
+  await prisma.customer.deleteMany({});
+  await prisma.pointTransaction.deleteMany({});
+  await prisma.questProgress.deleteMany({});
+  await prisma.quest.deleteMany({});
+  await prisma.taskTag.deleteMany({});
+  await prisma.comment.deleteMany({});
+  await prisma.attachment.deleteMany({});
+  await prisma.task.deleteMany({});
+  console.log('✅ Cleanup complete');
+
   // Create departments
   const [engineering, product, marketing] = await Promise.all([
     prisma.department.upsert({
@@ -28,30 +45,26 @@ async function main() {
 
   console.log('✅ Departments created');
 
-  // Create teams
-  const [frontendTeam, backendTeam, mobileTeam] = await Promise.all([
-    prisma.team.create({
-      data: {
-        name: 'Frontend Team',
-        description: 'Web Frontend Development',
-        departmentId: engineering.id,
-      },
-    }),
-    prisma.team.create({
-      data: {
-        name: 'Backend Team',
-        description: 'API & Infrastructure',
-        departmentId: engineering.id,
-      },
-    }),
-    prisma.team.create({
-      data: {
-        name: 'Mobile Team',
-        description: 'iOS & Android Development',
-        departmentId: engineering.id,
-      },
-    }),
-  ]);
+  // Create teams (find existing or create new)
+  let frontendTeam = await prisma.team.findFirst({ where: { name: 'Frontend Team' } });
+  let backendTeam = await prisma.team.findFirst({ where: { name: 'Backend Team' } });
+  let mobileTeam = await prisma.team.findFirst({ where: { name: 'Mobile Team' } });
+
+  if (!frontendTeam) {
+    frontendTeam = await prisma.team.create({
+      data: { name: 'Frontend Team', description: 'Web Frontend Development', departmentId: engineering.id },
+    });
+  }
+  if (!backendTeam) {
+    backendTeam = await prisma.team.create({
+      data: { name: 'Backend Team', description: 'API & Infrastructure', departmentId: engineering.id },
+    });
+  }
+  if (!mobileTeam) {
+    mobileTeam = await prisma.team.create({
+      data: { name: 'Mobile Team', description: 'iOS & Android Development', departmentId: engineering.id },
+    });
+  }
 
   console.log('✅ Teams created');
 
@@ -75,11 +88,13 @@ async function main() {
 
   console.log('✅ Admin user created');
 
-  // Create demo users
+  // Create demo users (upsert to handle re-runs)
   const demoPassword = await bcrypt.hash('demo123', 12);
   const demoUsers = await Promise.all([
-    prisma.user.create({
-      data: {
+    prisma.user.upsert({
+      where: { email: 'john@taskmaster.io' },
+      update: { teamId: frontendTeam.id, departmentId: engineering.id },
+      create: {
         email: 'john@taskmaster.io',
         passwordHash: demoPassword,
         firstName: 'John',
@@ -94,8 +109,10 @@ async function main() {
         streak: 15,
       },
     }),
-    prisma.user.create({
-      data: {
+    prisma.user.upsert({
+      where: { email: 'jane@taskmaster.io' },
+      update: { teamId: backendTeam.id, departmentId: engineering.id },
+      create: {
         email: 'jane@taskmaster.io',
         passwordHash: demoPassword,
         firstName: 'Jane',
@@ -110,8 +127,10 @@ async function main() {
         streak: 7,
       },
     }),
-    prisma.user.create({
-      data: {
+    prisma.user.upsert({
+      where: { email: 'bob@taskmaster.io' },
+      update: { teamId: frontendTeam.id, departmentId: engineering.id },
+      create: {
         email: 'bob@taskmaster.io',
         passwordHash: demoPassword,
         firstName: 'Bob',
