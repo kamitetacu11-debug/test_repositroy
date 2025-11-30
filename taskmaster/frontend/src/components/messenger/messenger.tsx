@@ -833,28 +833,6 @@ export function Messenger() {
                 >
                   <Plus className="w-5 h-5" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  title={isExpanded ? "Свернуть" : "Развернуть"}
-                  className="h-9 w-9"
-                >
-                  {isExpanded ? (
-                    <Minimize2 className="w-5 h-5" />
-                  ) : (
-                    <Maximize2 className="w-5 h-5" />
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={closeMessenger}
-                  title="Закрыть мессенджер"
-                  className="h-9 w-9"
-                >
-                  <X className="w-5 h-5" />
-                </Button>
               </div>
             </div>
 
