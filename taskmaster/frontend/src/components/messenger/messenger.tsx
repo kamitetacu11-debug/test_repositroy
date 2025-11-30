@@ -849,7 +849,7 @@ export function Messenger() {
           </div>
 
           {/* Chat List */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden" style={{ overscrollBehavior: 'contain' }}>
             {filteredChats.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
                 <Users className="w-12 h-12 mb-2" />
@@ -1048,6 +1048,7 @@ export function Messenger() {
                 ref={messagesContainerRef}
                 onScroll={handleMessagesScroll}
                 className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4"
+                style={{ overscrollBehavior: 'contain' }}
               >
                 {chatMessages.map((message, index) => {
                   const isOwn = message.senderId === currentUserId;

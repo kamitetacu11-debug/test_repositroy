@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useSettingsStore } from '@/stores/settings.store';
 
 // Mock tasks data for each day
 const tasksData: Record<string, { id: string; title: string; points: number; completedAt: string; category: string }[]> = {
@@ -122,6 +123,8 @@ const categoriesData = [
 
 export default function AnalyticsPage() {
   const t = useTranslation();
+  const { getCurrentTheme } = useSettingsStore();
+  const theme = getCurrentTheme();
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -339,12 +342,19 @@ export default function AnalyticsPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl"
+              className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl border border-glass-border"
+              style={{
+                backgroundColor: theme.colors.background,
+                boxShadow: `0 0 40px ${theme.colors.glow1}, 0 0 80px ${theme.colors.glow2}`,
+              }}
             >
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-glass-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cosmic-purple to-cosmic-blue flex items-center justify-center">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})` }}
+                  >
                     <Calendar className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -395,7 +405,13 @@ export default function AnalyticsPage() {
                           <span>{t.analytics.completedAt} {task.completedAt}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cosmic-purple/20 text-cosmic-purple">
+                      <div
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg"
+                        style={{
+                          backgroundColor: `${theme.colors.primary}20`,
+                          color: theme.colors.primary,
+                        }}
+                      >
                         <Zap className="w-4 h-4" />
                         <span className="font-medium">+{task.points}</span>
                       </div>
@@ -408,11 +424,11 @@ export default function AnalyticsPage() {
               <div className="flex items-center justify-between p-6 border-t border-glass-border bg-glass-light/30">
                 <div className="flex items-center gap-4 text-sm text-gray-400">
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-cosmic-purple" />
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.colors.primary }} />
                     <span>{t.analytics.development}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-cosmic-cyan" />
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.colors.secondary }} />
                     <span>{t.analytics.design}</span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -456,7 +472,11 @@ export default function AnalyticsPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl border border-glass-border bg-cosmic-dark/95 shadow-2xl"
+              className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl border border-glass-border"
+              style={{
+                backgroundColor: theme.colors.background,
+                boxShadow: `0 0 40px ${theme.colors.glow1}, 0 0 80px ${theme.colors.glow2}`,
+              }}
             >
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-glass-border">
