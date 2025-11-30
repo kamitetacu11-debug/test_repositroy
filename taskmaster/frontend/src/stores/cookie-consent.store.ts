@@ -130,13 +130,23 @@ export const useCookieConsentStore = create<CookieConsentState>()(
     }),
     {
       name: 'cookie-consent-storage',
-      onRehydrateStorage: () => (state) => {
+      onRehydrateStorage: () => (state, error) => {
+        // Handle errors
+        if (error) {
+          console.error('Cookie consent hydration error:', error);
+          useCookieConsentStore.setState({ _hasHydrated: true });
+          return;
+        }
+
         if (state) {
           state.setHasHydrated(true);
           // If user has already consented, don't show banner
           if (state.hasConsented) {
             state.showBanner = false;
           }
+        } else {
+          // Handle fresh store (no localStorage data - e.g., after clearing cookies)
+          useCookieConsentStore.setState({ _hasHydrated: true });
         }
       },
       partialize: (state) => ({

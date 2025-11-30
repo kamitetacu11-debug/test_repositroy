@@ -178,11 +178,15 @@ export default function LoginPage() {
       const savedEmail = localStorage.getItem('rememberedEmail');
 
       if (savedRememberMe && savedEmail) {
-        setValue('email', savedEmail);
-        setRememberMe(true);
+        // Use setTimeout to ensure form is fully initialized
+        setTimeout(() => {
+          setValue('email', savedEmail);
+          setRememberMe(true);
+        }, 0);
       }
     }
-  }, [setValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Show CAPTCHA when required
   useEffect(() => {
