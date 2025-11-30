@@ -28,6 +28,10 @@ import {
   PinOff,
   Upload,
   Code,
+  Download,
+  ExternalLink,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,7 +86,7 @@ const detectLanguage = (code: string): { language: string; confidence: 'high' | 
   if (/^#\s*\w+/.test(trimmed) && /^\s*```/.test(trimmed)) return { language: 'Markdown', confidence: 'medium' };
 
   // Low confidence - generic patterns
-  if (/<\w+[^>]*>.*<\/\w+>/s.test(trimmed)) return { language: 'HTML/XML', confidence: 'low' };
+  if (/<\w+[^>]*>[\s\S]*<\/\w+>/.test(trimmed)) return { language: 'HTML/XML', confidence: 'low' };
   if (/^\s*\/\/|^\s*\/\*|^\s*#/.test(trimmed)) return { language: 'Code', confidence: 'low' };
   if (/[{}\[\];]/.test(trimmed)) return { language: 'Code', confidence: 'low' };
 
@@ -117,6 +121,235 @@ const getLanguageColor = (language: string): string => {
     'Markdown': '#083fa1',
   };
   return colors[language] || '#6b7280';
+};
+
+// Minimum lines threshold for showing code as file
+const CODE_FILE_THRESHOLD = 30;
+
+// Helper to download code as file
+const downloadCodeAsFile = (code: string, language: string) => {
+  const extensions: Record<string, string> = {
+    javascript: 'js',
+    typescript: 'ts',
+    python: 'py',
+    java: 'java',
+    'c/c++': 'cpp',
+    'c#': 'cs',
+    go: 'go',
+    rust: 'rs',
+    php: 'php',
+    ruby: 'rb',
+    swift: 'swift',
+    kotlin: 'kt',
+    scala: 'scala',
+    'react/jsx': 'jsx',
+    vue: 'vue',
+    html: 'html',
+    css: 'css',
+    'scss/sass': 'scss',
+    sql: 'sql',
+    json: 'json',
+    yaml: 'yaml',
+    shell: 'sh',
+    markdown: 'md',
+  };
+
+  const ext = extensions[language.toLowerCase()] || 'txt';
+  const blob = new Blob([code], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `code.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+// Helper to open code in new tab for preview
+const openCodeInNewTab = (code: string, language: string) => {
+  const langColor = getLanguageColor(language.charAt(0).toUpperCase() + language.slice(1));
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Code Preview - ${language.toUpperCase()}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+    }
+    .header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .lang-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: ${langColor}20;
+      border: 1px solid ${langColor}40;
+      color: ${langColor};
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .lang-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: ${langColor};
+    }
+    .stats {
+      color: #8b949e;
+      font-size: 14px;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #c9d1d9;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background: #30363d;
+      border-color: #8b949e;
+    }
+    .btn-primary {
+      background: ${langColor};
+      border-color: ${langColor};
+      color: white;
+    }
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+    .code-container {
+      padding: 24px;
+    }
+    pre {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow-x: auto;
+      padding: 16px;
+    }
+    code {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre;
+      display: block;
+    }
+    .line-numbers {
+      display: inline-block;
+      min-width: 40px;
+      padding-right: 16px;
+      text-align: right;
+      color: #484f58;
+      user-select: none;
+      border-right: 1px solid #30363d;
+      margin-right: 16px;
+    }
+    .line {
+      display: flex;
+    }
+    .line-content {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="lang-badge">
+        <span class="lang-dot"></span>
+        ${language.toUpperCase()}
+      </div>
+      <span class="stats">${code.split('\\n').length} строк</span>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="copyCode()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        Копировать
+      </button>
+      <button class="btn btn-primary" onclick="downloadCode()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Скачать
+      </button>
+    </div>
+  </div>
+  <div class="code-container">
+    <pre><code id="code-content"></code></pre>
+  </div>
+  <script>
+    const code = ${JSON.stringify(code)};
+    const lines = code.split('\\n');
+    const codeEl = document.getElementById('code-content');
+    codeEl.innerHTML = lines.map((line, i) =>
+      '<div class="line"><span class="line-numbers">' + (i + 1) + '</span><span class="line-content">' +
+      line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span></div>'
+    ).join('');
+
+    function copyCode() {
+      navigator.clipboard.writeText(code);
+      const btn = event.target.closest('button');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Скопировано!';
+      setTimeout(() => btn.innerHTML = originalText, 2000);
+    }
+
+    function downloadCode() {
+      const blob = new Blob([code], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'code.${language.toLowerCase().replace(/[^a-z]/g, '')}';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  // Clean up after a delay
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 // Component to render message content with code blocks
@@ -165,7 +398,85 @@ const MessageContent = ({ content, theme }: { content: string; theme: any }) => 
 
         // Render code block
         const langColor = getLanguageColor(part.language?.charAt(0).toUpperCase() + (part.language?.slice(1) || ''));
+        const lineCount = part.content.split('\n').length;
+        const isLargeCode = lineCount > CODE_FILE_THRESHOLD;
 
+        // For large code blocks (>30 lines), show as file card
+        if (isLargeCode) {
+          return (
+            <div
+              key={index}
+              className="rounded-xl overflow-hidden bg-black/40 border border-glass-border/30 hover:border-glass-border/50 transition-colors"
+            >
+              {/* File card header */}
+              <div className="flex items-center justify-between px-4 py-3 bg-black/30">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: `${langColor}20` }}
+                  >
+                    <FileText className="w-5 h-5" style={{ color: langColor }} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">
+                        {part.language?.charAt(0).toUpperCase() + (part.language?.slice(1) || 'Code')} код
+                      </span>
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full"
+                        style={{
+                          backgroundColor: `${langColor}20`,
+                          color: langColor,
+                        }}
+                      >
+                        {part.language?.toUpperCase() || 'CODE'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Document · {lineCount} строк
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openCodeInNewTab(part.content, part.language || 'code')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors hover:bg-white/10"
+                    title="Посмотреть код"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Посмотреть
+                  </button>
+                  <button
+                    onClick={() => downloadCodeAsFile(part.content, part.language || 'code')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    style={{
+                      backgroundColor: `${langColor}20`,
+                      color: langColor,
+                    }}
+                    title="Скачать код"
+                  >
+                    <Download className="w-4 h-4" />
+                    Скачать
+                  </button>
+                </div>
+              </div>
+              {/* Code preview (first 10 lines) */}
+              <div className="border-t border-glass-border/20">
+                <pre className="p-3 overflow-x-auto text-sm max-h-32 overflow-y-hidden relative">
+                  <code className="font-mono text-gray-200 whitespace-pre">
+                    {part.content.split('\n').slice(0, 10).join('\n')}
+                  </code>
+                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+                </pre>
+                <div className="px-3 py-2 text-xs text-gray-500 text-center border-t border-glass-border/20 bg-black/20">
+                  + ещё {lineCount - 10} строк · нажмите "Посмотреть" для полного кода
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // For small code blocks, show inline
         return (
           <div key={index} className="rounded-lg overflow-hidden bg-black/40 border border-glass-border/30">
             {/* Code header with language badge */}
@@ -177,6 +488,9 @@ const MessageContent = ({ content, theme }: { content: string; theme: any }) => 
                 />
                 <span className="text-xs font-medium text-gray-400">
                   {part.language?.toUpperCase() || 'CODE'}
+                </span>
+                <span className="text-xs text-gray-600">
+                  {lineCount} {lineCount === 1 ? 'строка' : lineCount < 5 ? 'строки' : 'строк'}
                 </span>
               </div>
               <button
@@ -239,23 +553,47 @@ export function Messenger() {
   const [isDragging, setIsDragging] = useState(false);
   const [codeInput, setCodeInput] = useState('');
   const [detectedLang, setDetectedLang] = useState<{ language: string; confidence: 'high' | 'medium' | 'low' } | null>(null);
+  const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
+  const [lastMessageCount, setLastMessageCount] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatMenuRef = useRef<HTMLDivElement>(null);
 
   const activeChat = chats.find((c) => c.id === activeChatId);
   const chatMessages = activeChatId ? getChatMessages(activeChatId) : [];
 
-  // Scroll to bottom when messages change or chat changes
+  // Scroll to bottom only when new messages arrive or chat changes
   useEffect(() => {
     if (activeChatId) {
-      // Use setTimeout to ensure DOM is ready after chat switch
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
-      }, 100);
+      const currentMessageCount = chatMessages.length;
+      const isNewMessage = currentMessageCount > lastMessageCount;
+      const isChatSwitch = lastMessageCount === 0 || currentMessageCount !== lastMessageCount;
+
+      // Only scroll if it's a new message and user hasn't scrolled up
+      if ((isNewMessage || isChatSwitch) && !isUserScrolledUp) {
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+        }, 100);
+      }
+
+      setLastMessageCount(currentMessageCount);
+    } else {
+      setLastMessageCount(0);
     }
-  }, [chatMessages, activeChatId]);
+  }, [chatMessages.length, activeChatId]);
+
+  // Handle scroll to detect if user scrolled up
+  const handleMessagesScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setIsUserScrolledUp(!isAtBottom);
+  }, []);
 
   // Close chat menu when clicking outside
   useEffect(() => {
@@ -440,7 +778,12 @@ export function Messenger() {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ duration: 0.2 }}
-        className="fixed bottom-4 right-4 z-50 w-[95vw] max-w-[900px] h-[600px] max-h-[80vh] rounded-2xl border border-glass-border shadow-2xl overflow-hidden flex"
+        className={cn(
+          "fixed z-50 rounded-2xl border border-glass-border shadow-2xl overflow-hidden flex transition-all duration-300",
+          isExpanded
+            ? "inset-4 w-auto h-auto max-w-none max-h-none"
+            : "bottom-4 right-4 w-[95vw] max-w-[900px] h-[600px] max-h-[80vh]"
+        )}
         style={{
           backgroundColor: `${theme.colors.background}f8`,
           boxShadow: `0 0 40px ${theme.colors.glow1}, 0 0 80px ${theme.colors.glow2}`,
@@ -480,6 +823,18 @@ export function Messenger() {
                   title="New Chat"
                 >
                   <Plus className="w-5 h-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  title={isExpanded ? "Свернуть" : "Развернуть"}
+                >
+                  {isExpanded ? (
+                    <Minimize2 className="w-5 h-5" />
+                  ) : (
+                    <Maximize2 className="w-5 h-5" />
+                  )}
                 </Button>
                 <Button variant="ghost" size="icon" onClick={closeMessenger}>
                   <X className="w-5 h-5" />
@@ -668,7 +1023,11 @@ export function Messenger() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+              <div
+                ref={messagesContainerRef}
+                onScroll={handleMessagesScroll}
+                className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4"
+              >
                 {chatMessages.map((message, index) => {
                   const isOwn = message.senderId === currentUserId;
                   const sender = getUserById(message.senderId);
@@ -1276,33 +1635,28 @@ export function Messenger() {
                   <div className="flex-1 border-t border-glass-border/50" />
                 </div>
 
-                {/* File upload section */}
-                <div className="space-y-3">
+                {/* File upload section - fixed height to prevent jumping */}
+                <div className="space-y-3 min-h-[160px]">
                   <div className="flex items-center justify-center gap-2 text-sm">
                     <ImageIcon className="w-4 h-4" style={{ color: theme.colors.secondary }} />
                     <span>Фото, видео и файлы</span>
                   </div>
 
-                  {/* Drag indicator */}
-                  {isDragging ? (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="py-4 rounded-lg border-2 border-dashed"
-                      style={{
-                        borderColor: theme.colors.primary,
-                        backgroundColor: `${theme.colors.primary}10`,
-                      }}
+                  {/* Drag indicator - always reserve space */}
+                  <div
+                    className="py-6 rounded-lg border-2 border-dashed transition-all duration-200 min-h-[80px] flex items-center justify-center"
+                    style={{
+                      borderColor: isDragging ? theme.colors.primary : 'rgba(255,255,255,0.2)',
+                      backgroundColor: isDragging ? `${theme.colors.primary}10` : 'transparent',
+                    }}
+                  >
+                    <p
+                      className="text-sm transition-colors"
+                      style={{ color: isDragging ? theme.colors.primary : 'var(--muted-foreground)' }}
                     >
-                      <p className="text-sm font-medium" style={{ color: theme.colors.primary }}>
-                        Отпустите файл для загрузки
-                      </p>
-                    </motion.div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Перетащите файл сюда или нажмите кнопку ниже
+                      {isDragging ? 'Отпустите файл для загрузки' : 'Перетащите файл сюда или нажмите кнопку ниже'}
                     </p>
-                  )}
+                  </div>
 
                   {/* Select file button */}
                   <Button
