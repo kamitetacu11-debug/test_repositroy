@@ -26,7 +26,7 @@ import {
   Lock,
   File,
   PinOff,
-  CloudUpload,
+  Upload,
   Code,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -1125,7 +1125,7 @@ export function Messenger() {
               >
                 {/* Header with icon */}
                 <div className="flex items-center justify-center gap-2 mb-4">
-                  <CloudUpload
+                  <Upload
                     className="w-8 h-8"
                     style={{ color: isDragging ? theme.colors.primary : theme.colors.secondary }}
                   />
@@ -1232,7 +1232,7 @@ export function Messenger() {
                     onClick={() => fileInputRef.current?.click()}
                     className="w-full"
                   >
-                    <CloudUpload className="w-4 h-4 mr-2" />
+                    <Upload className="w-4 h-4 mr-2" />
                     Выбрать файл
                   </Button>
 
