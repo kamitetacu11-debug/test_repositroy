@@ -37,11 +37,11 @@ const DEFAULT_CONFIG: BruteForceConfig = {
   maxAttempts: 5,
   windowMs: 15 * 60 * 1000, // 15 minutes
   lockoutDurations: [
-    15 * 60,      // 15 minutes after 5 attempts
-    60 * 60,      // 1 hour after 10 attempts
-    4 * 60 * 60,  // 4 hours after 15 attempts
-    24 * 60 * 60, // 24 hours after 20 attempts
-    7 * 24 * 60 * 60, // 7 days after 25+ attempts
+    30,           // 30 seconds after 5 attempts
+    60,           // 1 minute after 10 attempts
+    2 * 60,       // 2 minutes after 15 attempts
+    5 * 60,       // 5 minutes after 20 attempts
+    10 * 60,      // 10 minutes after 25+ attempts
   ],
   notifyOnLockout: true,
 };
