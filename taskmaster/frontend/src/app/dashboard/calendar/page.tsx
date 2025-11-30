@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   CalendarDays,
@@ -125,10 +125,34 @@ export default function CalendarPage() {
     }
   }, [token, fetchTasksFromStore]);
 
-  // Use store's getTasksByDate for calendar display
-  const getTasksByDateLocal = useCallback((): DayTasks => {
+  // Auto-navigate to current month when date changes (e.g., at midnight)
+  useEffect(() => {
+    const checkDateChange = () => {
+      const now = new Date();
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      const nowMonth = now.getMonth();
+      const nowYear = now.getFullYear();
+
+      // If the current view doesn't include today and the month/year changed, navigate to today
+      if (currentMonth !== nowMonth || currentYear !== nowYear) {
+        setCurrentDate(new Date());
+      }
+    };
+
+    // Check on mount
+    checkDateChange();
+
+    // Set up interval to check every minute for date changes
+    const interval = setInterval(checkDateChange, 60000);
+
+    return () => clearInterval(interval);
+  }, [currentDate]);
+
+  // Use store's getTasksByDate for calendar display - reactive to tasks changes
+  const tasksByDate = useMemo((): DayTasks => {
     return getTasksByDate();
-  }, [getTasksByDate]);
+  }, [tasks, getTasksByDate]);
 
   const getDaysInMonth = () => {
     const year = currentDate.getFullYear();
@@ -266,19 +290,23 @@ export default function CalendarPage() {
     // Use noon to avoid timezone day-boundary issues
     const newDueDate = `${dateKey}T12:00:00`;
 
-    // Update in store (syncs with Tasks page)
-    updateTaskInStore(draggedTask.id, { dueDate: newDueDate });
+    // For demo/local tasks, update directly in store
+    // For API tasks, use updateTaskApi which handles both local and API update
+    if (draggedTask.id.startsWith('demo-') || draggedTask.id.startsWith('local-')) {
+      updateTaskInStore(draggedTask.id, { dueDate: newDueDate });
+    } else if (token) {
+      // updateTaskApi handles local state update internally
+      await updateTaskApi(draggedTask.id, { dueDate: newDueDate }, token);
+    } else {
+      // No token but not demo/local - update locally
+      updateTaskInStore(draggedTask.id, { dueDate: newDueDate });
+    }
 
     addToast({
       type: 'success',
       title: t.calendar.taskMoved || 'Task moved',
       message: `${draggedTask.title} ${t.calendar.movedToDate || 'moved to'} ${dateKey}`,
     });
-
-    // Sync to API
-    if (token && !draggedTask.id.startsWith('demo-') && !draggedTask.id.startsWith('local-')) {
-      await updateTaskApi(draggedTask.id, { dueDate: newDueDate }, token);
-    }
 
     setDraggedTask(null);
   };
@@ -318,8 +346,19 @@ export default function CalendarPage() {
       newDueDate = `${formatDateKeyFromDate(tomorrow)}T12:00:00`;
     }
 
-    // Update in store (syncs with Tasks page)
-    updateTaskInStore(draggedTask.id, { dueDate: newDueDate, status: newStatus });
+    const updates = { dueDate: newDueDate, status: newStatus };
+
+    // For demo/local tasks, update directly in store
+    // For API tasks, use updateTaskApi which handles both local and API update
+    if (draggedTask.id.startsWith('demo-') || draggedTask.id.startsWith('local-')) {
+      updateTaskInStore(draggedTask.id, updates);
+    } else if (token) {
+      // updateTaskApi handles local state update internally
+      await updateTaskApi(draggedTask.id, updates, token);
+    } else {
+      // No token but not demo/local - update locally
+      updateTaskInStore(draggedTask.id, updates);
+    }
 
     const sectionNames: Record<string, string> = {
       completed: t.calendar.completed,
@@ -333,11 +372,6 @@ export default function CalendarPage() {
       title: t.calendar.taskMoved || 'Task moved',
       message: `${draggedTask.title} → ${sectionNames[section]}`,
     });
-
-    // Sync to API
-    if (token && !draggedTask.id.startsWith('demo-') && !draggedTask.id.startsWith('local-')) {
-      await updateTaskApi(draggedTask.id, { dueDate: newDueDate, status: newStatus }, token);
-    }
 
     setDraggedTask(null);
   };
@@ -489,7 +523,6 @@ export default function CalendarPage() {
     }
   };
 
-  const tasksByDate = getTasksByDateLocal();
   const days = getDaysInMonth();
   const weekDays = getWeekDays();
 
