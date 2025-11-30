@@ -71,6 +71,10 @@ export default function PipelinesPage() {
   const [editStageColor, setEditStageColor] = useState('');
   const [editStageWinProbability, setEditStageWinProbability] = useState('');
 
+  // Confirm dialog state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [stageToDelete, setStageToDelete] = useState<string | null>(null);
+
   // Drag-to-scroll state
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -148,13 +152,21 @@ export default function PipelinesPage() {
     setEditingStage(null);
   };
 
-  // Delete stage
+  // Delete stage - opens confirm dialog
   const handleDeleteStage = (stageId: string) => {
     if (!selectedPipeline) return;
-    if (!confirm('Are you sure you want to delete this stage?')) return;
+    setStageToDelete(stageId);
+    setShowDeleteConfirm(true);
+  };
 
-    const updatedStages = selectedPipeline.stages.filter(s => s.id !== stageId);
+  // Confirm delete stage
+  const confirmDeleteStage = () => {
+    if (!selectedPipeline || !stageToDelete) return;
+
+    const updatedStages = selectedPipeline.stages.filter(s => s.id !== stageToDelete);
     updatePipeline(selectedPipeline.id, { stages: updatedStages });
+    setShowDeleteConfirm(false);
+    setStageToDelete(null);
   };
 
   // Add new stage
@@ -587,6 +599,51 @@ export default function PipelinesPage() {
                 }}
               >
                 {t.crm.update}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Stage Confirmation Dialog */}
+        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <DialogContent
+            className="sm:max-w-[400px]"
+            style={{
+              backgroundColor: theme.colors.background,
+              borderColor: `${theme.colors.primary}30`,
+              boxShadow: `0 0 30px ${theme.colors.glow1}`,
+            }}
+          >
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)' }}
+                >
+                  <Trash2 className="w-5 h-5 text-red-400" />
+                </div>
+                <DialogTitle>Удалить этап?</DialogTitle>
+              </div>
+              <DialogDescription className="ml-[52px]">
+                Это действие нельзя отменить. Этап будет удалён из pipeline.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex-col sm:flex-row gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setStageToDelete(null);
+                }}
+                className="w-full sm:w-auto rounded-xl"
+              >
+                Отмена
+              </Button>
+              <Button
+                onClick={confirmDeleteStage}
+                className="w-full sm:w-auto rounded-xl bg-red-500 hover:bg-red-600 text-white border-0"
+              >
+                Удалить
               </Button>
             </DialogFooter>
           </DialogContent>
