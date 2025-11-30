@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { consentApi } from '@/lib/api';
 
 export type CookieCategory = 'necessary' | 'functional' | 'analytics' | 'marketing';
 
@@ -11,6 +12,8 @@ export interface CookiePreferences {
 }
 
 interface CookieConsentState {
+  // Unique visitor identifier for database sync
+  visitorId: string | null;
   // Whether user has made a choice (accepted or customized)
   hasConsented: boolean;
   // When the consent was given
@@ -23,6 +26,8 @@ interface CookieConsentState {
   showSettings: boolean;
   // Hydration flag for SSR
   _hasHydrated: boolean;
+  // Sync status
+  _isSyncing: boolean;
 
   // Actions
   acceptAll: () => void;
@@ -44,58 +49,115 @@ const defaultPreferences: CookiePreferences = {
   marketing: false,
 };
 
+// Generate a unique visitor ID
+function generateVisitorId(): string {
+  // Use a combination of timestamp and random string for uniqueness
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 15);
+  return `visitor_${timestamp}_${randomPart}`;
+}
+
+// Get or create visitor ID
+function getVisitorId(existingId: string | null): string {
+  if (existingId) return existingId;
+  return generateVisitorId();
+}
+
+// Sync consent to database (fire-and-forget, don't block UI)
+async function syncToDatabase(visitorId: string, preferences: CookiePreferences): Promise<void> {
+  try {
+    await consentApi.saveConsent(visitorId, preferences);
+  } catch (error) {
+    // Log but don't fail - database sync is best-effort
+    console.warn('Failed to sync cookie consent to database:', error);
+  }
+}
+
 export const useCookieConsentStore = create<CookieConsentState>()(
   persist(
     (set, get) => ({
+      visitorId: null,
       hasConsented: false,
       consentDate: null,
       preferences: defaultPreferences,
       showBanner: true,
       showSettings: false,
       _hasHydrated: false,
+      _isSyncing: false,
 
       acceptAll: () => {
+        const visitorId = getVisitorId(get().visitorId);
+        const preferences: CookiePreferences = {
+          necessary: true,
+          functional: true,
+          analytics: true,
+          marketing: true,
+        };
+
         set({
+          visitorId,
           hasConsented: true,
           consentDate: new Date().toISOString(),
-          preferences: {
-            necessary: true,
-            functional: true,
-            analytics: true,
-            marketing: true,
-          },
+          preferences,
           showBanner: false,
           showSettings: false,
+          _isSyncing: true,
+        });
+
+        // Sync to database asynchronously
+        syncToDatabase(visitorId, preferences).finally(() => {
+          set({ _isSyncing: false });
         });
       },
 
       rejectAll: () => {
+        const visitorId = getVisitorId(get().visitorId);
+        const preferences: CookiePreferences = {
+          necessary: true, // Necessary cookies are always enabled
+          functional: false,
+          analytics: false,
+          marketing: false,
+        };
+
         set({
+          visitorId,
           hasConsented: true,
           consentDate: new Date().toISOString(),
-          preferences: {
-            necessary: true, // Necessary cookies are always enabled
-            functional: false,
-            analytics: false,
-            marketing: false,
-          },
+          preferences,
           showBanner: false,
           showSettings: false,
+          _isSyncing: true,
+        });
+
+        // Sync to database asynchronously
+        syncToDatabase(visitorId, preferences).finally(() => {
+          set({ _isSyncing: false });
         });
       },
 
       acceptSelected: (newPreferences) => {
-        set((state) => ({
+        const state = get();
+        const visitorId = getVisitorId(state.visitorId);
+        const preferences: CookiePreferences = {
+          ...state.preferences,
+          ...newPreferences,
+          necessary: true, // Always keep necessary enabled
+        };
+
+        set({
+          visitorId,
           hasConsented: true,
           consentDate: new Date().toISOString(),
-          preferences: {
-            ...state.preferences,
-            ...newPreferences,
-            necessary: true, // Always keep necessary enabled
-          },
+          preferences,
           showBanner: false,
           showSettings: false,
-        }));
+          _isSyncing: true,
+        });
+
+        // Sync to database asynchronously
+        syncToDatabase(visitorId, preferences).finally(() => {
+          set({ _isSyncing: false });
+        });
       },
 
       openSettings: () => {
@@ -107,6 +169,8 @@ export const useCookieConsentStore = create<CookieConsentState>()(
       },
 
       resetConsent: () => {
+        const visitorId = get().visitorId;
+
         set({
           hasConsented: false,
           consentDate: null,
@@ -114,6 +178,13 @@ export const useCookieConsentStore = create<CookieConsentState>()(
           showBanner: true,
           showSettings: false,
         });
+
+        // Try to delete from database if we have a visitor ID
+        if (visitorId) {
+          consentApi.deleteConsent(visitorId).catch((error) => {
+            console.warn('Failed to delete cookie consent from database:', error);
+          });
+        }
       },
 
       setHasHydrated: (state) => {
@@ -134,22 +205,24 @@ export const useCookieConsentStore = create<CookieConsentState>()(
         // Handle errors
         if (error) {
           console.error('Cookie consent hydration error:', error);
-          useCookieConsentStore.setState({ _hasHydrated: true });
+          useCookieConsentStore.setState({ _hasHydrated: true, showBanner: true });
           return;
         }
 
         if (state) {
-          state.setHasHydrated(true);
+          // Use setState to properly update the store after hydration
           // If user has already consented, don't show banner
-          if (state.hasConsented) {
-            state.showBanner = false;
-          }
+          useCookieConsentStore.setState({
+            _hasHydrated: true,
+            showBanner: !state.hasConsented,
+          });
         } else {
           // Handle fresh store (no localStorage data - e.g., after clearing cookies)
-          useCookieConsentStore.setState({ _hasHydrated: true });
+          useCookieConsentStore.setState({ _hasHydrated: true, showBanner: true });
         }
       },
       partialize: (state) => ({
+        visitorId: state.visitorId,
         hasConsented: state.hasConsented,
         consentDate: state.consentDate,
         preferences: state.preferences,

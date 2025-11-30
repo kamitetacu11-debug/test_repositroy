@@ -337,9 +337,10 @@ export default function SecurityDashboardPage() {
     return date.toLocaleDateString();
   };
 
-  // Get protection level info
-  const protectionInfo = PROTECTION_LEVELS[dashboard?.protectionLevel || 0];
-  const ProtectionIcon = protectionInfo?.icon || Shield;
+  // Get protection level info - ensure valid index and fallback
+  const protectionLevel = dashboard?.protectionLevel ?? 0;
+  const protectionInfo = PROTECTION_LEVELS[protectionLevel] || PROTECTION_LEVELS[0];
+  const ProtectionIcon = protectionInfo.icon;
 
   if (isLoading) {
     return (

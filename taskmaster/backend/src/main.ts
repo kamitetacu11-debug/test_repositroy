@@ -31,6 +31,9 @@ import { setupWebSocket } from './modules/notifications/websocket.js';
 import { registerSecurityMiddleware } from './modules/security/index.js';
 import { securityRoutes } from './modules/security/security.routes.js';
 
+// Consent
+import { consentRoutes } from './modules/consent/consent.routes.js';
+
 const app = Fastify({
   logger: {
     level: config.logLevel,
@@ -186,6 +189,9 @@ async function bootstrap() {
     await app.register(aiRoutes, { prefix: '/api/v1/ai' });
     await app.register(notificationRoutes, { prefix: '/api/v1/notifications' });
     await app.register(crmRoutes, { prefix: '/api/v1/crm' });
+
+    // Cookie Consent Routes (public - no auth required)
+    await app.register(consentRoutes, { prefix: '/api/v1/consent' });
 
     // Security Admin Routes (requires authentication)
     await app.register(async (securityApp) => {

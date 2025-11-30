@@ -673,3 +673,35 @@ enum ActivityType {
   NOTE
   TASK
 }
+
+// ============================================
+// COOKIE CONSENT
+// ============================================
+
+model CookieConsent {
+  id              String   @id @default(cuid())
+
+  // User identifier (can be anonymous or logged-in user)
+  visitorId       String   @unique  // Device/browser fingerprint for anonymous users
+  userId          String?  // Optional: linked to logged-in user
+
+  // Consent status
+  hasConsented    Boolean  @default(false)
+  consentDate     DateTime?
+
+  // Cookie preferences
+  necessary       Boolean  @default(true)  // Always true
+  functional      Boolean  @default(false)
+  analytics       Boolean  @default(false)
+  marketing       Boolean  @default(false)
+
+  // Metadata
+  ipAddress       String?
+  userAgent       String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([visitorId])
+}

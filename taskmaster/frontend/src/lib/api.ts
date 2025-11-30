@@ -198,6 +198,22 @@ export const notificationsApi = {
   delete: (id: string) => api.delete(`/notifications/${id}`),
 };
 
+// Consent API
+export const consentApi = {
+  saveConsent: (visitorId: string, preferences: {
+    necessary: boolean;
+    functional: boolean;
+    analytics: boolean;
+    marketing: boolean;
+  }) => api.post('/consent/cookies', { visitorId, preferences }),
+
+  getConsent: (visitorId: string) =>
+    api.get(`/consent/cookies/${visitorId}`),
+
+  deleteConsent: (visitorId: string) =>
+    api.delete(`/consent/cookies/${visitorId}`),
+};
+
 // Security API
 export const securityApi = {
   getDashboard: () => api.get('/security/dashboard'),
