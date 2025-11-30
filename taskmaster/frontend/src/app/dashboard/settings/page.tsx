@@ -82,11 +82,22 @@ export default function SettingsPage() {
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Check file size (limit to 500KB for base64 storage)
+      if (file.size > 500 * 1024) {
+        alert('Image too large. Please select an image under 500KB.');
+        return;
+      }
+
       setIsUploading(true);
       const reader = new FileReader();
       reader.onload = async (e) => {
         const avatarData = e.target?.result as string;
-        await updateAvatar(avatarData);
+        try {
+          await updateAvatar(avatarData);
+        } catch (error) {
+          alert('Failed to save avatar. Please try again.');
+          console.error('Avatar upload error:', error);
+        }
         setIsUploading(false);
       };
       reader.readAsDataURL(file);

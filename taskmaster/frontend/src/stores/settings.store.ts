@@ -373,12 +373,15 @@ export const useSettingsStore = create<SettingsState>()(
       setUserId: (userId) => set({ _userId: userId }),
 
       loadFromServer: async (userId: string) => {
+        // Set userId immediately so subsequent changes can be synced
+        set({ _userId: userId });
+
         try {
           const response = await usersApi.getPreferences(userId);
           const prefs = response.data.data;
 
+          // Apply server preferences - these take priority over local
           set({
-            _userId: userId,
             theme: (prefs.theme as Theme) || 'cosmic-dark',
             language: (prefs.language as Language) || 'en',
             timezone: prefs.timezone || 'auto',
@@ -387,8 +390,11 @@ export const useSettingsStore = create<SettingsState>()(
             glassOpacity: prefs.glassOpacity ?? 50,
             starBrightness: prefs.starBrightness ?? 50,
           });
+          console.log('Preferences loaded from server:', prefs.theme, prefs.language);
         } catch (error) {
           console.log('Failed to load preferences from server, using local:', error);
+          // If server fails, sync current local preferences to server
+          get().syncToServer();
         }
       },
 
@@ -396,7 +402,15 @@ export const useSettingsStore = create<SettingsState>()(
         const state = get();
         const userId = state._userId;
 
-        if (!userId || state._isSyncing) return;
+        if (!userId) {
+          console.log('Cannot sync preferences: no userId set');
+          return;
+        }
+
+        if (state._isSyncing) {
+          console.log('Already syncing preferences, skipping...');
+          return;
+        }
 
         set({ _isSyncing: true });
         try {
@@ -409,8 +423,9 @@ export const useSettingsStore = create<SettingsState>()(
             glassOpacity: state.glassOpacity,
             starBrightness: state.starBrightness,
           });
+          console.log('Preferences synced to server:', state.theme, state.language);
         } catch (error) {
-          console.log('Failed to sync preferences to server:', error);
+          console.error('Failed to sync preferences to server:', error);
         } finally {
           set({ _isSyncing: false });
         }

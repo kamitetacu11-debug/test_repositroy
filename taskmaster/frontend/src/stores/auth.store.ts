@@ -124,22 +124,16 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authApi.me();
           const serverUser = response.data.data;
-          const currentUser = get().user;
 
-          // Preserve local avatar if server doesn't have one
-          const mergedUser = {
-            ...serverUser,
-            avatar: serverUser.avatar || currentUser?.avatar,
-          };
-
+          // Use server data as source of truth for cross-browser sync
           set({
-            user: mergedUser,
+            user: serverUser,
             isAuthenticated: true,
             isLoading: false,
           });
 
           // Load user preferences from server
-          useSettingsStore.getState().loadFromServer(mergedUser.id);
+          useSettingsStore.getState().loadFromServer(serverUser.id);
         } catch {
           set({
             user: null,
@@ -167,12 +161,15 @@ export const useAuthStore = create<AuthState>()(
         // Update local state immediately for instant feedback
         set({ user: { ...currentUser, avatar: avatarData } });
 
-        // Try to sync with server (will fail gracefully if server doesn't support base64)
+        // Sync with server - avatar must be persisted for cross-browser access
         try {
           await usersApi.update(currentUser.id, { avatar: avatarData });
+          console.log('Avatar saved to server successfully');
         } catch (error) {
-          // Server may not support base64, but we still save locally
-          console.log('Avatar saved locally. Server sync skipped.');
+          console.error('Failed to save avatar to server:', error);
+          // Revert local state if server save failed
+          set({ user: { ...currentUser, avatar: currentUser.avatar } });
+          throw error; // Re-throw so UI can show error
         }
       },
     }),
