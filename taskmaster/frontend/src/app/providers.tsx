@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, ReactNode } from 'react';
 import { Toaster } from '@/components/ui/toaster';
 import { ToastProvider } from '@/components/ui/toast';
+import { CookieConsent } from '@/components/shared/CookieConsent';
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -23,6 +24,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <ToastProvider>
         {children}
         <Toaster />
+        <CookieConsent />
       </ToastProvider>
     </QueryClientProvider>
   );
