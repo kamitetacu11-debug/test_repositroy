@@ -730,6 +730,13 @@ export function Messenger() {
 
   const filteredChats = chats
     .filter((chat) => {
+      // Filter by team: show chats where at least one participant (excluding current user) belongs to selected team
+      if (selectedTeamId) {
+        const otherParticipants = chat.participants.filter(p => p.id !== currentUserId);
+        const hasTeamMember = otherParticipants.some(p => p.teamId === selectedTeamId);
+        if (!hasTeamMember) return false;
+      }
+      // Filter by search query
       if (!searchQuery) return true;
       const name = getChatName(chat).toLowerCase();
       return name.includes(searchQuery.toLowerCase());
