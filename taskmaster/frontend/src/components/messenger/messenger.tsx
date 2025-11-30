@@ -119,6 +119,86 @@ const getLanguageColor = (language: string): string => {
   return colors[language] || '#6b7280';
 };
 
+// Component to render message content with code blocks
+const MessageContent = ({ content, theme }: { content: string; theme: any }) => {
+  // Parse code blocks (```language\ncode\n```)
+  const codeBlockRegex = /```(\w*)\n?([\s\S]*?)```/g;
+  const parts: Array<{ type: 'text' | 'code'; content: string; language?: string }> = [];
+
+  let lastIndex = 0;
+  let match;
+
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    // Add text before code block
+    if (match.index > lastIndex) {
+      parts.push({ type: 'text', content: content.slice(lastIndex, match.index) });
+    }
+
+    // Add code block
+    parts.push({
+      type: 'code',
+      content: match[2].trim(),
+      language: match[1] || 'code'
+    });
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push({ type: 'text', content: content.slice(lastIndex) });
+  }
+
+  // If no code blocks found, just return text
+  if (parts.length === 0) {
+    return <p className="text-sm whitespace-pre-wrap">{content}</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {parts.map((part, index) => {
+        if (part.type === 'text') {
+          return part.content.trim() ? (
+            <p key={index} className="text-sm whitespace-pre-wrap">{part.content.trim()}</p>
+          ) : null;
+        }
+
+        // Render code block
+        const langColor = getLanguageColor(part.language?.charAt(0).toUpperCase() + (part.language?.slice(1) || ''));
+
+        return (
+          <div key={index} className="rounded-lg overflow-hidden bg-black/40 border border-glass-border/30">
+            {/* Code header with language badge */}
+            <div className="flex items-center justify-between px-3 py-1.5 bg-black/30 border-b border-glass-border/30">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: langColor }}
+                />
+                <span className="text-xs font-medium text-gray-400">
+                  {part.language?.toUpperCase() || 'CODE'}
+                </span>
+              </div>
+              <button
+                onClick={() => navigator.clipboard.writeText(part.content)}
+                className="text-xs text-gray-500 hover:text-white transition px-2 py-0.5 rounded hover:bg-white/10"
+              >
+                Копировать
+              </button>
+            </div>
+            {/* Code content */}
+            <pre className="p-3 overflow-x-auto text-sm">
+              <code className="font-mono text-gray-200 whitespace-pre">
+                {part.content}
+              </code>
+            </pre>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export function Messenger() {
   const theme = useSettingsStore((state) => state.getCurrentTheme());
   const {
@@ -686,9 +766,10 @@ export function Messenger() {
                               </div>
                             )}
 
-                            <p className="text-sm whitespace-pre-wrap">
-                              {message.decryptedContent || message.content}
-                            </p>
+                            <MessageContent
+                              content={message.decryptedContent || message.content}
+                              theme={theme}
+                            />
                           </>
                         )}
 
@@ -1105,11 +1186,7 @@ export function Messenger() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+              <div
                 className={cn(
                   'relative w-[95%] max-w-lg rounded-2xl border border-glass-border/50 p-6 text-center',
                   isDragging
@@ -1120,6 +1197,7 @@ export function Messenger() {
                   boxShadow: isDragging
                     ? `0 0 40px ${theme.colors.glow1}`
                     : '0 20px 60px rgba(0, 0, 0, 0.3)',
+                  backgroundColor: 'var(--background)',
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -1241,7 +1319,7 @@ export function Messenger() {
                     Все форматы: .xlsx, .pdf, .zip, .exe, .app и др.
                   </p>
                 </div>
-              </motion.div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
