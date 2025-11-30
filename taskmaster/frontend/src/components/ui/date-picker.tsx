@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface DatePickerProps {
@@ -39,7 +39,10 @@ export function DatePicker({
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [isManualInput, setIsManualInput] = useState(false);
+  const [manualInputValue, setManualInputValue] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const MONTHS = locale === 'ru' ? MONTHS_RU : MONTHS_EN;
   const WEEKDAYS = locale === 'ru' ? WEEKDAYS_RU : WEEKDAYS_EN;
@@ -134,7 +137,68 @@ export function DatePicker({
 
   const handleClear = () => {
     onChange?.('');
+    setManualInputValue('');
     setIsOpen(false);
+  };
+
+  const handleManualInputToggle = () => {
+    if (!isManualInput) {
+      // Opening manual input - set current value
+      if (selectedDate) {
+        setManualInputValue(formatDisplayDate(selectedDate));
+      } else {
+        setManualInputValue('');
+      }
+    }
+    setIsManualInput(!isManualInput);
+    // Focus input after toggle
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 50);
+  };
+
+  const handleManualInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value;
+    // Allow only numbers and dots
+    val = val.replace(/[^\d.]/g, '');
+
+    // Auto-format as DD.MM.YYYY
+    const digits = val.replace(/\./g, '');
+    if (digits.length <= 2) {
+      setManualInputValue(digits);
+    } else if (digits.length <= 4) {
+      setManualInputValue(`${digits.slice(0, 2)}.${digits.slice(2)}`);
+    } else {
+      setManualInputValue(`${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4, 8)}`);
+    }
+  };
+
+  const handleManualInputSubmit = () => {
+    const parts = manualInputValue.split('.');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
+
+      // Validate date
+      if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1900 && year <= 2100) {
+        const dayStr = day.toString().padStart(2, '0');
+        const monthStr = month.toString().padStart(2, '0');
+        const isoDate = `${year}-${monthStr}-${dayStr}`;
+        onChange?.(isoDate);
+        setIsManualInput(false);
+        setIsOpen(false);
+      }
+    }
+  };
+
+  const handleManualInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleManualInputSubmit();
+    } else if (e.key === 'Escape') {
+      setIsManualInput(false);
+    }
   };
 
   const renderCalendarDays = () => {
@@ -238,64 +302,87 @@ export function DatePicker({
           >
             {/* Header */}
             <div className="p-3 border-b border-glass-border bg-glass-light/30">
-              <div className="flex items-center justify-between">
-                {/* Year navigation */}
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={handlePrevYear}
-                    className="p-1 rounded-lg hover:bg-glass-light transition text-gray-400 hover:text-white"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNextYear}
-                    className="p-1 rounded-lg hover:bg-glass-light transition text-gray-400 hover:text-white"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Month & Year Display */}
+              {/* Manual Input Mode */}
+              {isManualInput ? (
                 <div className="flex items-center gap-2">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={manualInputValue}
+                    onChange={handleManualInputChange}
+                    onKeyDown={handleManualInputKeyDown}
+                    placeholder="ДД.ММ.ГГГГ"
+                    maxLength={10}
+                    className="flex-1 h-9 rounded-lg border border-glass-border bg-glass-light px-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cosmic-purple/50"
+                  />
                   <button
                     type="button"
-                    onClick={handlePrevMonth}
-                    className="p-1.5 rounded-lg hover:bg-glass-light transition text-gray-400 hover:text-white"
+                    onClick={handleManualInputSubmit}
+                    className="px-3 h-9 rounded-lg bg-cosmic-purple text-white text-sm font-medium hover:bg-cosmic-purple/80 transition"
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    OK
                   </button>
-                  <span className="font-medium text-white min-w-[140px] text-center">
-                    {MONTHS[currentMonth]} {currentYear}
-                  </span>
                   <button
                     type="button"
-                    onClick={handleNextMonth}
-                    className="p-1.5 rounded-lg hover:bg-glass-light transition text-gray-400 hover:text-white"
+                    onClick={() => setIsManualInput(false)}
+                    className="px-3 h-9 rounded-lg bg-glass-light text-gray-400 text-sm hover:text-white transition"
                   >
-                    <ChevronRight className="w-4 h-4" />
+                    ✕
                   </button>
                 </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  {/* Left navigation: prev year, prev month */}
+                  <div className="flex items-center">
+                    <button
+                      type="button"
+                      onClick={handlePrevYear}
+                      className="p-1.5 rounded-lg hover:bg-glass-light transition text-gray-400 hover:text-white"
+                      title={locale === 'ru' ? 'Предыдущий год' : 'Previous year'}
+                    >
+                      <ChevronsLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handlePrevMonth}
+                      className="p-1.5 rounded-lg hover:bg-glass-light transition text-gray-400 hover:text-white"
+                      title={locale === 'ru' ? 'Предыдущий месяц' : 'Previous month'}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  </div>
 
-                {/* Year navigation right side */}
-                <div className="flex items-center gap-1">
+                  {/* Month & Year Display - clickable for manual input */}
                   <button
                     type="button"
-                    onClick={handlePrevYear}
-                    className="p-1 rounded-lg hover:bg-glass-light transition text-gray-400 hover:text-white"
+                    onClick={handleManualInputToggle}
+                    className="font-medium text-white text-sm hover:text-cosmic-purple transition px-2"
+                    title={locale === 'ru' ? 'Ввести дату вручную' : 'Enter date manually'}
                   >
-                    <ChevronUp className="w-4 h-4" />
+                    {MONTHS[currentMonth]} {currentYear}
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleNextYear}
-                    className="p-1 rounded-lg hover:bg-glass-light transition text-gray-400 hover:text-white"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
+
+                  {/* Right navigation: next month, next year */}
+                  <div className="flex items-center">
+                    <button
+                      type="button"
+                      onClick={handleNextMonth}
+                      className="p-1.5 rounded-lg hover:bg-glass-light transition text-gray-400 hover:text-white"
+                      title={locale === 'ru' ? 'Следующий месяц' : 'Next month'}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextYear}
+                      className="p-1.5 rounded-lg hover:bg-glass-light transition text-gray-400 hover:text-white"
+                      title={locale === 'ru' ? 'Следующий год' : 'Next year'}
+                    >
+                      <ChevronsRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Weekdays */}
@@ -323,6 +410,13 @@ export function DatePicker({
                 className="text-sm text-gray-400 hover:text-status-error transition"
               >
                 {locale === 'ru' ? 'Удалить' : 'Clear'}
+              </button>
+              <button
+                type="button"
+                onClick={handleManualInputToggle}
+                className="text-sm text-gray-400 hover:text-white transition"
+              >
+                {locale === 'ru' ? 'Ввести' : 'Enter'}
               </button>
               <button
                 type="button"
