@@ -231,7 +231,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 px-4 py-3 rounded-xl transition-all',
+                    'relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all',
                     isActive
                       ? 'bg-cosmic-purple/20 text-cosmic-purple'
                       : 'text-gray-400 hover:text-white hover:bg-glass-light'
@@ -241,9 +241,40 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <span className="font-medium">{item.name}</span>
                   {isActive && (
                     <motion.div
-                      layoutId="activeNav"
-                      className="absolute left-0 w-1 h-8 bg-cosmic-purple rounded-r-full"
-                    />
+                      layoutId="activeNavIndicator"
+                      className="absolute left-0 w-1 h-8 rounded-r-full"
+                      style={{
+                        background: 'linear-gradient(180deg, #8B5CF6 0%, #A855F7 50%, #8B5CF6 100%)',
+                        boxShadow: '0 0 12px 2px rgba(139, 92, 246, 0.6)',
+                      }}
+                      initial={false}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 350,
+                        damping: 30,
+                      }}
+                    >
+                      {/* Breathing glow effect */}
+                      <motion.div
+                        className="absolute inset-0 rounded-r-full"
+                        style={{
+                          background: 'linear-gradient(180deg, #8B5CF6 0%, #A855F7 100%)',
+                        }}
+                        animate={{
+                          boxShadow: [
+                            '0 0 8px 1px rgba(139, 92, 246, 0.4)',
+                            '0 0 20px 4px rgba(139, 92, 246, 0.8)',
+                            '0 0 8px 1px rgba(139, 92, 246, 0.4)',
+                          ],
+                          opacity: [0.7, 1, 0.7],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                        }}
+                      />
+                    </motion.div>
                   )}
                 </Link>
               );

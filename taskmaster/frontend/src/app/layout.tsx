@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: 'TaskMaster - AI-Powered Business Task Management',
   description: 'Boost team productivity with AI-driven task management, gamification, and real-time analytics.',
   keywords: ['task management', 'productivity', 'gamification', 'AI', 'team collaboration'],
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
