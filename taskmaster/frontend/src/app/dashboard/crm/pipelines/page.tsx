@@ -13,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -280,12 +279,6 @@ export default function PipelinesPage() {
             </div>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
-                <Plus className="mr-2 h-4 w-4" />
-                {t.crm.createPipeline}
-              </Button>
-            </DialogTrigger>
             <DialogContent
               className="max-w-[95vw] sm:max-w-lg glass"
               style={{

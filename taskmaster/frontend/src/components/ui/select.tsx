@@ -19,10 +19,10 @@ const SelectTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       "flex h-10 w-full items-center justify-between rounded-xl px-3 py-2 text-sm",
-      "bg-glass-light/50 backdrop-blur-md border border-glass-border",
+      "bg-glass-light/20 backdrop-blur-sm border border-glass-border/50",
       "text-foreground placeholder:text-muted-foreground",
-      "hover:bg-glass-light/70 hover:border-cosmic-purple/50",
-      "focus:outline-none focus:ring-2 focus:ring-cosmic-purple/50 focus:border-cosmic-purple",
+      "hover:bg-glass-light/30 hover:border-[var(--theme-primary)]/40",
+      "focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/30 focus:border-[var(--theme-primary)]/50",
       "disabled:cursor-not-allowed disabled:opacity-50",
       // Fixed: use specific transitions instead of transition-all to prevent dropdown jumping
       "transition-colors transition-shadow duration-200",
@@ -83,7 +83,7 @@ const SelectContent = React.forwardRef<
       ref={ref}
       className={cn(
         "relative z-[100] max-h-96 min-w-[8rem] overflow-hidden rounded-xl",
-        "bg-glass-dark/95 backdrop-blur-xl border border-glass-border shadow-2xl",
+        "bg-background/95 backdrop-blur-xl border border-glass-border/50 shadow-2xl",
         // Animation - появление из центра кнопки
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -135,8 +135,8 @@ const SelectItem = React.forwardRef<
     className={cn(
       "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-3 text-sm outline-none",
       "text-foreground/90",
-      "focus:bg-cosmic-purple/20 focus:text-foreground",
-      "hover:bg-glass-light/50",
+      "focus:bg-[var(--theme-primary)]/20 focus:text-foreground",
+      "hover:bg-glass-light/30",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       "transition-colors duration-150",
       className
@@ -145,7 +145,7 @@ const SelectItem = React.forwardRef<
   >
     <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4 text-cosmic-purple" />
+        <Check className="h-4 w-4 text-[var(--theme-primary)]" />
       </SelectPrimitive.ItemIndicator>
     </span>
 

@@ -315,7 +315,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <div className="flex-1 min-w-0" />
 
-          <div className="fixed top-3 right-4 sm:right-6 z-50 flex items-center gap-2 sm:gap-4 bg-glass-heavy/80 backdrop-blur-sm rounded-xl px-2 py-1">
+          <div className="fixed top-3 right-4 sm:right-6 z-50 flex items-center gap-2 sm:gap-4 bg-glass-light/30 backdrop-blur-md border border-glass-border/30 rounded-xl px-2 py-1">
             {/* Messenger */}
             <Button
               variant="ghost"
