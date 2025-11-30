@@ -20,7 +20,7 @@ model User {
   passwordHash    String
   firstName       String
   lastName        String
-  avatar          String?
+  avatar          String?   @db.Text  // Text type for base64 avatar storage
   role            UserRole  @default(EMPLOYEE)
   status          UserStatus @default(ACTIVE)
 
@@ -226,7 +226,7 @@ model Team {
   id              String   @id @default(cuid())
   name            String
   description     String?
-  avatar          String?
+  avatar          String?  @db.Text  // Text type for base64 avatar storage
   totalPoints     Int      @default(0)
   weeklyPoints    Int      @default(0)
   monthlyPoints   Int      @default(0)
