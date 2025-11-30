@@ -70,6 +70,14 @@ export const fromLegacyTask = (task: LegacyTask): Partial<Task> => ({
   estimatedHours: task.estimatedHours,
 });
 
+// Helper to format date without timezone issues (uses noon to avoid day-boundary shifts)
+const formatDateForStorage = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}T12:00:00`;
+};
+
 // Demo tasks for fallback
 const generateDemoTasks = (): Task[] => {
   const today = new Date();
@@ -87,7 +95,7 @@ const generateDemoTasks = (): Task[] => {
       description: 'Create wireframes and mockups for the new dashboard interface. Include responsive design considerations and dark mode support.',
       status: 'IN_PROGRESS',
       priority: 'HIGH',
-      dueDate: tomorrow.toISOString(),
+      dueDate: formatDateForStorage(tomorrow),
       basePoints: 40,
       assignee: { id: 'USR-001', firstName: 'John', lastName: 'Doe' },
     },
@@ -97,7 +105,7 @@ const generateDemoTasks = (): Task[] => {
       description: 'Build REST API endpoints for the tasks module including CRUD operations, filtering, and pagination.',
       status: 'TODO',
       priority: 'CRITICAL',
-      dueDate: today.toISOString(),
+      dueDate: formatDateForStorage(today),
       basePoints: 50,
       assignee: { id: 'USR-002', firstName: 'Jane', lastName: 'Smith' },
     },
@@ -107,7 +115,7 @@ const generateDemoTasks = (): Task[] => {
       description: 'Achieve 80% test coverage for the authentication module. Include edge cases and error handling tests.',
       status: 'TODO',
       priority: 'MEDIUM',
-      dueDate: nextWeek.toISOString(),
+      dueDate: formatDateForStorage(nextWeek),
       basePoints: 30,
       assignee: { id: 'USR-003', firstName: 'Bob', lastName: 'Johnson' },
     },
@@ -117,7 +125,7 @@ const generateDemoTasks = (): Task[] => {
       description: 'Review and provide feedback on pending pull requests from the team.',
       status: 'IN_PROGRESS',
       priority: 'HIGH',
-      dueDate: today.toISOString(),
+      dueDate: formatDateForStorage(today),
       basePoints: 20,
       assignee: { id: 'USR-001', firstName: 'John', lastName: 'Doe' },
     },
@@ -127,7 +135,7 @@ const generateDemoTasks = (): Task[] => {
       description: 'Configure GitHub Actions workflow for automated testing and deployment.',
       status: 'COMPLETED',
       priority: 'HIGH',
-      dueDate: yesterday.toISOString(),
+      dueDate: formatDateForStorage(yesterday),
       basePoints: 60,
       assignee: { id: 'USR-002', firstName: 'Jane', lastName: 'Smith' },
     },
@@ -137,7 +145,7 @@ const generateDemoTasks = (): Task[] => {
       description: 'Analyze and optimize slow database queries. Add proper indexing and query caching.',
       status: 'TODO',
       priority: 'LOW',
-      dueDate: nextWeek.toISOString(),
+      dueDate: formatDateForStorage(nextWeek),
       basePoints: 35,
       assignee: { id: 'USR-003', firstName: 'Bob', lastName: 'Johnson' },
     },

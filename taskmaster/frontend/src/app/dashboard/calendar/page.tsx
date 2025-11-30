@@ -263,7 +263,8 @@ export default function CalendarPage() {
 
     if (!draggedTask) return;
 
-    const newDueDate = `${dateKey}T23:59:59.000Z`;
+    // Use noon to avoid timezone day-boundary issues
+    const newDueDate = `${dateKey}T12:00:00`;
 
     // Update in store (syncs with Tasks page)
     updateTaskInStore(draggedTask.id, { dueDate: newDueDate });
@@ -309,12 +310,12 @@ export default function CalendarPage() {
       // Set to yesterday
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      newDueDate = `${formatDateKeyFromDate(yesterday)}T23:59:59.000Z`;
+      newDueDate = `${formatDateKeyFromDate(yesterday)}T12:00:00`;
     } else if (section === 'upcoming') {
       // Set to tomorrow
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      newDueDate = `${formatDateKeyFromDate(tomorrow)}T23:59:59.000Z`;
+      newDueDate = `${formatDateKeyFromDate(tomorrow)}T12:00:00`;
     }
 
     // Update in store (syncs with Tasks page)
@@ -360,7 +361,7 @@ export default function CalendarPage() {
       description: taskForm.description || null,
       status: 'TODO',
       priority: taskForm.priority as Task['priority'],
-      dueDate: taskForm.dueDate ? `${taskForm.dueDate}T23:59:59.000Z` : null,
+      dueDate: taskForm.dueDate ? `${taskForm.dueDate}T12:00:00` : null,
       basePoints: 25,
       assignee: null,
     };
