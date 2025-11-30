@@ -249,15 +249,17 @@ export default function PipelinesPage() {
 
   return (
     <DashboardLayout>
-      {/* Fixed floating Create Pipeline button - always visible */}
-      <button
-        onClick={() => setIsDialogOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-cosmic-purple hover:bg-cosmic-purple/90 text-white shadow-lg transition-all hover:scale-105"
-        style={{ boxShadow: '0 4px 20px rgba(139, 92, 246, 0.4)' }}
-      >
-        <Plus className="h-5 w-5" />
-        <span className="font-medium hidden sm:inline">{t.crm.createPipeline}</span>
-      </button>
+      {/* Fixed floating Create Pipeline button - only visible when pipelines exist */}
+      {pipelines.length > 0 && (
+        <button
+          onClick={() => setIsDialogOpen(true)}
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-cosmic-purple hover:bg-cosmic-purple/90 text-white shadow-lg transition-all hover:scale-105"
+          style={{ boxShadow: '0 4px 20px rgba(139, 92, 246, 0.4)' }}
+        >
+          <Plus className="h-5 w-5" />
+          <span className="font-medium hidden sm:inline">{t.crm.createPipeline}</span>
+        </button>
+      )}
 
       <div className="space-y-4 sm:space-y-6">
         {/* Header - responsive */}

@@ -39,6 +39,86 @@ import { cn, getInitials } from '@/lib/utils';
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp', 'image/tiff'];
 const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv', 'video/mpeg'];
 
+// Programming language detection patterns
+const detectLanguage = (code: string): { language: string; confidence: 'high' | 'medium' | 'low' } => {
+  const trimmed = code.trim();
+
+  // High confidence patterns (unique syntax)
+  if (/^<\?php/i.test(trimmed)) return { language: 'PHP', confidence: 'high' };
+  if (/^#!\s*\/.*\/(python|python3)/i.test(trimmed)) return { language: 'Python', confidence: 'high' };
+  if (/^#!\s*\/.*\/(bash|sh)/i.test(trimmed)) return { language: 'Shell', confidence: 'high' };
+  if (/^<!DOCTYPE\s+html/i.test(trimmed) || /^<html/i.test(trimmed)) return { language: 'HTML', confidence: 'high' };
+  if (/^<\?xml/i.test(trimmed)) return { language: 'XML', confidence: 'high' };
+  if (/^\s*package\s+\w+;/.test(trimmed) && /class\s+\w+/.test(trimmed)) return { language: 'Java', confidence: 'high' };
+  if (/^package\s+main/.test(trimmed)) return { language: 'Go', confidence: 'high' };
+  if (/^(use\s+strict|use\s+warnings)/.test(trimmed)) return { language: 'Perl', confidence: 'high' };
+  if (/^#include\s*<.*>/.test(trimmed) || /^#include\s*".*"/.test(trimmed)) return { language: 'C/C++', confidence: 'high' };
+  if (/^\s*fn\s+main\s*\(\)/.test(trimmed) || /^use\s+std::/.test(trimmed)) return { language: 'Rust', confidence: 'high' };
+  if (/^import\s+SwiftUI/.test(trimmed) || /^@main/.test(trimmed)) return { language: 'Swift', confidence: 'high' };
+  if (/^using\s+System;/.test(trimmed) || /^namespace\s+\w+/.test(trimmed)) return { language: 'C#', confidence: 'high' };
+
+  // Medium confidence patterns
+  if (/^\s*\{[\s\S]*"[\w-]+"[\s\S]*:/.test(trimmed)) return { language: 'JSON', confidence: 'high' };
+  if (/^---\s*\n/.test(trimmed) || /^\w+:\s*\n\s+-/.test(trimmed)) return { language: 'YAML', confidence: 'medium' };
+  if (/^(import|from)\s+[\w.]+\s+(import)?/.test(trimmed) && /def\s+\w+\s*\(/.test(trimmed)) return { language: 'Python', confidence: 'high' };
+  if (/def\s+\w+\s*\(|class\s+\w+:|if\s+__name__\s*==/.test(trimmed)) return { language: 'Python', confidence: 'medium' };
+  if (/(const|let|var)\s+\w+\s*=/.test(trimmed) && /=>\s*{?/.test(trimmed)) return { language: 'JavaScript', confidence: 'medium' };
+  if (/function\s+\w+\s*\(|const\s+\w+\s*=\s*\(/.test(trimmed)) return { language: 'JavaScript', confidence: 'medium' };
+  if (/:\s*(string|number|boolean|any)\s*[;=,)]/.test(trimmed) || /interface\s+\w+\s*{/.test(trimmed)) return { language: 'TypeScript', confidence: 'high' };
+  if (/<[A-Z]\w+[^>]*\/>|<[A-Z]\w+[^>]*>/.test(trimmed) && /(import|export|const|function)/.test(trimmed)) return { language: 'React/JSX', confidence: 'medium' };
+  if (/^SELECT|^INSERT|^UPDATE|^DELETE|^CREATE\s+TABLE/i.test(trimmed)) return { language: 'SQL', confidence: 'high' };
+  if (/^\s*\[[\w-]+\]/.test(trimmed) && /\s*=\s*/.test(trimmed)) return { language: 'TOML/INI', confidence: 'medium' };
+  if (/^(GET|POST|PUT|DELETE|PATCH)\s+\//.test(trimmed)) return { language: 'HTTP', confidence: 'high' };
+  if (/^\.\w+\s*{|^#\w+\s*{|^@media|^@import/.test(trimmed)) return { language: 'CSS', confidence: 'medium' };
+  if (/\$\w+\s*:.*;\s*$/.test(trimmed) || /@mixin\s+\w+/.test(trimmed)) return { language: 'SCSS/Sass', confidence: 'medium' };
+  if (/^<template>|^<script>|^<style>/.test(trimmed)) return { language: 'Vue', confidence: 'high' };
+  if (/^defmodule\s+\w+/.test(trimmed)) return { language: 'Elixir', confidence: 'high' };
+  if (/^-module\(\w+\)\./.test(trimmed)) return { language: 'Erlang', confidence: 'high' };
+  if (/^\(\s*defn?\s+/.test(trimmed)) return { language: 'Clojure', confidence: 'high' };
+  if (/^module\s+\w+/.test(trimmed) && /:\s+\w+\s*->/.test(trimmed)) return { language: 'Haskell', confidence: 'medium' };
+  if (/^fun\s+\w+\s*\(|^val\s+\w+\s*=/.test(trimmed)) return { language: 'Kotlin', confidence: 'medium' };
+  if (/^object\s+\w+|^def\s+\w+\s*\[/.test(trimmed)) return { language: 'Scala', confidence: 'medium' };
+  if (/^require\s*\(.*\)|^module\.exports/.test(trimmed)) return { language: 'Node.js', confidence: 'medium' };
+  if (/^#\s*\w+/.test(trimmed) && /^\s*```/.test(trimmed)) return { language: 'Markdown', confidence: 'medium' };
+
+  // Low confidence - generic patterns
+  if (/<\w+[^>]*>.*<\/\w+>/s.test(trimmed)) return { language: 'HTML/XML', confidence: 'low' };
+  if (/^\s*\/\/|^\s*\/\*|^\s*#/.test(trimmed)) return { language: 'Code', confidence: 'low' };
+  if (/[{}\[\];]/.test(trimmed)) return { language: 'Code', confidence: 'low' };
+
+  return { language: 'Текст', confidence: 'low' };
+};
+
+// Get language color for badge
+const getLanguageColor = (language: string): string => {
+  const colors: Record<string, string> = {
+    'JavaScript': '#f7df1e',
+    'TypeScript': '#3178c6',
+    'Python': '#3776ab',
+    'Java': '#ed8b00',
+    'C/C++': '#00599c',
+    'C#': '#239120',
+    'Go': '#00add8',
+    'Rust': '#dea584',
+    'PHP': '#777bb4',
+    'Ruby': '#cc342d',
+    'Swift': '#fa7343',
+    'Kotlin': '#7f52ff',
+    'Scala': '#dc322f',
+    'React/JSX': '#61dafb',
+    'Vue': '#42b883',
+    'HTML': '#e34f26',
+    'CSS': '#1572b6',
+    'SCSS/Sass': '#cf649a',
+    'SQL': '#336791',
+    'JSON': '#292929',
+    'YAML': '#cb171e',
+    'Shell': '#89e051',
+    'Markdown': '#083fa1',
+  };
+  return colors[language] || '#6b7280';
+};
+
 export function Messenger() {
   const theme = useSettingsStore((state) => state.getCurrentTheme());
   const {
@@ -77,6 +157,8 @@ export function Messenger() {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showUploadArea, setShowUploadArea] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [detectedLang, setDetectedLang] = useState<{ language: string; confidence: 'high' | 'medium' | 'low' } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -170,6 +252,30 @@ export function Messenger() {
 
     setShowUploadArea(false);
   }, [uploadFile]);
+
+  // Handle code input change with language detection
+  const handleCodeInputChange = useCallback((value: string) => {
+    setCodeInput(value);
+    if (value.trim().length > 10) {
+      const detected = detectLanguage(value);
+      setDetectedLang(detected);
+    } else {
+      setDetectedLang(null);
+    }
+  }, []);
+
+  // Send code as message
+  const handleSendCode = useCallback(async () => {
+    if (!activeChatId || !codeInput.trim()) return;
+
+    const lang = detectedLang?.language || 'Code';
+    const formattedMessage = `\`\`\`${lang.toLowerCase()}\n${codeInput.trim()}\n\`\`\``;
+
+    await sendMessage(activeChatId, formattedMessage, []);
+    setCodeInput('');
+    setDetectedLang(null);
+    setShowUploadArea(false);
+  }, [activeChatId, codeInput, detectedLang, sendMessage]);
 
   const handleCreateGroup = () => {
     if (!groupName.trim() || selectedUsers.length === 0) return;
@@ -1002,10 +1108,10 @@ export function Messenger() {
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
                 transition={{ type: 'spring', damping: 20, stiffness: 300 }}
                 className={cn(
-                  'relative w-[90%] max-w-md rounded-2xl border-2 border-dashed p-8 text-center',
+                  'relative w-[95%] max-w-lg rounded-2xl border border-glass-border/50 p-6 text-center',
                   isDragging
-                    ? 'border-[var(--theme-primary)] bg-[var(--theme-primary)]/10'
-                    : 'border-glass-border/70 bg-background/95'
+                    ? 'border-[var(--theme-primary)] bg-[var(--theme-primary)]/5'
+                    : 'bg-background/98'
                 )}
                 style={{
                   boxShadow: isDragging
@@ -1016,81 +1122,134 @@ export function Messenger() {
               >
                 {/* Close button */}
                 <button
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-glass-light/30 flex items-center justify-center hover:bg-glass-light/50 transition"
-                  onClick={() => setShowUploadArea(false)}
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-glass-light/30 flex items-center justify-center hover:bg-glass-light/50 transition z-10"
+                  onClick={() => {
+                    setShowUploadArea(false);
+                    setCodeInput('');
+                    setDetectedLang(null);
+                  }}
                 >
                   <X className="w-4 h-4" />
                 </button>
 
-                {/* Cloud upload icon */}
-                <motion.div
-                  animate={{
-                    y: isDragging ? -10 : 0,
-                    scale: isDragging ? 1.1 : 1,
-                  }}
-                  transition={{ type: 'spring', damping: 15 }}
-                  className="mb-6"
-                >
+                {/* Header with icon */}
+                <div className="flex items-center justify-center gap-2 mb-4">
                   <CloudUpload
-                    className="w-20 h-20 mx-auto"
+                    className="w-8 h-8"
                     style={{ color: isDragging ? theme.colors.primary : theme.colors.secondary }}
                   />
-                </motion.div>
-
-                {/* Main text */}
-                <div className="space-y-4 mb-6">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-center gap-2 text-lg font-medium">
-                      <Code className="w-5 h-5" style={{ color: theme.colors.primary }} />
-                      <span>Загрузка кода и файлов</span>
-                    </div>
-                    <p className="text-foreground/80">
-                      Добавьте сюда ваш код в виде обычного текста, либо файл
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Поддерживаем любой язык программирования: HTML, JSON, C++, Python, JavaScript и другие
-                    </p>
-                  </div>
-
-                  <div className="border-t border-glass-border pt-4">
-                    <div className="flex items-center justify-center gap-2 font-medium">
-                      <Image className="w-5 h-5" style={{ color: theme.colors.secondary }} />
-                      <span>Фото и видео</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Перетащите файл сюда или нажмите кнопку ниже
-                    </p>
-                  </div>
+                  <h3 className="text-lg font-semibold">Загрузка кода и файлов</h3>
                 </div>
 
-                {/* Drag indicator */}
-                {isDragging && (
+                {/* Code input textarea */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Code className="w-4 h-4" style={{ color: theme.colors.primary }} />
+                      <span className="text-sm font-medium">Вставьте код</span>
+                    </div>
+                    {detectedLang && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium"
+                        style={{
+                          backgroundColor: `${getLanguageColor(detectedLang.language)}20`,
+                          color: getLanguageColor(detectedLang.language),
+                          border: `1px solid ${getLanguageColor(detectedLang.language)}40`,
+                        }}
+                      >
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: getLanguageColor(detectedLang.language) }}
+                        />
+                        {detectedLang.language}
+                        {detectedLang.confidence === 'high' && <Check className="w-3 h-3" />}
+                      </motion.div>
+                    )}
+                  </div>
+                  <textarea
+                    value={codeInput}
+                    onChange={(e) => handleCodeInputChange(e.target.value)}
+                    placeholder="// Вставьте ваш код здесь...&#10;// Язык определится автоматически"
+                    className="w-full h-32 px-3 py-2 rounded-lg bg-black/40 border border-glass-border/50 text-sm font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/30 focus:border-[var(--theme-primary)]/50 resize-none"
+                    style={{ tabSize: 2 }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1 text-left">
+                    Поддерживаем: HTML, JSON, C++, Python, JavaScript, TypeScript, Go, Rust и другие
+                  </p>
+                </div>
+
+                {/* Send code button */}
+                {codeInput.trim() && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 text-sm font-medium"
-                    style={{ color: theme.colors.primary }}
+                    className="mb-4"
                   >
-                    Отпустите файл для загрузки
+                    <Button
+                      onClick={handleSendCode}
+                      className="w-full"
+                      style={{
+                        background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                      }}
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      Отправить код {detectedLang ? `(${detectedLang.language})` : ''}
+                    </Button>
                   </motion.div>
                 )}
 
-                {/* Select file button */}
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-8 py-2"
-                  style={{
-                    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
-                  }}
-                >
-                  <CloudUpload className="w-4 h-4 mr-2" />
-                  Выбрать файл
-                </Button>
+                {/* Divider */}
+                <div className="flex items-center gap-3 my-4">
+                  <div className="flex-1 border-t border-glass-border/50" />
+                  <span className="text-xs text-muted-foreground">или</span>
+                  <div className="flex-1 border-t border-glass-border/50" />
+                </div>
 
-                {/* Supported formats hint */}
-                <p className="mt-4 text-xs text-muted-foreground">
-                  Поддерживаемые форматы: все типы файлов (.xlsx, .pdf, .zip, программы и т.д.)
-                </p>
+                {/* File upload section */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2 text-sm">
+                    <Image className="w-4 h-4" style={{ color: theme.colors.secondary }} />
+                    <span>Фото, видео и файлы</span>
+                  </div>
+
+                  {/* Drag indicator */}
+                  {isDragging ? (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="py-4 rounded-lg border-2 border-dashed"
+                      style={{
+                        borderColor: theme.colors.primary,
+                        backgroundColor: `${theme.colors.primary}10`,
+                      }}
+                    >
+                      <p className="text-sm font-medium" style={{ color: theme.colors.primary }}>
+                        Отпустите файл для загрузки
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Перетащите файл сюда или нажмите кнопку ниже
+                    </p>
+                  )}
+
+                  {/* Select file button */}
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full"
+                  >
+                    <CloudUpload className="w-4 h-4 mr-2" />
+                    Выбрать файл
+                  </Button>
+
+                  {/* Supported formats hint */}
+                  <p className="text-xs text-muted-foreground">
+                    Все форматы: .xlsx, .pdf, .zip, .exe, .app и др.
+                  </p>
+                </div>
               </motion.div>
             </motion.div>
           )}
