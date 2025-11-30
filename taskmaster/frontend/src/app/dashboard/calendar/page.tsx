@@ -125,29 +125,31 @@ export default function CalendarPage() {
     }
   }, [token, fetchTasksFromStore]);
 
-  // Auto-navigate to current month when date changes (e.g., at midnight)
+  // Track the last known "today" to detect midnight date changes
+  const [lastKnownDate, setLastKnownDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+  });
+
+  // Auto-navigate to current month ONLY when the actual date changes (e.g., at midnight)
+  // This does NOT prevent user from viewing other months manually
   useEffect(() => {
     const checkDateChange = () => {
       const now = new Date();
-      const currentMonth = currentDate.getMonth();
-      const currentYear = currentDate.getFullYear();
-      const nowMonth = now.getMonth();
-      const nowYear = now.getFullYear();
+      const todayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
 
-      // If the current view doesn't include today and the month/year changed, navigate to today
-      if (currentMonth !== nowMonth || currentYear !== nowYear) {
+      // Only auto-navigate if the actual day changed (midnight crossed)
+      if (todayKey !== lastKnownDate) {
+        setLastKnownDate(todayKey);
         setCurrentDate(new Date());
       }
     };
-
-    // Check on mount
-    checkDateChange();
 
     // Set up interval to check every minute for date changes
     const interval = setInterval(checkDateChange, 60000);
 
     return () => clearInterval(interval);
-  }, [currentDate]);
+  }, [lastKnownDate]);
 
   // Use store's getTasksByDate for calendar display - reactive to tasks changes
   const tasksByDate = useMemo((): DayTasks => {
