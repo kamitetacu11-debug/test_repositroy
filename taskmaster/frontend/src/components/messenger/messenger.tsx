@@ -415,7 +415,7 @@ export function Messenger() {
           </div>
 
           {/* Chat List */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
             {filteredChats.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
                 <Users className="w-12 h-12 mb-2" />
@@ -431,15 +431,13 @@ export function Messenger() {
                 const lastMsg = messages.filter((m) => m.chatId === chat.id).slice(-1)[0];
 
                 return (
-                  <motion.div
+                  <div
                     key={chat.id}
                     className={cn(
                       'relative flex items-center gap-3 p-3 cursor-pointer transition-colors',
                       activeChatId === chat.id ? 'bg-glass-light' : 'hover:bg-glass-light/50'
                     )}
                     onClick={() => setActiveChat(chat.id)}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
                   >
                     {/* Avatar */}
                     <div className="relative flex-shrink-0">
@@ -505,7 +503,7 @@ export function Messenger() {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })
             )}
@@ -515,7 +513,7 @@ export function Messenger() {
         {/* Chat Area */}
         <div
           className={cn(
-            'flex-1 flex flex-col',
+            'flex-1 flex flex-col min-h-0 overflow-hidden',
             isMobileView && !activeChatId ? 'hidden' : 'flex'
           )}
         >
@@ -527,7 +525,7 @@ export function Messenger() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
-              className="flex-1 flex flex-col"
+              className="flex-1 flex flex-col min-h-0"
             >
               {/* Chat Header */}
               <div className="p-4 border-b border-glass-border flex items-center justify-between">
@@ -585,7 +583,7 @@ export function Messenger() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
                 {chatMessages.map((message, index) => {
                   const isOwn = message.senderId === currentUserId;
                   const sender = getUserById(message.senderId);
@@ -1120,18 +1118,6 @@ export function Messenger() {
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Close button */}
-                <button
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-glass-light/30 flex items-center justify-center hover:bg-glass-light/50 transition z-10"
-                  onClick={() => {
-                    setShowUploadArea(false);
-                    setCodeInput('');
-                    setDetectedLang(null);
-                  }}
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
                 {/* Header with icon */}
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <CloudUpload
