@@ -92,6 +92,13 @@ export class BruteForceProtectionService {
   }
 
   /**
+   * Check if IP is localhost (development)
+   */
+  private isLocalhost(ip: string): boolean {
+    return ip === '127.0.0.1' || ip === '::1' || ip === 'localhost' || ip === '::ffff:127.0.0.1';
+  }
+
+  /**
    * Check if a login attempt should be allowed
    */
   async checkLoginAttempt(
@@ -99,6 +106,16 @@ export class BruteForceProtectionService {
     email: string,
     deviceFingerprint?: string
   ): Promise<LoginAttemptResult> {
+    // Skip all restrictions for localhost
+    if (this.isLocalhost(ip)) {
+      return {
+        allowed: true,
+        attemptsRemaining: this.config.maxAttempts,
+        requiresCaptcha: false,
+        lockoutLevel: 0,
+      };
+    }
+
     const emailHash = this.hashEmail(email);
 
     try {
@@ -167,6 +184,11 @@ export class BruteForceProtectionService {
     email: string,
     deviceFingerprint?: string
   ): Promise<void> {
+    // Skip recording for localhost
+    if (this.isLocalhost(ip)) {
+      return;
+    }
+
     const emailHash = this.hashEmail(email);
     const now = Date.now();
     const windowStart = now - this.config.windowMs;
