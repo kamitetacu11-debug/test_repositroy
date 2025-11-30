@@ -1,6 +1,6 @@
 import { redis } from '../../config/redis.js';
 import { logger } from '../../config/logger.js';
-import type { FastifyRequest, FastifyReply, HookHandlerDoneFunction } from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { getClientIp } from './rate-limit.service.js';
 
 // ============================================================================
@@ -378,15 +378,14 @@ export function createCaptchaMiddleware(service: CaptchaService, config: Partial
 
   return async function captchaMiddleware(
     request: FastifyRequest,
-    reply: FastifyReply,
-    done: HookHandlerDoneFunction
+    reply: FastifyReply
   ) {
     const ip = getClientIp(request);
     const path = request.url.split('?')[0];
 
     // Skip excluded paths
     if (opts.excludePaths.some((p) => path.startsWith(p))) {
-      return done();
+      return;
     }
 
     // Check if CAPTCHA is required for this IP
@@ -396,7 +395,7 @@ export function createCaptchaMiddleware(service: CaptchaService, config: Partial
     const pathRequiresCaptcha = opts.requireForPaths.some((p) => path.startsWith(p));
 
     if (!challenge.required && !pathRequiresCaptcha) {
-      return done();
+      return;
     }
 
     // Get token from request
@@ -440,8 +439,6 @@ export function createCaptchaMiddleware(service: CaptchaService, config: Partial
         },
       });
     }
-
-    return done();
   };
 }
 
@@ -452,11 +449,10 @@ export function createCaptchaMiddleware(service: CaptchaService, config: Partial
 export function requireCaptcha(service: CaptchaService) {
   return async function(
     request: FastifyRequest,
-    reply: FastifyReply,
-    done: HookHandlerDoneFunction
+    reply: FastifyReply
   ) {
     if (service['config'].provider === 'disabled') {
-      return done();
+      return;
     }
 
     const ip = getClientIp(request);
@@ -487,8 +483,6 @@ export function requireCaptcha(service: CaptchaService) {
         },
       });
     }
-
-    return done();
   };
 }
 

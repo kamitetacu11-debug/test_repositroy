@@ -1,4 +1,4 @@
-import type { FastifyRequest, FastifyReply, HookHandlerDoneFunction } from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { redis } from '../../config/redis.js';
 import { logger } from '../../config/logger.js';
 import { getClientIp } from './rate-limit.service.js';
@@ -435,11 +435,10 @@ export function createDirectoryProtectionMiddleware(
 
   return async function directoryProtectionMiddleware(
     request: FastifyRequest,
-    reply: FastifyReply,
-    done: HookHandlerDoneFunction
+    reply: FastifyReply
   ) {
     if (!opts.enabled) {
-      return done();
+      return;
     }
 
     const ip = getClientIp(request);
@@ -496,8 +495,6 @@ export function createDirectoryProtectionMiddleware(
         });
       }
     }
-
-    return done();
   };
 }
 

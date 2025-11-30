@@ -1,6 +1,6 @@
 import { redis } from '../../config/redis.js';
 import { logger } from '../../config/logger.js';
-import type { FastifyRequest, FastifyReply, HookHandlerDoneFunction } from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { getClientIp, generateDeviceFingerprint } from './rate-limit.service.js';
 
 // ============================================================================
@@ -657,14 +657,13 @@ export class ThreatDetectionService {
 export function createThreatDetectionMiddleware(service: ThreatDetectionService) {
   return async function threatDetectionMiddleware(
     request: FastifyRequest,
-    reply: FastifyReply,
-    done: HookHandlerDoneFunction
+    reply: FastifyReply
   ) {
     const ip = getClientIp(request);
 
     // Check whitelist first
     if (await service.isWhitelisted(ip)) {
-      return done();
+      return;
     }
 
     // Check blacklist
@@ -689,8 +688,6 @@ export function createThreatDetectionMiddleware(service: ThreatDetectionService)
         },
       });
     }
-
-    return done();
   };
 }
 

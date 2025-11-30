@@ -1,4 +1,4 @@
-import type { FastifyRequest, FastifyReply, HookHandlerDoneFunction } from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { logger } from '../../config/logger.js';
 import crypto from 'crypto';
 
@@ -302,12 +302,11 @@ export function createInputValidationMiddleware(
 
   return async function inputValidationMiddleware(
     request: FastifyRequest,
-    reply: FastifyReply,
-    done: HookHandlerDoneFunction
+    reply: FastifyReply
   ) {
     // Skip excluded paths
     if (opts.excludePaths?.some((path) => request.url.startsWith(path))) {
-      return done();
+      return;
     }
 
     // Check URL for path traversal
@@ -396,8 +395,6 @@ export function createInputValidationMiddleware(
         // In production, you might want to enforce this
       }
     }
-
-    return done();
   };
 }
 
@@ -411,19 +408,18 @@ export function createInputValidationMiddleware(
 export function createContentTypeMiddleware(allowedTypes: string[] = ['application/json']) {
   return async function contentTypeMiddleware(
     request: FastifyRequest,
-    reply: FastifyReply,
-    done: HookHandlerDoneFunction
+    reply: FastifyReply
   ) {
     // Skip for GET, HEAD, OPTIONS
     if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
-      return done();
+      return;
     }
 
     const contentType = request.headers['content-type'];
 
     if (!contentType) {
       // No body expected
-      return done();
+      return;
     }
 
     const isAllowed = allowedTypes.some((type) =>
@@ -446,8 +442,6 @@ export function createContentTypeMiddleware(allowedTypes: string[] = ['applicati
         },
       });
     }
-
-    return done();
   };
 }
 
@@ -474,8 +468,7 @@ export function createRequestSizeMiddleware(limits: Partial<RequestSizeLimits> =
 
   return async function requestSizeMiddleware(
     request: FastifyRequest,
-    reply: FastifyReply,
-    done: HookHandlerDoneFunction
+    reply: FastifyReply
   ) {
     // Check URL length
     if (request.url.length > opts.maxUrlLength) {
@@ -505,7 +498,5 @@ export function createRequestSizeMiddleware(limits: Partial<RequestSizeLimits> =
         },
       });
     }
-
-    return done();
   };
 }
