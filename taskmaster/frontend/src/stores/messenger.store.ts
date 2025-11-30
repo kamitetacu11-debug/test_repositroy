@@ -10,6 +10,13 @@ export interface User {
   email?: string;
   status: 'online' | 'offline' | 'away';
   lastSeen?: string;
+  teamId?: string; // Team the user belongs to
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  description?: string;
 }
 
 export interface Attachment {
@@ -141,6 +148,25 @@ async function decryptMessage(encryptedContent: string): Promise<string> {
   }
 }
 
+// Demo teams
+const demoTeams: Team[] = [
+  {
+    id: 'team-1',
+    name: 'Frontend Team',
+    description: 'Web Frontend Development',
+  },
+  {
+    id: 'team-2',
+    name: 'Backend Team',
+    description: 'API & Infrastructure',
+  },
+  {
+    id: 'team-3',
+    name: 'Mobile Team',
+    description: 'iOS & Android Development',
+  },
+];
+
 // Demo users
 const demoUsers: User[] = [
   {
@@ -150,6 +176,7 @@ const demoUsers: User[] = [
     email: 'john@taskmaster.io',
     status: 'online',
     avatar: undefined,
+    teamId: 'team-1',
   },
   {
     id: 'user-2',
@@ -158,6 +185,7 @@ const demoUsers: User[] = [
     email: 'sarah@taskmaster.io',
     status: 'online',
     avatar: undefined,
+    teamId: 'team-1',
   },
   {
     id: 'user-3',
@@ -166,6 +194,7 @@ const demoUsers: User[] = [
     email: 'mike@taskmaster.io',
     status: 'away',
     lastSeen: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    teamId: 'team-2',
   },
   {
     id: 'user-4',
@@ -174,6 +203,7 @@ const demoUsers: User[] = [
     email: 'emily@taskmaster.io',
     status: 'offline',
     lastSeen: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    teamId: 'team-2',
   },
   {
     id: 'user-5',
@@ -181,6 +211,7 @@ const demoUsers: User[] = [
     lastName: 'Brown',
     email: 'alex@taskmaster.io',
     status: 'online',
+    teamId: 'team-3',
   },
 ];
 
@@ -323,11 +354,13 @@ const demoMessages: Message[] = [
 interface MessengerState {
   // Data
   users: User[];
+  teams: Team[];
   chats: Chat[];
   messages: Message[];
   currentUserId: string;
   activeChatId: string | null;
   isMessengerOpen: boolean;
+  selectedTeamId: string | null; // For filtering users by team
   _hasHydrated: boolean;
 
   // Actions
@@ -365,17 +398,25 @@ interface MessengerState {
   getUserById: (userId: string) => User | undefined;
   getChatName: (chat: Chat) => string;
   startChatWithUser: (userId: string) => string; // Returns chatId
+  findOrCreateUserByEmail: (email: string, name: string, teamId?: string) => User;
+  addUser: (user: User) => void;
+  setSelectedTeamId: (teamId: string | null) => void;
+  getUsersByTeam: (teamId: string | null) => User[];
+  getTeamById: (teamId: string) => Team | undefined;
+  addTeam: (team: Team) => void;
 }
 
 export const useMessengerStore = create<MessengerState>()(
   persist(
     (set, get) => ({
       users: demoUsers,
+      teams: demoTeams,
       chats: demoChats,
       messages: demoMessages,
       currentUserId: 'user-1', // Demo: logged in as John Doe
       activeChatId: null,
       isMessengerOpen: false,
+      selectedTeamId: null,
       _hasHydrated: false,
 
       setHasHydrated: (state) => set({ _hasHydrated: state }),
@@ -673,6 +714,74 @@ export const useMessengerStore = create<MessengerState>()(
         set({ activeChatId: newChat.id, isMessengerOpen: true });
         return newChat.id;
       },
+
+      findOrCreateUserByEmail: (email, name, teamId) => {
+        const { users } = get();
+
+        // Check if user already exists by email
+        const existingUser = users.find((u) => u.email === email);
+        if (existingUser) {
+          // Update teamId if provided and user doesn't have one
+          if (teamId && !existingUser.teamId) {
+            set((state) => ({
+              users: state.users.map((u) =>
+                u.id === existingUser.id ? { ...u, teamId } : u
+              ),
+            }));
+          }
+          return existingUser;
+        }
+
+        // Create new user
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0] || 'Unknown';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        const newUser: User = {
+          id: `user-${Date.now()}`,
+          firstName,
+          lastName,
+          email,
+          status: 'offline',
+          lastSeen: new Date().toISOString(),
+          teamId,
+        };
+
+        set((state) => ({ users: [...state.users, newUser] }));
+        return newUser;
+      },
+
+      addUser: (user) => {
+        const { users } = get();
+        const existingUser = users.find((u) => u.email === user.email || u.id === user.id);
+        if (!existingUser) {
+          set((state) => ({ users: [...state.users, user] }));
+        }
+      },
+
+      setSelectedTeamId: (teamId) => {
+        set({ selectedTeamId: teamId });
+      },
+
+      getUsersByTeam: (teamId) => {
+        const { users, currentUserId } = get();
+        if (!teamId) {
+          return users.filter((u) => u.id !== currentUserId);
+        }
+        return users.filter((u) => u.id !== currentUserId && u.teamId === teamId);
+      },
+
+      getTeamById: (teamId) => {
+        return get().teams.find((t) => t.id === teamId);
+      },
+
+      addTeam: (team) => {
+        const { teams } = get();
+        const existingTeam = teams.find((t) => t.id === team.id);
+        if (!existingTeam) {
+          set((state) => ({ teams: [...state.teams, team] }));
+        }
+      },
     }),
     {
       name: 'messenger-storage',
@@ -685,6 +794,8 @@ export const useMessengerStore = create<MessengerState>()(
         chats: state.chats,
         messages: state.messages,
         users: state.users,
+        teams: state.teams,
+        selectedTeamId: state.selectedTeamId,
       }),
     }
   )

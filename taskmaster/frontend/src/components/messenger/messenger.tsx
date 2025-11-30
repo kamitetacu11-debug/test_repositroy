@@ -35,9 +35,10 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useMessengerStore, Chat, Message, Attachment, User } from '@/stores/messenger.store';
+import { useMessengerStore, Chat, Message, Attachment, User, Team } from '@/stores/messenger.store';
 import { useSettingsStore } from '@/stores/settings.store';
 import { cn, getInitials } from '@/lib/utils';
+import { ChevronDown } from 'lucide-react';
 
 // File type categories for icon display
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp', 'image/tiff'];
@@ -520,9 +521,11 @@ export function Messenger() {
     chats,
     messages,
     users,
+    teams,
     currentUserId,
     activeChatId,
     isMessengerOpen,
+    selectedTeamId,
     closeMessenger,
     setActiveChat,
     sendMessage,
@@ -537,6 +540,9 @@ export function Messenger() {
     getChatName,
     getUserById,
     getChatMessages,
+    setSelectedTeamId,
+    getUsersByTeam,
+    getTeamById,
   } = useMessengerStore();
 
   const [messageInput, setMessageInput] = useState('');
@@ -565,6 +571,7 @@ export function Messenger() {
   } | null>(null);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string } | null>(null);
+  const [showTeamSelector, setShowTeamSelector] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -847,6 +854,79 @@ export function Messenger() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
+            </div>
+
+            {/* Team Selector */}
+            <div className="relative mt-3">
+              <button
+                onClick={() => setShowTeamSelector(!showTeamSelector)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-glass-light/50 hover:bg-glass-light transition-colors border border-glass-border/30"
+              >
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4" style={{ color: theme.colors.primary }} />
+                  <span className="text-sm font-medium">
+                    {selectedTeamId ? getTeamById(selectedTeamId)?.name : 'All Teams'}
+                  </span>
+                </div>
+                <ChevronDown className={cn(
+                  "w-4 h-4 text-gray-400 transition-transform",
+                  showTeamSelector && "rotate-180"
+                )} />
+              </button>
+
+              {/* Team Dropdown */}
+              <AnimatePresence>
+                {showTeamSelector && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-glass-border overflow-hidden z-10"
+                    style={{ backgroundColor: theme.colors.background }}
+                  >
+                    <button
+                      onClick={() => {
+                        setSelectedTeamId(null);
+                        setShowTeamSelector(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-glass-light transition-colors",
+                        !selectedTeamId && "bg-glass-light"
+                      )}
+                    >
+                      <Users className="w-4 h-4" style={{ color: theme.colors.secondary }} />
+                      <span>All Teams</span>
+                      {!selectedTeamId && (
+                        <Check className="w-4 h-4 ml-auto" style={{ color: theme.colors.primary }} />
+                      )}
+                    </button>
+                    {teams.map((team) => (
+                      <button
+                        key={team.id}
+                        onClick={() => {
+                          setSelectedTeamId(team.id);
+                          setShowTeamSelector(false);
+                        }}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-glass-light transition-colors",
+                          selectedTeamId === team.id && "bg-glass-light"
+                        )}
+                      >
+                        <Users className="w-4 h-4" style={{ color: theme.colors.primary }} />
+                        <div className="flex-1 min-w-0">
+                          <span className="truncate">{team.name}</span>
+                          {team.description && (
+                            <p className="text-xs text-gray-500 truncate">{team.description}</p>
+                          )}
+                        </div>
+                        {selectedTeamId === team.id && (
+                          <Check className="w-4 h-4 flex-shrink-0" style={{ color: theme.colors.primary }} />
+                        )}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
@@ -1261,10 +1341,20 @@ export function Messenger() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 className="text-lg font-semibold mb-4">New Chat</h3>
+                {selectedTeamId && (
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-glass-light/50">
+                    <Users className="w-4 h-4" style={{ color: theme.colors.primary }} />
+                    <span className="text-xs">{getTeamById(selectedTeamId)?.name}</span>
+                  </div>
+                )}
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {users
-                    .filter((u) => u.id !== currentUserId)
-                    .map((user) => (
+                  {getUsersByTeam(selectedTeamId).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+                      <Users className="w-10 h-10 mb-2 opacity-50" />
+                      <p className="text-sm">No users in this team</p>
+                    </div>
+                  ) : (
+                    getUsersByTeam(selectedTeamId).map((user) => (
                       <button
                         key={user.id}
                         className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-glass-light transition"
@@ -1294,7 +1384,8 @@ export function Messenger() {
                           <p className="text-xs text-gray-500">{user.status}</p>
                         </div>
                       </button>
-                    ))}
+                    ))
+                  )}
                 </div>
               </motion.div>
             </motion.div>
@@ -1327,10 +1418,20 @@ export function Messenger() {
                   className="mb-4"
                 />
                 <p className="text-sm text-gray-500 mb-2">Select members:</p>
+                {selectedTeamId && (
+                  <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-glass-light/50">
+                    <Users className="w-4 h-4" style={{ color: theme.colors.primary }} />
+                    <span className="text-xs">{getTeamById(selectedTeamId)?.name}</span>
+                  </div>
+                )}
                 <div className="space-y-2 max-h-40 overflow-y-auto mb-4">
-                  {users
-                    .filter((u) => u.id !== currentUserId)
-                    .map((user) => (
+                  {getUsersByTeam(selectedTeamId).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-4 text-gray-500">
+                      <Users className="w-8 h-8 mb-2 opacity-50" />
+                      <p className="text-sm">No users in this team</p>
+                    </div>
+                  ) : (
+                    getUsersByTeam(selectedTeamId).map((user) => (
                       <label
                         key={user.id}
                         className="flex items-center gap-3 p-2 rounded-xl hover:bg-glass-light transition cursor-pointer"
@@ -1365,7 +1466,8 @@ export function Messenger() {
                           {user.firstName} {user.lastName}
                         </span>
                       </label>
-                    ))}
+                    ))
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button

@@ -39,6 +39,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/dropdown';
 import { useToast } from '@/components/ui/toast';
 import { useSettingsStore } from '@/stores/settings.store';
+import { useMessengerStore } from '@/stores/messenger.store';
 import { formatNumber, getRankColor } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -108,6 +109,7 @@ export default function TeamsPage() {
   const { getCurrentTheme } = useSettingsStore();
   const currentTheme = getCurrentTheme();
   const t = useTranslation();
+  const { findOrCreateUserByEmail, startChatWithUser, addTeam } = useMessengerStore();
   const [teams, setTeams] = useState<Team[]>(mockTeams);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -772,11 +774,22 @@ export default function TeamsPage() {
                 </Button>
                 <Button
                   onClick={() => {
-                    addToast({
-                      type: 'info',
-                      title: t.teams.comingSoon,
-                      message: t.teams.messagingComingSoon,
-                    });
+                    if (selectedMember && selectedTeam) {
+                      // Add team to messenger if it doesn't exist
+                      const teamId = `team-${selectedTeam.id}`;
+                      addTeam({ id: teamId, name: selectedTeam.name, description: selectedTeam.description || undefined });
+                      // Find or create user in messenger by email with team association
+                      const user = findOrCreateUserByEmail(selectedMember.email, selectedMember.name, teamId);
+                      // Start chat with the user
+                      startChatWithUser(user.id);
+                      // Close the member modal
+                      setShowMemberModal(false);
+                      addToast({
+                        type: 'success',
+                        title: t.teams.chatOpened || 'Chat Opened',
+                        message: `${t.teams.chatWith || 'Chat with'} ${selectedMember.name}`,
+                      });
+                    }
                   }}
                 >
                   <Mail className="w-4 h-4 mr-2" />

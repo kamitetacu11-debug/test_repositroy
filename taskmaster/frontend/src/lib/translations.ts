@@ -245,6 +245,8 @@ export const translations = {
       sendMessage: 'Send Message',
       comingSoon: 'Coming Soon',
       messagingComingSoon: 'Direct messaging will be available soon.',
+      chatOpened: 'Chat Opened',
+      chatWith: 'Chat with',
       // Team Settings
       visibilityAccess: 'Visibility & Access',
       teamVisibility: 'Team Visibility',
@@ -908,6 +910,8 @@ export const translations = {
       sendMessage: 'Написать сообщение',
       comingSoon: 'Скоро',
       messagingComingSoon: 'Личные сообщения скоро будут доступны.',
+      chatOpened: 'Чат открыт',
+      chatWith: 'Чат с',
       // Team Settings
       visibilityAccess: 'Видимость и доступ',
       teamVisibility: 'Видимость команды',
@@ -1571,6 +1575,8 @@ export const translations = {
       sendMessage: '发送消息',
       comingSoon: '即将推出',
       messagingComingSoon: '私信功能即将上线。',
+      chatOpened: '聊天已打开',
+      chatWith: '与...聊天',
       // Team Settings
       visibilityAccess: '可见性与访问',
       teamVisibility: '团队可见性',
