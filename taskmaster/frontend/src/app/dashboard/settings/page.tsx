@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings,
@@ -17,19 +17,21 @@ import {
   ShieldCheck,
   ShieldAlert,
   Smartphone,
+  Loader2,
 } from 'lucide-react';
 import { TwoFactorSetup } from '@/components/security';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore, useAuthHydration } from '@/stores/auth.store';
 import { useSettingsStore, themes, Theme, languages, Language, timezones, detectTimezone } from '@/stores/settings.store';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SettingsPage() {
-  const { user, updateAvatar } = useAuthStore();
+  const { user, updateAvatar, fetchUser, isLoading: authLoading } = useAuthStore();
+  const hasHydrated = useAuthHydration();
   const {
     theme,
     language,
@@ -55,6 +57,27 @@ export default function SettingsPage() {
   const [show2FASetup, setShow2FASetup] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Form state for profile fields
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+
+  // Sync form state with user data when it changes
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
+      setEmail(user.email || '');
+    }
+  }, [user]);
+
+  // Fetch user data if not already loaded
+  useEffect(() => {
+    if (hasHydrated && !user) {
+      fetchUser();
+    }
+  }, [hasHydrated, user, fetchUser]);
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -185,21 +208,49 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm text-gray-400">{t.settings.profile.firstName}</label>
-                      <Input defaultValue={user?.firstName} />
+                      <Input
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder={authLoading ? 'Loading...' : ''}
+                        disabled={authLoading}
+                      />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm text-gray-400">{t.settings.profile.lastName}</label>
-                      <Input defaultValue={user?.lastName} />
+                      <Input
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder={authLoading ? 'Loading...' : ''}
+                        disabled={authLoading}
+                      />
                     </div>
                     <div className="space-y-2 md:col-span-2">
                       <label className="text-sm text-gray-400">{t.settings.profile.email}</label>
-                      <Input defaultValue={user?.email} type="email" />
+                      <Input
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        type="email"
+                        placeholder={authLoading ? 'Loading...' : ''}
+                        disabled={authLoading}
+                      />
                     </div>
                   </div>
 
-                  <Button className="bg-cosmic-purple hover:bg-cosmic-purple/80">
-                    <Save className="mr-2 w-4 h-4" />
-                    {t.settings.profile.saveChanges}
+                  <Button
+                    className="bg-cosmic-purple hover:bg-cosmic-purple/80"
+                    disabled={authLoading}
+                  >
+                    {authLoading ? (
+                      <>
+                        <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 w-4 h-4" />
+                        {t.settings.profile.saveChanges}
+                      </>
+                    )}
                   </Button>
                 </CardContent>
               </Card>
