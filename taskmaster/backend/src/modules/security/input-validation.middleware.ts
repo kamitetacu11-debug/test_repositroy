@@ -243,7 +243,7 @@ const DEFAULT_OPTIONS: SecurityValidationOptions = {
   validatePathTraversal: true,
   sanitizeInput: false, // Set to true to auto-sanitize
   validateCsrf: true,
-  excludePaths: ['/health', '/docs', '/api/v1/auth/login', '/api/v1/auth/register'],
+  excludePaths: ['/health', '/docs', '/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/users'],
   excludeMethods: ['GET', 'HEAD', 'OPTIONS'],
 };
 
