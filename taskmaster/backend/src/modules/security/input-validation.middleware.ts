@@ -19,7 +19,7 @@ const XSS_PATTERNS = [
   /<link\b[^>]*>/gi,
   /expression\s*\(/gi,
   /url\s*\(/gi,
-  /data:/gi,
+  /data:(?!image\/)/gi,  // Block data: URLs except for images (data:image/...)
   /vbscript:/gi,
   /<svg\b[^>]*onload/gi,
   /<img\b[^>]*onerror/gi,
