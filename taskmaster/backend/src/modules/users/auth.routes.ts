@@ -333,6 +333,49 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       message: 'Logged out successfully',
     };
   });
+
+  // Development-only endpoint to reset brute-force protection
+  // Only available for localhost requests
+  app.post('/dev/reset-lockout', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Reset brute-force lockout (localhost only)',
+      body: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', format: 'email' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const ip = getClientIp(request);
+
+    // Only allow from localhost
+    const isLocalhost = ip === '127.0.0.1' || ip === '::1' || ip === 'localhost' || ip === '::ffff:127.0.0.1';
+    if (!isLocalhost) {
+      return reply.status(403).send({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'This endpoint is only available from localhost' },
+      });
+    }
+
+    const { email } = (request.body as { email?: string }) || {};
+
+    // Reset IP lockout
+    await bruteForceService.unlockIp(ip);
+
+    // Reset account lockout if email provided
+    if (email) {
+      await bruteForceService.unlockAccount(email);
+    }
+
+    logger.info({ ip, email }, 'Brute-force lockout reset via dev endpoint');
+
+    return {
+      success: true,
+      message: 'Lockout has been reset',
+    };
+  });
 };
 
 // JWT verification decorator

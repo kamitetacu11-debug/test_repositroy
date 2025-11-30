@@ -272,6 +272,7 @@ interface SettingsState {
   animations: boolean;
   glassOpacity: number; // 0-100
   starBrightness: number; // 0-100
+  _hasHydrated: boolean;
 
   setTheme: (theme: Theme) => void;
   setLanguage: (language: Language) => void;
@@ -280,6 +281,7 @@ interface SettingsState {
   setAnimations: (enabled: boolean) => void;
   setGlassOpacity: (opacity: number) => void;
   setStarBrightness: (brightness: number) => void;
+  setHasHydrated: (state: boolean) => void;
   getCurrentTheme: () => ThemeConfig;
   getCurrentLanguage: () => LanguageConfig;
   getCurrentTimezone: () => TimezoneConfig | undefined;
@@ -296,6 +298,7 @@ export const useSettingsStore = create<SettingsState>()(
       animations: true,
       glassOpacity: 50,
       starBrightness: 50,
+      _hasHydrated: false,
 
       setTheme: (theme) => set({ theme }),
       setLanguage: (language) => set({ language }),
@@ -304,6 +307,7 @@ export const useSettingsStore = create<SettingsState>()(
       setAnimations: (enabled) => set({ animations: enabled }),
       setGlassOpacity: (opacity) => set({ glassOpacity: opacity }),
       setStarBrightness: (brightness) => set({ starBrightness: brightness }),
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
 
       getCurrentTheme: () => {
         const currentTheme = get().theme;
@@ -327,6 +331,19 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'settings-storage',
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('Settings hydration error:', error);
+          useSettingsStore.setState({ _hasHydrated: true });
+          return;
+        }
+
+        if (state) {
+          state.setHasHydrated(true);
+        } else {
+          useSettingsStore.setState({ _hasHydrated: true });
+        }
+      },
     }
   )
 );
