@@ -95,7 +95,19 @@ export class BruteForceProtectionService {
    * Check if IP is localhost (development)
    */
   private isLocalhost(ip: string): boolean {
-    return ip === '127.0.0.1' || ip === '::1' || ip === 'localhost' || ip === '::ffff:127.0.0.1';
+    const localhostIps = [
+      '127.0.0.1',
+      '::1',
+      'localhost',
+      '::ffff:127.0.0.1',
+      '0.0.0.0',
+      '::ffff:0.0.0.0',
+      // Docker/container networks
+      '172.17.0.1',
+      '192.168.65.1',
+      // Local network ranges often used in development
+    ];
+    return localhostIps.includes(ip) || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.');
   }
 
   /**
