@@ -1006,22 +1006,8 @@ export function Messenger() {
                     </p>
                   </div>
                 </div>
-                {/* Action buttons */}
+                {/* Action buttons - only Settings here, expand/close are in persistent controls */}
                 <div className="flex items-center gap-1">
-                  {/* Expand/Collapse button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="flex-shrink-0 h-9 w-9"
-                    title={isExpanded ? "Свернуть" : "Развернуть"}
-                  >
-                    {isExpanded ? (
-                      <Minimize2 className="w-5 h-5" />
-                    ) : (
-                      <Maximize2 className="w-5 h-5" />
-                    )}
-                  </Button>
                   {/* Settings button */}
                   <Button
                     variant="ghost"
@@ -1031,16 +1017,6 @@ export function Messenger() {
                     className="flex-shrink-0 h-9 w-9"
                   >
                     <Settings className="w-5 h-5" />
-                  </Button>
-                  {/* Close messenger button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={closeMessenger}
-                    className="flex-shrink-0 h-9 w-9"
-                    title="Закрыть мессенджер"
-                  >
-                    <X className="w-5 h-5" />
                   </Button>
                 </div>
               </div>

@@ -40,6 +40,7 @@ export default function TasksPage() {
   const {
     tasks,
     isLoading,
+    isHydrated,
     fetchTasks,
     createTask,
     updateTask,
@@ -63,12 +64,12 @@ export default function TasksPage() {
   const { addToast } = useToast();
   const t = useTranslation();
 
-  // Fetch tasks on mount
+  // Fetch tasks on mount only if not hydrated (to preserve local changes)
   useEffect(() => {
-    if (token) {
+    if (token && !isHydrated) {
       fetchTasks(token);
     }
-  }, [token, fetchTasks]);
+  }, [token, isHydrated, fetchTasks]);
 
   // Convert store tasks to legacy format for display
   const legacyTasks: LegacyTask[] = tasks.map(toLegacyTask);
