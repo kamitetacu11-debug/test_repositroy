@@ -26,6 +26,8 @@ import {
   Lock,
   File,
   PinOff,
+  CloudUpload,
+  Code,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,6 +75,8 @@ export function Messenger() {
   const [showChatMenu, setShowChatMenu] = useState<string | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showUploadArea, setShowUploadArea] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,6 +132,7 @@ export function Messenger() {
 
     e.target.value = '';
     setShowAttachMenu(false);
+    setShowUploadArea(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -136,6 +141,35 @@ export function Messenger() {
       handleSendMessage();
     }
   };
+
+  // Drag and drop handlers
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    for (const file of Array.from(files)) {
+      const attachment = await uploadFile(file);
+      setAttachments((prev) => [...prev, attachment]);
+    }
+
+    setShowUploadArea(false);
+  }, [uploadFile]);
 
   const handleCreateGroup = () => {
     if (!groupName.trim() || selectedUsers.length === 0) return;
@@ -620,94 +654,15 @@ export function Messenger() {
                     className="hidden"
                   />
 
-                  {/* Attach button with menu */}
-                  <div className="relative">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowAttachMenu(!showAttachMenu)}
-                      title="Attach file"
-                    >
-                      <Paperclip className="w-5 h-5" />
-                    </Button>
-
-                    {/* Attachment menu */}
-                    <AnimatePresence>
-                      {showAttachMenu && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className="absolute bottom-full left-0 mb-2 w-48 rounded-xl border border-glass-border shadow-lg overflow-hidden"
-                          style={{ backgroundColor: theme.colors.background }}
-                        >
-                          <button
-                            className="w-full flex items-center gap-3 p-3 hover:bg-glass-light transition text-left"
-                            onClick={() => {
-                              fileInputRef.current?.click();
-                            }}
-                          >
-                            <File className="w-5 h-5" style={{ color: theme.colors.primary }} />
-                            <div>
-                              <p className="font-medium text-sm">Any File</p>
-                              <p className="text-xs text-gray-500">All formats</p>
-                            </div>
-                          </button>
-                          <button
-                            className="w-full flex items-center gap-3 p-3 hover:bg-glass-light transition text-left"
-                            onClick={() => {
-                              const input = fileInputRef.current;
-                              if (input) {
-                                input.accept = 'image/*';
-                                input.click();
-                                input.accept = '';
-                              }
-                            }}
-                          >
-                            <Image className="w-5 h-5" style={{ color: theme.colors.secondary }} />
-                            <div>
-                              <p className="font-medium text-sm">Photo</p>
-                              <p className="text-xs text-gray-500">JPG, PNG, GIF</p>
-                            </div>
-                          </button>
-                          <button
-                            className="w-full flex items-center gap-3 p-3 hover:bg-glass-light transition text-left"
-                            onClick={() => {
-                              const input = fileInputRef.current;
-                              if (input) {
-                                input.accept = 'video/*';
-                                input.click();
-                                input.accept = '';
-                              }
-                            }}
-                          >
-                            <Video className="w-5 h-5 text-red-400" />
-                            <div>
-                              <p className="font-medium text-sm">Video</p>
-                              <p className="text-xs text-gray-500">MP4, MOV, AVI</p>
-                            </div>
-                          </button>
-                          <button
-                            className="w-full flex items-center gap-3 p-3 hover:bg-glass-light transition text-left"
-                            onClick={() => {
-                              const input = fileInputRef.current;
-                              if (input) {
-                                input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pages,.numbers,.keynote,.txt,.csv';
-                                input.click();
-                                input.accept = '';
-                              }
-                            }}
-                          >
-                            <FileText className="w-5 h-5 text-blue-400" />
-                            <div>
-                              <p className="font-medium text-sm">Document</p>
-                              <p className="text-xs text-gray-500">PDF, Office, iWork</p>
-                            </div>
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                  {/* Attach button - opens upload area */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowUploadArea(!showUploadArea)}
+                    title="Прикрепить файл"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </Button>
 
                   <div className="flex-1 relative">
                     <Input
@@ -1023,6 +978,119 @@ export function Messenger() {
                   <Shield className="w-4 h-4" />
                   <span>End-to-end encrypted</span>
                 </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Upload Area Modal */}
+        <AnimatePresence>
+          {showUploadArea && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-30"
+              onClick={() => setShowUploadArea(false)}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                className={cn(
+                  'relative w-[90%] max-w-md rounded-2xl border-2 border-dashed p-8 text-center',
+                  isDragging
+                    ? 'border-[var(--theme-primary)] bg-[var(--theme-primary)]/10'
+                    : 'border-glass-border/70 bg-background/95'
+                )}
+                style={{
+                  boxShadow: isDragging
+                    ? `0 0 40px ${theme.colors.glow1}`
+                    : '0 20px 60px rgba(0, 0, 0, 0.3)',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close button */}
+                <button
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-glass-light/30 flex items-center justify-center hover:bg-glass-light/50 transition"
+                  onClick={() => setShowUploadArea(false)}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                {/* Cloud upload icon */}
+                <motion.div
+                  animate={{
+                    y: isDragging ? -10 : 0,
+                    scale: isDragging ? 1.1 : 1,
+                  }}
+                  transition={{ type: 'spring', damping: 15 }}
+                  className="mb-6"
+                >
+                  <CloudUpload
+                    className="w-20 h-20 mx-auto"
+                    style={{ color: isDragging ? theme.colors.primary : theme.colors.secondary }}
+                  />
+                </motion.div>
+
+                {/* Main text */}
+                <div className="space-y-4 mb-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-lg font-medium">
+                      <Code className="w-5 h-5" style={{ color: theme.colors.primary }} />
+                      <span>Загрузка кода и файлов</span>
+                    </div>
+                    <p className="text-foreground/80">
+                      Добавьте сюда ваш код в виде обычного текста, либо файл
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Поддерживаем любой язык программирования: HTML, JSON, C++, Python, JavaScript и другие
+                    </p>
+                  </div>
+
+                  <div className="border-t border-glass-border pt-4">
+                    <div className="flex items-center justify-center gap-2 font-medium">
+                      <Image className="w-5 h-5" style={{ color: theme.colors.secondary }} />
+                      <span>Фото и видео</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Перетащите файл сюда или нажмите кнопку ниже
+                    </p>
+                  </div>
+                </div>
+
+                {/* Drag indicator */}
+                {isDragging && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-4 text-sm font-medium"
+                    style={{ color: theme.colors.primary }}
+                  >
+                    Отпустите файл для загрузки
+                  </motion.div>
+                )}
+
+                {/* Select file button */}
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-8 py-2"
+                  style={{
+                    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                  }}
+                >
+                  <CloudUpload className="w-4 h-4 mr-2" />
+                  Выбрать файл
+                </Button>
+
+                {/* Supported formats hint */}
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Поддерживаемые форматы: все типы файлов (.xlsx, .pdf, .zip, программы и т.д.)
+                </p>
               </motion.div>
             </motion.div>
           )}
