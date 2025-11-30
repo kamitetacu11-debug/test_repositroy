@@ -20,3 +20,8 @@ export {
   type SecurityError,
   type SecurityErrorHandlerProps,
 } from './SecurityErrorHandler';
+
+export {
+  TwoFactorSetup,
+  TwoFactorVerify,
+} from './TwoFactorSetup';

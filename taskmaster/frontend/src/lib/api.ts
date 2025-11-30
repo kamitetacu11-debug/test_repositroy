@@ -198,4 +198,41 @@ export const notificationsApi = {
   delete: (id: string) => api.delete(`/notifications/${id}`),
 };
 
+// Security API
+export const securityApi = {
+  getDashboard: () => api.get('/security/dashboard'),
+
+  getEvents: (params?: { limit?: number; type?: string; severity?: string }) =>
+    api.get('/security/events', { params }),
+
+  getIpReputation: (ip: string) => api.get(`/security/ip/${ip}`),
+
+  blockIp: (ip: string, reason?: string, duration?: number) =>
+    api.post('/security/ip/block', { ip, reason, duration }),
+
+  unblockIp: (ip: string) => api.delete(`/security/ip/block/${ip}`),
+
+  whitelistIp: (ip: string, reason?: string) =>
+    api.post('/security/ip/whitelist', { ip, reason }),
+
+  removeWhitelist: (ip: string) => api.delete(`/security/ip/whitelist/${ip}`),
+
+  getBlockedIps: () => api.get('/security/ip/blocked'),
+
+  getWhitelistedIps: () => api.get('/security/ip/whitelisted'),
+
+  getLockedAccounts: () => api.get('/security/accounts/locked'),
+
+  unlockAccount: (email: string) =>
+    api.post('/security/accounts/unlock', { email }),
+
+  setProtectionLevel: (level: number) =>
+    api.post('/security/protection-level', { level }),
+
+  setCaptchaMode: (enabled: boolean, global?: boolean) =>
+    api.post('/security/captcha', { enabled, global }),
+
+  getMetrics: () => api.get('/security/metrics'),
+};
+
 export default api;

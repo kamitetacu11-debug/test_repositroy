@@ -67,6 +67,18 @@ export {
   type CaptchaChallenge,
 } from './captcha.service.js';
 
+export {
+  TwoFactorService,
+  twoFactorService,
+  generateTwoFactorSetup,
+  verifyTwoFactorToken,
+  verifyTwoFactorTokenOrBackup,
+  hashBackupCodes,
+  type TwoFactorSecret,
+  type TwoFactorVerifyResult,
+  type TwoFactorConfig,
+} from './two-factor.service.js';
+
 // ============================================================================
 // Middleware
 // ============================================================================

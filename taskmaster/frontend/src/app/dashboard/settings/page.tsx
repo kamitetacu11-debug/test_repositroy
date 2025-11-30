@@ -14,7 +14,11 @@ import {
   Star,
   Globe,
   Clock,
+  ShieldCheck,
+  ShieldAlert,
+  Smartphone,
 } from 'lucide-react';
+import { TwoFactorSetup } from '@/components/security';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +52,8 @@ export default function SettingsPage() {
 
   const [activeTab, setActiveTab] = useState('profile');
   const [isUploading, setIsUploading] = useState(false);
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -256,17 +262,77 @@ export default function SettingsPage() {
 
                   <div className="border-t border-glass-border pt-6">
                     <h3 className="font-medium mb-4">{t.settings.security.twoFactor}</h3>
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-glass-light">
-                      <div>
-                        <p className="font-medium">{t.settings.security.twoFactorStatus}</p>
-                        <p className="text-sm text-gray-400">{t.settings.security.twoFactorDesc}</p>
+                    <div className="space-y-4">
+                      {/* 2FA Status Card */}
+                      <div className={cn(
+                        "flex items-center justify-between p-4 rounded-xl",
+                        twoFactorEnabled ? "bg-status-success/10 border border-status-success/30" : "bg-glass-light"
+                      )}>
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "w-10 h-10 rounded-xl flex items-center justify-center",
+                            twoFactorEnabled ? "bg-status-success/20" : "bg-cosmic-purple/20"
+                          )}>
+                            {twoFactorEnabled ? (
+                              <ShieldCheck className="w-5 h-5 text-status-success" />
+                            ) : (
+                              <ShieldAlert className="w-5 h-5 text-cosmic-purple" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              {twoFactorEnabled ? 'Two-Factor Authentication Enabled' : t.settings.security.twoFactorStatus}
+                            </p>
+                            <p className="text-sm text-gray-400">
+                              {twoFactorEnabled
+                                ? 'Your account is protected with 2FA'
+                                : t.settings.security.twoFactorDesc}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant={twoFactorEnabled ? "outline" : "default"}
+                          onClick={() => setShow2FASetup(true)}
+                        >
+                          {twoFactorEnabled ? 'Manage' : t.settings.security.enable2fa}
+                        </Button>
                       </div>
-                      <Button variant="outline">{t.settings.security.enable2fa}</Button>
+
+                      {/* 2FA Benefits Info */}
+                      {!twoFactorEnabled && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="flex items-start gap-3 p-3 rounded-xl bg-glass-light/50">
+                            <Smartphone className="w-5 h-5 text-cosmic-cyan mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">Authenticator App</p>
+                              <p className="text-xs text-gray-400">
+                                Use apps like Google Authenticator or Authy
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3 p-3 rounded-xl bg-glass-light/50">
+                            <Shield className="w-5 h-5 text-cosmic-purple mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">Enhanced Security</p>
+                              <p className="text-xs text-gray-400">
+                                Protect against unauthorized access
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )}
+
+            {/* 2FA Setup Modal */}
+            <TwoFactorSetup
+              isOpen={show2FASetup}
+              onClose={() => setShow2FASetup(false)}
+              onSuccess={() => setTwoFactorEnabled(true)}
+            />
 
             {activeTab === 'appearance' && (
               <Card className="glass">

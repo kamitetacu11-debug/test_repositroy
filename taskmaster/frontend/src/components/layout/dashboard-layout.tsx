@@ -28,6 +28,7 @@ import {
   Building2,
   CalendarDays,
   MessagesSquare,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore, useAuthHydration } from '@/stores/auth.store';
@@ -152,6 +153,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: t.nav.leaderboard, href: '/dashboard/leaderboard', icon: Trophy },
     { name: t.nav.analytics, href: '/dashboard/analytics', icon: BarChart3 },
     { name: t.nav.aiInsights, href: '/dashboard/ai', icon: Sparkles },
+    { name: t.nav.security || 'Security', href: '/dashboard/security', icon: Shield },
   ];
 
   const getNotificationIcon = (type: Notification['type']) => {
