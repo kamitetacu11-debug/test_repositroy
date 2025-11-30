@@ -556,6 +556,12 @@ export function Messenger() {
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const [lastMessageCount, setLastMessageCount] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmDialogData, setConfirmDialogData] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -800,6 +806,15 @@ export function Messenger() {
           <div className="p-4 border-b border-glass-border">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={closeMessenger}
+                  title="Закрыть чат"
+                  className="h-8 w-8"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
                 <Lock className="w-5 h-5" style={{ color: theme.colors.primary }} />
                 <h2 className="text-lg font-semibold">Messages</h2>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 flex items-center gap-1">
@@ -835,9 +850,6 @@ export function Messenger() {
                   ) : (
                     <Maximize2 className="w-5 h-5" />
                   )}
-                </Button>
-                <Button variant="ghost" size="icon" onClick={closeMessenger}>
-                  <X className="w-5 h-5" />
                 </Button>
               </div>
             </div>
@@ -1510,15 +1522,21 @@ export function Messenger() {
                   <button
                     className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 transition text-left text-red-400"
                     onClick={() => {
-                      if (confirm('Delete this conversation? This action cannot be undone.')) {
-                        deleteChat(activeChat.id);
-                        setShowSettingsModal(false);
-                        setActiveChat(null);
-                      }
+                      setConfirmDialogData({
+                        title: 'Удалить чат?',
+                        message: 'Это действие нельзя отменить. Все сообщения будут удалены.',
+                        onConfirm: () => {
+                          deleteChat(activeChat.id);
+                          setShowSettingsModal(false);
+                          setActiveChat(null);
+                          setShowConfirmDialog(false);
+                        },
+                      });
+                      setShowConfirmDialog(true);
                     }}
                   >
                     <Trash2 className="w-5 h-5" />
-                    <span>Delete conversation</span>
+                    <span>Удалить чат</span>
                   </button>
                 </div>
 
@@ -1674,6 +1692,65 @@ export function Messenger() {
                   </p>
                 </div>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Custom Confirm Dialog */}
+        <AnimatePresence>
+          {showConfirmDialog && confirmDialogData && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+              onClick={() => setShowConfirmDialog(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="w-[90%] max-w-md rounded-2xl border border-glass-border overflow-hidden"
+                style={{
+                  backgroundColor: theme.colors.background,
+                  boxShadow: `0 0 40px ${theme.colors.glow1}`,
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Dialog Header */}
+                <div className="px-6 pt-6 pb-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)' }}
+                    >
+                      <Trash2 className="w-5 h-5 text-red-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold">{confirmDialogData.title}</h3>
+                  </div>
+                  <p className="text-sm text-gray-400 ml-[52px]">
+                    {confirmDialogData.message}
+                  </p>
+                </div>
+
+                {/* Dialog Actions */}
+                <div className="flex items-center gap-3 px-6 pb-6">
+                  <Button
+                    variant="outline"
+                    className="flex-1 rounded-xl h-11"
+                    onClick={() => setShowConfirmDialog(false)}
+                  >
+                    Отмена
+                  </Button>
+                  <Button
+                    className="flex-1 rounded-xl h-11 bg-red-500 hover:bg-red-600 text-white border-0"
+                    onClick={confirmDialogData.onConfirm}
+                  >
+                    Удалить
+                  </Button>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
