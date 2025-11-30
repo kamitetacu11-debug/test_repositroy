@@ -102,6 +102,8 @@ export default function CustomersPage() {
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   const [formData, setFormData] = useState<CustomerFormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<string | null>(null);
 
   // Filter customers
   const filteredCustomers = useMemo(() => {
@@ -195,8 +197,16 @@ export default function CustomersPage() {
   };
 
   const handleDelete = (customerId: string) => {
-    if (!confirm(t.crm.confirmDelete)) return;
-    deleteCustomer(customerId);
+    setCustomerToDelete(customerId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (customerToDelete) {
+      deleteCustomer(customerToDelete);
+      setShowDeleteConfirm(false);
+      setCustomerToDelete(null);
+    }
   };
 
   const openNewDialog = () => {
@@ -570,6 +580,38 @@ export default function CustomersPage() {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-red-500" />
+                {t.crm.confirmDelete}
+              </DialogTitle>
+              <DialogDescription>
+                Это действие нельзя отменить. Клиент будет удален навсегда.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setCustomerToDelete(null);
+                }}
+              >
+                Отмена
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDelete}
+              >
+                Удалить
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

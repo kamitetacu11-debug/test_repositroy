@@ -81,6 +81,7 @@ export default function CustomerDetailPage() {
     notes: '',
   });
   const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Update edit form when customer changes
   useEffect(() => {
@@ -126,8 +127,12 @@ export default function CustomerDetailPage() {
   };
 
   const handleDelete = () => {
-    if (!confirm(t.crm.confirmDelete)) return;
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
     deleteCustomer(customerId);
+    setShowDeleteConfirm(false);
     router.push('/dashboard/crm/customers');
   };
 
@@ -489,6 +494,35 @@ export default function CustomerDetailPage() {
               }}
             >
               {saving ? t.crm.saving : t.crm.update}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-500" />
+              {t.crm.confirmDelete}
+            </DialogTitle>
+            <DialogDescription>
+              Это действие нельзя отменить. Клиент будет удален навсегда.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+            >
+              Удалить
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -166,6 +166,8 @@ export default function DealsPage() {
   const [editingDealId, setEditingDealId] = useState<string | null>(null);
   const [formData, setFormData] = useState<DealFormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [dealToDelete, setDealToDelete] = useState<string | null>(null);
 
   // Filter deals
   const filteredDeals = useMemo(() => {
@@ -259,8 +261,16 @@ export default function DealsPage() {
   };
 
   const handleDelete = (dealId: string) => {
-    if (!confirm(t.crm.confirmDelete)) return;
-    deleteDeal(dealId);
+    setDealToDelete(dealId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (dealToDelete) {
+      deleteDeal(dealToDelete);
+      setShowDeleteConfirm(false);
+      setDealToDelete(null);
+    }
   };
 
   const openNewDialog = () => {
@@ -754,6 +764,38 @@ export default function DealsPage() {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-red-500" />
+                {t.crm.confirmDelete}
+              </DialogTitle>
+              <DialogDescription>
+                Это действие нельзя отменить. Сделка будет удалена навсегда.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDealToDelete(null);
+                }}
+              >
+                Отмена
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDelete}
+              >
+                Удалить
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

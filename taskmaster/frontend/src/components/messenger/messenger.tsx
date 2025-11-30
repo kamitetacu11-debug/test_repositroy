@@ -562,6 +562,7 @@ export function Messenger() {
     message: string;
     onConfirm: () => void;
   } | null>(null);
+  const [showMembersModal, setShowMembersModal] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -1137,7 +1138,8 @@ export function Messenger() {
                                       <img
                                         src={att.url}
                                         alt={att.name}
-                                        className="max-w-full rounded-lg"
+                                        className="max-w-[200px] max-h-[200px] object-cover rounded-lg cursor-pointer hover:opacity-90 transition"
+                                        onClick={() => window.open(att.url, '_blank')}
                                       />
                                     ) : att.type === 'video' ? (
                                       <video
@@ -1539,7 +1541,8 @@ export function Messenger() {
                     <button
                       className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-glass-light transition text-left"
                       onClick={() => {
-                        // Show participants
+                        setShowMembersModal(true);
+                        setShowSettingsModal(false);
                       }}
                     >
                       <Users className="w-5 h-5" style={{ color: theme.colors.primary }} />
@@ -1779,6 +1782,103 @@ export function Messenger() {
                   >
                     Удалить
                   </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Members Modal */}
+        <AnimatePresence>
+          {showMembersModal && activeChat && activeChat.type === 'group' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+              onClick={() => setShowMembersModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="w-[90%] max-w-sm rounded-2xl border border-glass-border overflow-hidden"
+                style={{
+                  backgroundColor: theme.colors.background,
+                  boxShadow: `0 0 40px ${theme.colors.glow1}`,
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="px-6 pt-6 pb-4 border-b border-glass-border">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: `${theme.colors.primary}20` }}
+                      >
+                        <Users className="w-5 h-5" style={{ color: theme.colors.primary }} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">Участники</h3>
+                        <p className="text-sm text-gray-500">{activeChat.participants.length} участников</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowMembersModal(false)}
+                      className="h-8 w-8"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Members List */}
+                <div className="max-h-[300px] overflow-y-auto p-4 space-y-2">
+                  {activeChat.participants.map((participant) => {
+                    const isCurrentUser = participant.id === currentUserId;
+                    return (
+                      <div
+                        key={participant.id}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-glass-light"
+                      >
+                        <div className="relative">
+                          <div
+                            className="w-10 h-10 rounded-full flex items-center justify-center font-medium overflow-hidden"
+                            style={{ backgroundColor: `${theme.colors.primary}30` }}
+                          >
+                            {participant.avatar ? (
+                              <img
+                                src={participant.avatar}
+                                alt={`${participant.firstName} ${participant.lastName}`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              getInitials(participant.firstName || '', participant.lastName || '')
+                            )}
+                          </div>
+                          <div
+                            className={cn(
+                              'absolute bottom-0 right-0 w-3 h-3 rounded-full border-2',
+                              participant.status === 'online' ? 'bg-green-500' :
+                              participant.status === 'away' ? 'bg-yellow-500' : 'bg-gray-500'
+                            )}
+                            style={{ borderColor: theme.colors.background }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">
+                            {participant.firstName} {participant.lastName}
+                            {isCurrentUser && <span className="text-gray-500 ml-1">(Вы)</span>}
+                          </p>
+                          <p className="text-sm text-gray-500 truncate">{participant.email}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </motion.div>
             </motion.div>

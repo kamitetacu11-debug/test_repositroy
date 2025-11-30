@@ -196,6 +196,7 @@ export default function DealDetailPage() {
     stageId: '',
   });
   const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (hasHydrated) {
@@ -363,8 +364,12 @@ export default function DealDetailPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm(t.crm.confirmDelete)) return;
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteConfirm(false);
 
     // For demo deals or store deals, delete via CRM store
     if (dealId.startsWith('demo-') || storeDeals.some(d => d.id === dealId)) {
@@ -773,6 +778,35 @@ export default function DealDetailPage() {
             </Button>
             <Button onClick={handleUpdateDeal} disabled={saving}>
               {saving ? t.crm.saving : t.crm.update}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-500" />
+              {t.crm.confirmDelete}
+            </DialogTitle>
+            <DialogDescription>
+              Это действие нельзя отменить. Сделка будет удалена навсегда.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+            >
+              Удалить
             </Button>
           </DialogFooter>
         </DialogContent>
