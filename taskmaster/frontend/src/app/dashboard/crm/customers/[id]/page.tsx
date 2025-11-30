@@ -27,6 +27,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useCRMStore, useCRMHydration } from '@/stores/crm.store';
 import { useSettingsStore } from '@/stores/settings.store';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatDateWithTimezone } from '@/lib/utils';
 import {
   ArrowLeft,
   Building2,
@@ -48,7 +49,7 @@ export default function CustomerDetailPage() {
   const params = useParams();
   const t = useTranslation();
   const hasHydrated = useCRMHydration();
-  const { getCurrentTheme } = useSettingsStore();
+  const { getCurrentTheme, language, timezone } = useSettingsStore();
   const theme = getCurrentTheme();
   const customerId = params.id as string;
 
@@ -134,10 +135,6 @@ export default function CustomerDetailPage() {
     deleteCustomer(customerId);
     setShowDeleteConfirm(false);
     router.push('/dashboard/crm/customers');
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
   };
 
   // Show loading until hydrated
@@ -282,7 +279,7 @@ export default function CustomerDetailPage() {
                       <div>
                         <p className="font-medium">{t.crm.lastUpdated}</p>
                         <p className="text-sm text-muted-foreground">
-                          {formatDate(customer.updatedAt)}
+                          {formatDateWithTimezone(customer.updatedAt, language, timezone)}
                         </p>
                       </div>
                     </div>
@@ -294,7 +291,7 @@ export default function CustomerDetailPage() {
                     <div>
                       <p className="font-medium">{t.crm.created}</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatDate(customer.createdAt)}
+                        {formatDateWithTimezone(customer.createdAt, language, timezone)}
                       </p>
                     </div>
                   </div>

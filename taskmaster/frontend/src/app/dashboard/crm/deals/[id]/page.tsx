@@ -26,7 +26,9 @@ import {
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
 import { useCRMStore, useCRMHydration } from '@/stores/crm.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatDateWithTimezone } from '@/lib/utils';
 import {
   ArrowLeft,
   DollarSign,
@@ -176,6 +178,7 @@ export default function DealDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { token } = useAuthStore();
+  const { language, timezone } = useSettingsStore();
   const t = useTranslation();
   const dealId = params.id as string;
 
@@ -434,10 +437,6 @@ export default function DealDetailPage() {
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'WON':
@@ -583,7 +582,7 @@ export default function DealDetailPage() {
                     <div>
                       <p className="font-medium">Deal updated</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatDate(deal.updatedAt)}
+                        {formatDateWithTimezone(deal.updatedAt, language, timezone)}
                       </p>
                     </div>
                   </div>
@@ -594,7 +593,7 @@ export default function DealDetailPage() {
                     <div>
                       <p className="font-medium">Deal created</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatDate(deal.createdAt)}
+                        {formatDateWithTimezone(deal.createdAt, language, timezone)}
                       </p>
                     </div>
                   </div>
@@ -634,7 +633,7 @@ export default function DealDetailPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">{t.crm.expectedCloseDate}</p>
                     <p className="font-semibold">
-                      {deal.expectedCloseDate ? formatDate(deal.expectedCloseDate) : '-'}
+                      {deal.expectedCloseDate ? formatDateWithTimezone(deal.expectedCloseDate, language, timezone) : '-'}
                     </p>
                   </div>
                 </div>

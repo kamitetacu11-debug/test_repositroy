@@ -36,6 +36,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useCRMStore, useCRMHydration } from '@/stores/crm.store';
 import { useSettingsStore } from '@/stores/settings.store';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatDateWithTimezone } from '@/lib/utils';
 import {
   Plus,
   Search,
@@ -153,7 +154,7 @@ export default function DealsPage() {
   const router = useRouter();
   const t = useTranslation();
   const hasHydrated = useCRMHydration();
-  const { getCurrentTheme } = useSettingsStore();
+  const { getCurrentTheme, language, timezone } = useSettingsStore();
   const theme = getCurrentTheme();
 
   // Get data from CRM store
@@ -297,13 +298,6 @@ export default function DealsPage() {
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -713,7 +707,7 @@ export default function DealsPage() {
                         {deal.expectedCloseDate ? (
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {formatDate(deal.expectedCloseDate)}
+                            {formatDateWithTimezone(deal.expectedCloseDate, language, timezone)}
                           </div>
                         ) : (
                           '-'

@@ -40,7 +40,7 @@ import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/dropdow
 import { useToast } from '@/components/ui/toast';
 import { useSettingsStore } from '@/stores/settings.store';
 import { useMessengerStore } from '@/stores/messenger.store';
-import { formatNumber, getRankColor } from '@/lib/utils';
+import { formatNumber, getRankColor, formatDateWithTimezone } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface TeamMember {
@@ -106,7 +106,7 @@ const mockTeams: Team[] = [
 
 export default function TeamsPage() {
   const { addToast } = useToast();
-  const { getCurrentTheme } = useSettingsStore();
+  const { getCurrentTheme, language, timezone } = useSettingsStore();
   const currentTheme = getCurrentTheme();
   const t = useTranslation();
   const { findOrCreateUserByEmail, startChatWithUser, addTeam } = useMessengerStore();
@@ -768,7 +768,7 @@ export default function TeamsPage() {
                   <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-gray-400" />
                     <div className="text-right">
-                      <p className="font-medium">{new Date(selectedMember.joinedDate).toLocaleDateString()}</p>
+                      <p className="font-medium">{formatDateWithTimezone(selectedMember.joinedDate, language, timezone)}</p>
                       <p className="text-xs text-gray-400">{t.teams.joinedDate}</p>
                     </div>
                   </div>
