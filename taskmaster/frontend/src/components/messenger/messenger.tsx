@@ -33,32 +33,9 @@ import { useMessengerStore, Chat, Message, Attachment, User } from '@/stores/mes
 import { useSettingsStore } from '@/stores/settings.store';
 import { cn, getInitials } from '@/lib/utils';
 
-// Supported file types
-const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-const SUPPORTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
-const SUPPORTED_DOCUMENT_TYPES = [
-  // Windows documents
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  // Mac documents
-  'application/vnd.apple.pages',
-  'application/vnd.apple.numbers',
-  'application/vnd.apple.keynote',
-  // Other common formats
-  'text/plain',
-  'text/csv',
-  'application/json',
-  'application/xml',
-  'application/zip',
-  'application/x-rar-compressed',
-];
-
-const ALL_SUPPORTED_TYPES = [...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_VIDEO_TYPES, ...SUPPORTED_DOCUMENT_TYPES];
+// File type categories for icon display
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp', 'image/tiff'];
+const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv', 'video/mpeg'];
 
 export function Messenger() {
   const theme = useSettingsStore((state) => state.getCurrentTheme());
@@ -95,7 +72,7 @@ export function Messenger() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showChatMenu, setShowChatMenu] = useState<string | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
-  const [swipeStates, setSwipeStates] = useState<Record<string, number>>({});
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -143,14 +120,14 @@ export function Messenger() {
     const files = e.target.files;
     if (!files) return;
 
+    // Accept all file types - no filtering
     for (const file of Array.from(files)) {
-      if (ALL_SUPPORTED_TYPES.includes(file.type)) {
-        const attachment = await uploadFile(file);
-        setAttachments((prev) => [...prev, attachment]);
-      }
+      const attachment = await uploadFile(file);
+      setAttachments((prev) => [...prev, attachment]);
     }
 
     e.target.value = '';
+    setShowAttachMenu(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -213,9 +190,9 @@ export function Messenger() {
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return <Image className="w-5 h-5" />;
-    if (mimeType.startsWith('video/')) return <Video className="w-5 h-5" />;
-    return <FileText className="w-5 h-5" />;
+    if (IMAGE_TYPES.some(t => mimeType.startsWith('image/'))) return <Image className="w-5 h-5" />;
+    if (VIDEO_TYPES.some(t => mimeType.startsWith('video/'))) return <Video className="w-5 h-5" />;
+    return <File className="w-5 h-5" />;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -224,43 +201,9 @@ export function Messenger() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // Swipe handlers
-  const handleSwipeStart = (chatId: string, startX: number) => {
-    setSwipeStates((prev) => ({ ...prev, [`${chatId}_start`]: startX }));
-  };
-
-  const handleSwipeMove = (chatId: string, currentX: number) => {
-    const startX = swipeStates[`${chatId}_start`] || 0;
-    const diff = currentX - startX;
-    // Limit swipe distance
-    const clampedDiff = Math.max(-100, Math.min(100, diff));
-    setSwipeStates((prev) => ({ ...prev, [chatId]: clampedDiff }));
-  };
-
-  const handleSwipeEnd = (chatId: string, chat: Chat) => {
-    const swipeDistance = swipeStates[chatId] || 0;
-
-    if (swipeDistance < -60) {
-      // Swipe left - Pin/Unpin
-      if (chat.isPinned) {
-        unpinChat(chatId);
-      } else {
-        pinChat(chatId);
-      }
-    } else if (swipeDistance > 60) {
-      // Swipe right - Delete
-      if (confirm('Delete this conversation?')) {
-        deleteChat(chatId);
-      }
-    }
-
-    // Reset swipe state
-    setSwipeStates((prev) => {
-      const newState = { ...prev };
-      delete newState[chatId];
-      delete newState[`${chatId}_start`];
-      return newState;
-    });
+  // Get file extension from name
+  const getFileExtension = (filename: string) => {
+    return filename.split('.').pop()?.toUpperCase() || 'FILE';
   };
 
   if (!isMessengerOpen) return null;
@@ -346,116 +289,83 @@ export function Messenger() {
                     ? chat.participants.find((p) => p.id !== currentUserId)
                     : null;
                 const lastMsg = messages.filter((m) => m.chatId === chat.id).slice(-1)[0];
-                const swipeOffset = swipeStates[chat.id] || 0;
 
                 return (
-                  <div key={chat.id} className="relative overflow-hidden">
-                    {/* Swipe action backgrounds */}
-                    <div className="absolute inset-0 flex">
-                      {/* Left side - Pin (swipe left reveals this) */}
+                  <motion.div
+                    key={chat.id}
+                    className={cn(
+                      'relative flex items-center gap-3 p-3 cursor-pointer transition-colors',
+                      activeChatId === chat.id ? 'bg-glass-light' : 'hover:bg-glass-light/50'
+                    )}
+                    onClick={() => setActiveChat(chat.id)}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    {/* Avatar */}
+                    <div className="relative flex-shrink-0">
                       <div
-                        className="flex-1 flex items-center justify-end pr-4"
-                        style={{ backgroundColor: theme.colors.primary }}
+                        className="w-12 h-12 rounded-full flex items-center justify-center font-medium overflow-hidden"
+                        style={{ backgroundColor: `${theme.colors.primary}30` }}
                       >
-                        {chat.isPinned ? (
-                          <PinOff className="w-6 h-6 text-white" />
+                        {chat.type === 'group' ? (
+                          <Users className="w-6 h-6" />
+                        ) : otherUser?.avatar ? (
+                          <img
+                            src={otherUser.avatar}
+                            alt={chatName}
+                            className="w-full h-full rounded-full object-cover"
+                          />
                         ) : (
-                          <Pin className="w-6 h-6 text-white" />
+                          getInitials(
+                            otherUser?.firstName || '',
+                            otherUser?.lastName || ''
+                          )
                         )}
                       </div>
-                      {/* Right side - Delete (swipe right reveals this) */}
-                      <div className="flex-1 flex items-center justify-start pl-4 bg-red-500">
-                        <Trash2 className="w-6 h-6 text-white" />
-                      </div>
+                      {otherUser && (
+                        <div
+                          className={cn(
+                            'absolute bottom-0 right-0 w-3 h-3 rounded-full border-2',
+                            getStatusColor(otherUser.status)
+                          )}
+                          style={{ borderColor: theme.colors.background }}
+                        />
+                      )}
                     </div>
 
-                    {/* Chat item */}
-                    <motion.div
-                      className={cn(
-                        'relative flex items-center gap-3 p-3 cursor-pointer hover:bg-glass-light',
-                        activeChatId === chat.id && 'bg-glass-light'
-                      )}
-                      style={{
-                        backgroundColor: theme.colors.background,
-                        x: swipeOffset,
-                      }}
-                      animate={{ x: swipeOffset }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      onClick={() => !swipeOffset && setActiveChat(chat.id)}
-                      onTouchStart={(e) => handleSwipeStart(chat.id, e.touches[0].clientX)}
-                      onTouchMove={(e) => handleSwipeMove(chat.id, e.touches[0].clientX)}
-                      onTouchEnd={() => handleSwipeEnd(chat.id, chat)}
-                      onMouseDown={(e) => handleSwipeStart(chat.id, e.clientX)}
-                      onMouseMove={(e) => e.buttons === 1 && handleSwipeMove(chat.id, e.clientX)}
-                      onMouseUp={() => handleSwipeEnd(chat.id, chat)}
-                      onMouseLeave={() => swipeStates[chat.id] && handleSwipeEnd(chat.id, chat)}
-                    >
-                      {/* Avatar */}
-                      <div className="relative flex-shrink-0">
-                        <div
-                          className="w-12 h-12 rounded-full flex items-center justify-center font-medium"
-                          style={{ backgroundColor: `${theme.colors.primary}30` }}
-                        >
-                          {chat.type === 'group' ? (
-                            <Users className="w-6 h-6" />
-                          ) : otherUser?.avatar ? (
-                            <img
-                              src={otherUser.avatar}
-                              alt={chatName}
-                              className="w-full h-full rounded-full object-cover"
-                            />
-                          ) : (
-                            getInitials(
-                              otherUser?.firstName || '',
-                              otherUser?.lastName || ''
-                            )
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium truncate flex items-center gap-1">
+                          {chat.isPinned && (
+                            <Pin className="w-3 h-3 flex-shrink-0" style={{ color: theme.colors.primary }} />
                           )}
-                        </div>
-                        {otherUser && (
-                          <div
-                            className={cn(
-                              'absolute bottom-0 right-0 w-3 h-3 rounded-full border-2',
-                              getStatusColor(otherUser.status)
-                            )}
-                            style={{ borderColor: theme.colors.background }}
-                          />
-                        )}
+                          {chatName}
+                        </span>
+                        <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                          {lastMsg ? formatTime(lastMsg.createdAt) : ''}
+                        </span>
                       </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium truncate flex items-center gap-1">
-                            {chat.isPinned && (
-                              <Pin className="w-3 h-3 flex-shrink-0" style={{ color: theme.colors.primary }} />
-                            )}
-                            {chatName}
-                          </span>
-                          <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                            {lastMsg ? formatTime(lastMsg.createdAt) : ''}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm text-gray-500 truncate">
-                            {lastMsg?.isDeleted
-                              ? 'Message deleted'
-                              : lastMsg?.decryptedContent || lastMsg?.content || 'No messages yet'}
-                          </p>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            {chat.unreadCount > 0 && (
-                              <span
-                                className="px-2 py-0.5 text-xs rounded-full text-white"
-                                style={{ backgroundColor: theme.colors.primary }}
-                              >
-                                {chat.unreadCount}
-                              </span>
-                            )}
-                            {chat.isMuted && <BellOff className="w-4 h-4 text-gray-500" />}
-                          </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm text-gray-500 truncate">
+                          {lastMsg?.isDeleted
+                            ? 'Message deleted'
+                            : lastMsg?.decryptedContent || lastMsg?.content || 'No messages yet'}
+                        </p>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {chat.unreadCount > 0 && (
+                            <span
+                              className="px-2 py-0.5 text-xs rounded-full text-white"
+                              style={{ backgroundColor: theme.colors.primary }}
+                            >
+                              {chat.unreadCount}
+                            </span>
+                          )}
+                          {chat.isMuted && <BellOff className="w-4 h-4 text-gray-500" />}
                         </div>
                       </div>
-                    </motion.div>
-                  </div>
+                    </div>
+                  </motion.div>
                 );
               })
             )}
@@ -469,27 +379,42 @@ export function Messenger() {
             isMobileView && !activeChatId ? 'hidden' : 'flex'
           )}
         >
+          <AnimatePresence mode="wait">
           {activeChat ? (
-            <>
+            <motion.div
+              key={activeChat.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col"
+            >
               {/* Chat Header */}
               <div className="p-4 border-b border-glass-border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {isMobileView && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setActiveChat(null)}
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </Button>
-                  )}
-                  {/* Avatar - separated from close button with gap */}
+                  {/* Back/Close button - always visible for navigation */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setActiveChat(null)}
+                    className="flex-shrink-0"
+                    title="Back to chats"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
+                  {/* Avatar - with profile photo support */}
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-medium flex-shrink-0"
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-medium flex-shrink-0 overflow-hidden"
                     style={{ backgroundColor: `${theme.colors.primary}30` }}
                   >
                     {activeChat.type === 'group' ? (
                       <Users className="w-5 h-5" />
+                    ) : activeChat.participants.find((p) => p.id !== currentUserId)?.avatar ? (
+                      <img
+                        src={activeChat.participants.find((p) => p.id !== currentUserId)?.avatar}
+                        alt={getChatName(activeChat)}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       getInitials(
                         activeChat.participants.find((p) => p.id !== currentUserId)?.firstName || '',
@@ -507,13 +432,13 @@ export function Messenger() {
                     </p>
                   </div>
                 </div>
-                {/* Settings button only */}
+                {/* Settings button */}
                 <Button
                   variant="ghost"
                   size="icon"
                   title="Chat Settings"
                   onClick={() => setShowSettingsModal(true)}
-                  className="flex-shrink-0 ml-2"
+                  className="flex-shrink-0"
                 >
                   <Settings className="w-5 h-5" />
                 </Button>
@@ -536,10 +461,18 @@ export function Messenger() {
                     >
                       {!isOwn && showAvatar && (
                         <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 overflow-hidden"
                           style={{ backgroundColor: `${theme.colors.primary}30` }}
                         >
-                          {getInitials(sender?.firstName || '', sender?.lastName || '')}
+                          {sender?.avatar ? (
+                            <img
+                              src={sender.avatar}
+                              alt={`${sender.firstName} ${sender.lastName}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            getInitials(sender?.firstName || '', sender?.lastName || '')
+                          )}
                         </div>
                       )}
                       {!isOwn && !showAvatar && <div className="w-8" />}
@@ -678,28 +611,111 @@ export function Messenger() {
               {/* Input Area */}
               <div className="p-4 border-t border-glass-border">
                 <div className="flex items-end gap-2">
+                  {/* Hidden file input - accepts ALL file types */}
                   <input
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileSelect}
                     multiple
-                    accept={ALL_SUPPORTED_TYPES.join(',')}
                     className="hidden"
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => fileInputRef.current?.click()}
-                    title="Attach file"
-                  >
-                    <Paperclip className="w-5 h-5" />
-                  </Button>
+
+                  {/* Attach button with menu */}
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowAttachMenu(!showAttachMenu)}
+                      title="Attach file"
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </Button>
+
+                    {/* Attachment menu */}
+                    <AnimatePresence>
+                      {showAttachMenu && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className="absolute bottom-full left-0 mb-2 w-48 rounded-xl border border-glass-border shadow-lg overflow-hidden"
+                          style={{ backgroundColor: theme.colors.background }}
+                        >
+                          <button
+                            className="w-full flex items-center gap-3 p-3 hover:bg-glass-light transition text-left"
+                            onClick={() => {
+                              fileInputRef.current?.click();
+                            }}
+                          >
+                            <File className="w-5 h-5" style={{ color: theme.colors.primary }} />
+                            <div>
+                              <p className="font-medium text-sm">Any File</p>
+                              <p className="text-xs text-gray-500">All formats</p>
+                            </div>
+                          </button>
+                          <button
+                            className="w-full flex items-center gap-3 p-3 hover:bg-glass-light transition text-left"
+                            onClick={() => {
+                              const input = fileInputRef.current;
+                              if (input) {
+                                input.accept = 'image/*';
+                                input.click();
+                                input.accept = '';
+                              }
+                            }}
+                          >
+                            <Image className="w-5 h-5" style={{ color: theme.colors.secondary }} />
+                            <div>
+                              <p className="font-medium text-sm">Photo</p>
+                              <p className="text-xs text-gray-500">JPG, PNG, GIF</p>
+                            </div>
+                          </button>
+                          <button
+                            className="w-full flex items-center gap-3 p-3 hover:bg-glass-light transition text-left"
+                            onClick={() => {
+                              const input = fileInputRef.current;
+                              if (input) {
+                                input.accept = 'video/*';
+                                input.click();
+                                input.accept = '';
+                              }
+                            }}
+                          >
+                            <Video className="w-5 h-5 text-red-400" />
+                            <div>
+                              <p className="font-medium text-sm">Video</p>
+                              <p className="text-xs text-gray-500">MP4, MOV, AVI</p>
+                            </div>
+                          </button>
+                          <button
+                            className="w-full flex items-center gap-3 p-3 hover:bg-glass-light transition text-left"
+                            onClick={() => {
+                              const input = fileInputRef.current;
+                              if (input) {
+                                input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pages,.numbers,.keynote,.txt,.csv';
+                                input.click();
+                                input.accept = '';
+                              }
+                            }}
+                          >
+                            <FileText className="w-5 h-5 text-blue-400" />
+                            <div>
+                              <p className="font-medium text-sm">Document</p>
+                              <p className="text-xs text-gray-500">PDF, Office, iWork</p>
+                            </div>
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
                   <div className="flex-1 relative">
                     <Input
                       placeholder="Type a message..."
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
                       onKeyDown={handleKeyDown}
+                      onFocus={() => setShowAttachMenu(false)}
                       className="pr-10"
                     />
                   </div>
@@ -715,16 +731,23 @@ export function Messenger() {
                   </Button>
                 </div>
               </div>
-            </>
+            </motion.div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
+            <motion.div
+              key="no-chat"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 flex flex-col items-center justify-center text-gray-500"
+            >
               <Lock className="w-16 h-16 mb-4" style={{ color: theme.colors.primary }} />
               <h3 className="text-xl font-semibold mb-2">End-to-End Encrypted</h3>
               <p className="text-center max-w-md">
                 Select a conversation or start a new chat. All messages are encrypted for your privacy.
               </p>
-            </div>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
 
         {/* New Chat Modal */}
@@ -759,10 +782,18 @@ export function Messenger() {
                         }}
                       >
                         <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center font-medium"
+                          className="w-10 h-10 rounded-full flex items-center justify-center font-medium overflow-hidden"
                           style={{ backgroundColor: `${theme.colors.primary}30` }}
                         >
-                          {getInitials(user.firstName, user.lastName)}
+                          {user.avatar ? (
+                            <img
+                              src={user.avatar}
+                              alt={`${user.firstName} ${user.lastName}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            getInitials(user.firstName, user.lastName)
+                          )}
                         </div>
                         <div className="text-left">
                           <p className="font-medium">
@@ -825,10 +856,18 @@ export function Messenger() {
                           className="rounded"
                         />
                         <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium overflow-hidden"
                           style={{ backgroundColor: `${theme.colors.primary}30` }}
                         >
-                          {getInitials(user.firstName, user.lastName)}
+                          {user.avatar ? (
+                            <img
+                              src={user.avatar}
+                              alt={`${user.firstName} ${user.lastName}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            getInitials(user.firstName, user.lastName)
+                          )}
                         </div>
                         <span>
                           {user.firstName} {user.lastName}
@@ -892,11 +931,17 @@ export function Messenger() {
                 {/* Chat info */}
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-glass-light mb-4">
                   <div
-                    className="w-14 h-14 rounded-full flex items-center justify-center font-medium text-lg"
+                    className="w-14 h-14 rounded-full flex items-center justify-center font-medium text-lg overflow-hidden"
                     style={{ backgroundColor: `${theme.colors.primary}30` }}
                   >
                     {activeChat.type === 'group' ? (
                       <Users className="w-7 h-7" />
+                    ) : activeChat.participants.find((p) => p.id !== currentUserId)?.avatar ? (
+                      <img
+                        src={activeChat.participants.find((p) => p.id !== currentUserId)?.avatar}
+                        alt={getChatName(activeChat)}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       getInitials(
                         activeChat.participants.find((p) => p.id !== currentUserId)?.firstName || '',
