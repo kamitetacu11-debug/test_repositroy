@@ -242,10 +242,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   {isActive && (
                     <motion.div
                       layoutId="activeNavIndicator"
-                      className="absolute left-0 w-1 h-8 rounded-r-full"
+                      className="absolute left-0 w-1.5 h-8 rounded-r-full"
                       style={{
                         background: 'linear-gradient(180deg, #8B5CF6 0%, #A855F7 50%, #8B5CF6 100%)',
-                        boxShadow: '0 0 12px 2px rgba(139, 92, 246, 0.6)',
                       }}
                       initial={false}
                       transition={{
@@ -254,22 +253,38 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         damping: 30,
                       }}
                     >
-                      {/* Breathing glow effect */}
+                      {/* Breathing glow effect - more pronounced */}
                       <motion.div
-                        className="absolute inset-0 rounded-r-full"
+                        className="absolute -inset-1 rounded-r-full"
                         style={{
-                          background: 'linear-gradient(180deg, #8B5CF6 0%, #A855F7 100%)',
+                          background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.8) 0%, transparent 70%)',
                         }}
                         animate={{
                           boxShadow: [
-                            '0 0 8px 1px rgba(139, 92, 246, 0.4)',
-                            '0 0 20px 4px rgba(139, 92, 246, 0.8)',
-                            '0 0 8px 1px rgba(139, 92, 246, 0.4)',
+                            '0 0 10px 2px rgba(139, 92, 246, 0.3), 0 0 20px 4px rgba(139, 92, 246, 0.2)',
+                            '0 0 25px 8px rgba(139, 92, 246, 0.8), 0 0 50px 15px rgba(168, 85, 247, 0.5)',
+                            '0 0 10px 2px rgba(139, 92, 246, 0.3), 0 0 20px 4px rgba(139, 92, 246, 0.2)',
                           ],
-                          opacity: [0.7, 1, 0.7],
+                          scale: [1, 1.3, 1],
+                          opacity: [0.5, 1, 0.5],
                         }}
                         transition={{
-                          duration: 2,
+                          duration: 2.5,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                        }}
+                      />
+                      {/* Inner glow pulse */}
+                      <motion.div
+                        className="absolute inset-0 rounded-r-full"
+                        style={{
+                          background: 'linear-gradient(180deg, #A855F7 0%, #8B5CF6 100%)',
+                        }}
+                        animate={{
+                          opacity: [0.8, 1, 0.8],
+                        }}
+                        transition={{
+                          duration: 1.5,
                           repeat: Infinity,
                           ease: 'easeInOut',
                         }}
