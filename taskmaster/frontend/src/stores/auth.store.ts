@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authApi, usersApi } from '@/lib/api';
+import { useSettingsStore } from './settings.store';
 
 interface User {
   id: string;
@@ -67,6 +68,9 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+
+          // Load user preferences from server
+          useSettingsStore.getState().loadFromServer(user.id);
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -87,6 +91,9 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+
+          // Set user ID in settings store for new user
+          useSettingsStore.getState().setUserId(user.id);
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -101,6 +108,8 @@ export const useAuthStore = create<AuthState>()(
           token: null,
           isAuthenticated: false,
         });
+        // Clear user ID from settings store
+        useSettingsStore.getState().setUserId(null);
         // Redirect to login page
         if (typeof window !== 'undefined') {
           window.location.href = '/auth/login';
@@ -128,6 +137,9 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+
+          // Load user preferences from server
+          useSettingsStore.getState().loadFromServer(mergedUser.id);
         } catch {
           set({
             user: null,
@@ -136,6 +148,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
           localStorage.removeItem('token');
+          // Clear user ID from settings store
+          useSettingsStore.getState().setUserId(null);
         }
       },
 

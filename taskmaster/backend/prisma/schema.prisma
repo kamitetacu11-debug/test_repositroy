@@ -53,6 +53,9 @@ model User {
   activitiesCreated Activity[]  @relation("ActivityCreator")
   activitiesAssigned Activity[] @relation("ActivityAssignee")
 
+  // User preferences
+  preferences     UserPreferences?
+
   // Timestamps
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -60,6 +63,26 @@ model User {
   @@index([email])
   @@index([teamId])
   @@index([totalPoints])
+}
+
+model UserPreferences {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Appearance
+  theme           String    @default("cosmic-dark")
+  language        String    @default("en")
+  timezone        String    @default("auto")
+  compactMode     Boolean   @default(false)
+  animations      Boolean   @default(true)
+  glassOpacity    Int       @default(30)
+  starBrightness  Int       @default(70)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
 }
 
 enum UserRole {

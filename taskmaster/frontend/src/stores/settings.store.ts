@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { usersApi } from '@/lib/api';
 
 export type Theme = 'cosmic-dark' | 'ocean-blue' | 'forest-green' | 'sunset-orange' | 'aurora-purple' | 'midnight-black' | 'soft-slate' | 'warm-sepia' | 'minimal-gray' | 'gentle-lavender';
 
@@ -273,6 +274,8 @@ interface SettingsState {
   glassOpacity: number; // 0-100
   starBrightness: number; // 0-100
   _hasHydrated: boolean;
+  _userId: string | null; // Track current user for syncing
+  _isSyncing: boolean;
 
   setTheme: (theme: Theme) => void;
   setLanguage: (language: Language) => void;
@@ -286,7 +289,21 @@ interface SettingsState {
   getCurrentLanguage: () => LanguageConfig;
   getCurrentTimezone: () => TimezoneConfig | undefined;
   getEffectiveTimezone: () => string;
+
+  // Sync functions
+  setUserId: (userId: string | null) => void;
+  loadFromServer: (userId: string) => Promise<void>;
+  syncToServer: () => Promise<void>;
 }
+
+// Debounce helper for sync
+let syncTimeout: NodeJS.Timeout | null = null;
+const debouncedSync = (syncFn: () => Promise<void>) => {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(() => {
+    syncFn();
+  }, 1000); // Wait 1 second before syncing to reduce API calls
+};
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
@@ -299,14 +316,37 @@ export const useSettingsStore = create<SettingsState>()(
       glassOpacity: 50,
       starBrightness: 50,
       _hasHydrated: false,
+      _userId: null,
+      _isSyncing: false,
 
-      setTheme: (theme) => set({ theme }),
-      setLanguage: (language) => set({ language }),
-      setTimezone: (timezone) => set({ timezone }),
-      setCompactMode: (enabled) => set({ compactMode: enabled }),
-      setAnimations: (enabled) => set({ animations: enabled }),
-      setGlassOpacity: (opacity) => set({ glassOpacity: opacity }),
-      setStarBrightness: (brightness) => set({ starBrightness: brightness }),
+      setTheme: (theme) => {
+        set({ theme });
+        debouncedSync(get().syncToServer);
+      },
+      setLanguage: (language) => {
+        set({ language });
+        debouncedSync(get().syncToServer);
+      },
+      setTimezone: (timezone) => {
+        set({ timezone });
+        debouncedSync(get().syncToServer);
+      },
+      setCompactMode: (enabled) => {
+        set({ compactMode: enabled });
+        debouncedSync(get().syncToServer);
+      },
+      setAnimations: (enabled) => {
+        set({ animations: enabled });
+        debouncedSync(get().syncToServer);
+      },
+      setGlassOpacity: (opacity) => {
+        set({ glassOpacity: opacity });
+        debouncedSync(get().syncToServer);
+      },
+      setStarBrightness: (brightness) => {
+        set({ starBrightness: brightness });
+        debouncedSync(get().syncToServer);
+      },
       setHasHydrated: (state) => set({ _hasHydrated: state }),
 
       getCurrentTheme: () => {
@@ -328,9 +368,66 @@ export const useSettingsStore = create<SettingsState>()(
         const tz = get().timezone;
         return getEffectiveTimezone(tz);
       },
+
+      // Sync functions
+      setUserId: (userId) => set({ _userId: userId }),
+
+      loadFromServer: async (userId: string) => {
+        try {
+          const response = await usersApi.getPreferences(userId);
+          const prefs = response.data.data;
+
+          set({
+            _userId: userId,
+            theme: (prefs.theme as Theme) || 'cosmic-dark',
+            language: (prefs.language as Language) || 'en',
+            timezone: prefs.timezone || 'auto',
+            compactMode: prefs.compactMode ?? false,
+            animations: prefs.animations ?? true,
+            glassOpacity: prefs.glassOpacity ?? 50,
+            starBrightness: prefs.starBrightness ?? 50,
+          });
+        } catch (error) {
+          console.log('Failed to load preferences from server, using local:', error);
+        }
+      },
+
+      syncToServer: async () => {
+        const state = get();
+        const userId = state._userId;
+
+        if (!userId || state._isSyncing) return;
+
+        set({ _isSyncing: true });
+        try {
+          await usersApi.updatePreferences(userId, {
+            theme: state.theme,
+            language: state.language,
+            timezone: state.timezone,
+            compactMode: state.compactMode,
+            animations: state.animations,
+            glassOpacity: state.glassOpacity,
+            starBrightness: state.starBrightness,
+          });
+        } catch (error) {
+          console.log('Failed to sync preferences to server:', error);
+        } finally {
+          set({ _isSyncing: false });
+        }
+      },
     }),
     {
       name: 'settings-storage',
+      partialize: (state) => ({
+        theme: state.theme,
+        language: state.language,
+        timezone: state.timezone,
+        compactMode: state.compactMode,
+        animations: state.animations,
+        glassOpacity: state.glassOpacity,
+        starBrightness: state.starBrightness,
+        _userId: state._userId,
+      }),
       onRehydrateStorage: () => (state, error) => {
         if (error) {
           console.error('Settings hydration error:', error);

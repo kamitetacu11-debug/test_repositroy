@@ -51,6 +51,17 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
 };
 
+// User preferences interface
+export interface UserPreferences {
+  theme: string;
+  language: string;
+  timezone: string;
+  compactMode: boolean;
+  animations: boolean;
+  glassOpacity: number;
+  starBrightness: number;
+}
+
 // Users API
 export const usersApi = {
   list: (params?: { page?: number; limit?: number; teamId?: string; search?: string }) =>
@@ -65,6 +76,12 @@ export const usersApi = {
 
   getActivity: (id: string, limit?: number) =>
     api.get(`/users/${id}/activity`, { params: { limit } }),
+
+  // User preferences
+  getPreferences: (id: string) => api.get(`/users/${id}/preferences`),
+
+  updatePreferences: (id: string, data: Partial<UserPreferences>) =>
+    api.patch(`/users/${id}/preferences`, data),
 };
 
 // Tasks API
