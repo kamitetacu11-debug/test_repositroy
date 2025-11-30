@@ -64,12 +64,12 @@ export default function TasksPage() {
   const { addToast } = useToast();
   const t = useTranslation();
 
-  // Fetch tasks on mount only if not hydrated (to preserve local changes)
+  // Fetch tasks on mount - fetchTasks handles cache logic internally
   useEffect(() => {
-    if (token && !isHydrated) {
+    if (token) {
       fetchTasks(token);
     }
-  }, [token, isHydrated, fetchTasks]);
+  }, [token, fetchTasks]);
 
   // Convert store tasks to legacy format for display
   const legacyTasks: LegacyTask[] = tasks.map(toLegacyTask);

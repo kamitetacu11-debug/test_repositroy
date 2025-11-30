@@ -118,12 +118,12 @@ export default function CalendarPage() {
     t.leaderboard.thursday, t.leaderboard.friday, t.leaderboard.saturday
   ];
 
-  // Fetch tasks on mount if not hydrated
+  // Fetch tasks on mount - fetchTasks handles cache logic internally
   useEffect(() => {
-    if (token && !isHydrated) {
+    if (token) {
       fetchTasksFromStore(token);
     }
-  }, [token, isHydrated, fetchTasksFromStore]);
+  }, [token, fetchTasksFromStore]);
 
   // Use store's getTasksByDate for calendar display
   const getTasksByDateLocal = useCallback((): DayTasks => {

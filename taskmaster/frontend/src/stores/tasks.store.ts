@@ -180,25 +180,35 @@ export const useTasksStore = create<TasksState>()(
       setTasks: (tasks) => set({ tasks, lastFetched: Date.now() }),
 
       addTask: (task) => set((state) => ({
-        tasks: [task, ...state.tasks]
+        tasks: [task, ...state.tasks],
+        lastFetched: Date.now(), // Update timestamp on add
       })),
 
       updateTask: (id, updates) => set((state) => ({
         tasks: state.tasks.map((t) =>
-          t.id === id ? { ...t, ...updates } : t
+          t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
         ),
+        lastFetched: Date.now(), // Update timestamp on update
       })),
 
       deleteTask: (id) => set((state) => ({
         tasks: state.tasks.filter((t) => t.id !== id),
+        lastFetched: Date.now(), // Update timestamp on delete
       })),
 
       setLoading: (loading) => set({ isLoading: loading }),
       setHydrated: (hydrated) => set({ isHydrated: hydrated }),
 
-      // Fetch tasks from API
+      // Fetch tasks from API - only if no local data or data is stale
       fetchTasks: async (token) => {
-        const { setLoading, setTasks, setHydrated } = get();
+        const { setLoading, setTasks, setHydrated, tasks, lastFetched } = get();
+
+        // If we have local tasks and they're recent (within 5 minutes), don't refetch
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+        if (tasks.length > 0 && lastFetched && (Date.now() - lastFetched) < CACHE_DURATION) {
+          setHydrated(true);
+          return;
+        }
 
         try {
           setLoading(true);
@@ -212,17 +222,23 @@ export const useTasksStore = create<TasksState>()(
           if (response.ok) {
             const data = await response.json();
             const apiTasks = data.data || [];
-            // Use demo data if no tasks returned
-            const tasksToUse = apiTasks.length > 0 ? apiTasks : generateDemoTasks();
-            setTasks(tasksToUse);
-          } else {
-            // Use demo data on error
+            // Only use demo data if API returned nothing AND we have no local tasks
+            if (apiTasks.length > 0) {
+              setTasks(apiTasks);
+            } else if (tasks.length === 0) {
+              setTasks(generateDemoTasks());
+            }
+            // If we have local tasks but API returned nothing, keep local tasks
+          } else if (tasks.length === 0) {
+            // Use demo data only if we have no local tasks
             setTasks(generateDemoTasks());
           }
         } catch (error) {
           console.error('Failed to fetch tasks:', error);
-          // Use demo data on error
-          setTasks(generateDemoTasks());
+          // Only use demo data if we have no local tasks
+          if (tasks.length === 0) {
+            setTasks(generateDemoTasks());
+          }
         } finally {
           setLoading(false);
           setHydrated(true);
@@ -364,6 +380,12 @@ export const useTasksStore = create<TasksState>()(
         tasks: state.tasks,
         lastFetched: state.lastFetched,
       }),
+      // Set isHydrated when localStorage data is restored
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.setHydrated(true);
+        }
+      },
     }
   )
 );
