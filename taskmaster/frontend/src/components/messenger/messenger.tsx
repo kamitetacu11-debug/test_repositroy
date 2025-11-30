@@ -1930,7 +1930,7 @@ export function Messenger() {
             )}
           </button>
           <button
-            onClick={onClose}
+            onClick={closeMessenger}
             className="w-8 h-8 rounded-lg flex items-center justify-center bg-glass-light/50 hover:bg-glass-light transition-colors border border-glass-border/30"
             title="Закрыть"
           >
