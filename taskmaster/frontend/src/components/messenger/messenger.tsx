@@ -1006,19 +1006,6 @@ export function Messenger() {
                     </p>
                   </div>
                 </div>
-                {/* Action buttons - only Settings here, expand/close are in persistent controls */}
-                <div className="flex items-center gap-1">
-                  {/* Settings button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Настройки чата"
-                    onClick={() => setShowSettingsModal(true)}
-                    className="flex-shrink-0 h-9 w-9"
-                  >
-                    <Settings className="w-5 h-5" />
-                  </Button>
-                </div>
               </div>
 
               {/* Messages */}
@@ -1892,8 +1879,18 @@ export function Messenger() {
           )}
         </AnimatePresence>
 
-        {/* Persistent Expand/Close Controls */}
+        {/* Persistent Controls - Settings, Expand, Close */}
         <div className="absolute top-3 right-3 flex items-center gap-1 z-10">
+          {/* Settings button - only show when chat is open */}
+          {activeChat && (
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center bg-glass-light/50 hover:bg-glass-light transition-colors border border-glass-border/30"
+              title="Настройки чата"
+            >
+              <Settings className="w-4 h-4" style={{ color: theme.colors.primary }} />
+            </button>
+          )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="w-8 h-8 rounded-lg flex items-center justify-center bg-glass-light/50 hover:bg-glass-light transition-colors border border-glass-border/30"
