@@ -29,6 +29,7 @@ import { setupWebSocket } from './modules/notifications/websocket.js';
 
 // Security
 import { registerSecurityMiddleware } from './modules/security/index.js';
+import { securityRoutes } from './modules/security/security.routes.js';
 
 const app = Fastify({
   logger: {
@@ -185,6 +186,12 @@ async function bootstrap() {
     await app.register(aiRoutes, { prefix: '/api/v1/ai' });
     await app.register(notificationRoutes, { prefix: '/api/v1/notifications' });
     await app.register(crmRoutes, { prefix: '/api/v1/crm' });
+
+    // Security Admin Routes (requires authentication)
+    await app.register(async (securityApp) => {
+      securityApp.addHook('preHandler', app.authenticate);
+      await securityApp.register(securityRoutes);
+    }, { prefix: '/api/v1/security' });
 
     // Global error handler
     app.setErrorHandler((error, request, reply) => {

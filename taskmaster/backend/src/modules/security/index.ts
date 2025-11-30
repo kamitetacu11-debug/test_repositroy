@@ -89,6 +89,18 @@ export {
 } from './input-validation.middleware.js';
 
 // ============================================================================
+// Metrics
+// ============================================================================
+
+export {
+  securityMetricsCollector,
+  recordMetric,
+  generatePrometheusMetrics,
+  registerMetricsEndpoint,
+  type SecurityMetrics,
+} from './metrics.js';
+
+// ============================================================================
 // Combined Security Middleware
 // ============================================================================
 

@@ -3,6 +3,14 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../../config/database.js';
 import { logger } from '../../config/logger.js';
+import {
+  bruteForceService,
+  captchaService,
+  getClientIp,
+  generateDeviceFingerprint,
+  threatDetectionService,
+  SecurityEventType,
+} from '../security/index.js';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -89,17 +97,112 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         properties: {
           email: { type: 'string', format: 'email' },
           password: { type: 'string' },
+          captchaToken: { type: 'string', description: 'CAPTCHA token if required' },
         },
       },
     },
   }, async (request, reply) => {
     const body = loginSchema.parse(request.body);
+    const ip = getClientIp(request);
+    const deviceFingerprint = generateDeviceFingerprint(request);
+    const captchaToken = (request.body as any).captchaToken;
+
+    // Check brute-force protection
+    const bruteForceCheck = await bruteForceService.checkLoginAttempt(
+      ip,
+      body.email,
+      deviceFingerprint
+    );
+
+    if (!bruteForceCheck.allowed) {
+      // Log security event
+      await threatDetectionService.logSecurityEvent({
+        type: SecurityEventType.BRUTE_FORCE_DETECTED,
+        severity: 'HIGH',
+        ip,
+        path: '/api/v1/auth/login',
+        method: 'POST',
+        userAgent: request.headers['user-agent'] || '',
+        details: {
+          email: body.email.replace(/(.{2}).*(@.*)/, '$1***$2'), // Mask email
+          lockoutLevel: bruteForceCheck.lockoutLevel,
+          lockoutUntil: bruteForceCheck.lockoutUntil,
+        },
+        timestamp: new Date(),
+      });
+
+      return reply.status(429).send({
+        success: false,
+        error: {
+          code: 'TOO_MANY_ATTEMPTS',
+          message: 'Too many login attempts. Please try again later.',
+          lockoutUntil: bruteForceCheck.lockoutUntil?.toISOString(),
+          requiresCaptcha: bruteForceCheck.requiresCaptcha,
+          captcha: bruteForceCheck.requiresCaptcha ? captchaService.getClientConfig() : undefined,
+        },
+      });
+    }
+
+    // Check CAPTCHA if required
+    if (bruteForceCheck.requiresCaptcha) {
+      if (!captchaToken) {
+        return reply.status(428).send({
+          success: false,
+          error: {
+            code: 'CAPTCHA_REQUIRED',
+            message: 'CAPTCHA verification required',
+            attemptsRemaining: bruteForceCheck.attemptsRemaining,
+            captcha: captchaService.getClientConfig(),
+          },
+        });
+      }
+
+      const captchaResult = await captchaService.verify(captchaToken, ip);
+      if (!captchaResult.success) {
+        await threatDetectionService.logSecurityEvent({
+          type: SecurityEventType.CAPTCHA_FAILED,
+          severity: 'MEDIUM',
+          ip,
+          path: '/api/v1/auth/login',
+          method: 'POST',
+          userAgent: request.headers['user-agent'] || '',
+          details: { errors: captchaResult.errorCodes },
+          timestamp: new Date(),
+        });
+
+        return reply.status(403).send({
+          success: false,
+          error: {
+            code: 'CAPTCHA_FAILED',
+            message: 'CAPTCHA verification failed',
+            captcha: captchaService.getClientConfig(),
+          },
+        });
+      }
+    }
 
     const user = await prisma.user.findUnique({
       where: { email: body.email },
     });
 
     if (!user) {
+      // Record failed attempt
+      await bruteForceService.recordFailedAttempt(ip, body.email, deviceFingerprint);
+
+      await threatDetectionService.logSecurityEvent({
+        type: SecurityEventType.FAILED_LOGIN,
+        severity: 'LOW',
+        ip,
+        path: '/api/v1/auth/login',
+        method: 'POST',
+        userAgent: request.headers['user-agent'] || '',
+        details: {
+          email: body.email.replace(/(.{2}).*(@.*)/, '$1***$2'),
+          reason: 'USER_NOT_FOUND',
+        },
+        timestamp: new Date(),
+      });
+
       return reply.status(401).send({
         success: false,
         error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' },
@@ -109,11 +212,32 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const isValidPassword = await bcrypt.compare(body.password, user.passwordHash);
 
     if (!isValidPassword) {
+      // Record failed attempt
+      await bruteForceService.recordFailedAttempt(ip, body.email, deviceFingerprint);
+
+      await threatDetectionService.logSecurityEvent({
+        type: SecurityEventType.FAILED_LOGIN,
+        severity: 'LOW',
+        ip,
+        userId: user.id,
+        path: '/api/v1/auth/login',
+        method: 'POST',
+        userAgent: request.headers['user-agent'] || '',
+        details: {
+          email: body.email.replace(/(.{2}).*(@.*)/, '$1***$2'),
+          reason: 'INVALID_PASSWORD',
+        },
+        timestamp: new Date(),
+      });
+
       return reply.status(401).send({
         success: false,
         error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' },
       });
     }
+
+    // Clear brute-force counters on successful login
+    await bruteForceService.recordSuccessfulLogin(ip, body.email, deviceFingerprint);
 
     // Update last active
     await prisma.user.update({
@@ -123,7 +247,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     const token = app.jwt.sign({ userId: user.id, role: user.role });
 
-    logger.info({ userId: user.id }, 'User logged in');
+    logger.info({ userId: user.id, ip }, 'User logged in');
 
     return {
       success: true,
