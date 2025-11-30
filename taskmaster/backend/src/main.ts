@@ -41,7 +41,9 @@ const app = Fastify({
       target: 'pino-pretty',
       options: { colorize: true }
     }
-  }
+  },
+  // Increase body limit for base64 avatar uploads (5MB)
+  bodyLimit: 5 * 1024 * 1024,
 });
 
 async function bootstrap() {
