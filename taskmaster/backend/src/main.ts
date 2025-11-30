@@ -27,6 +27,9 @@ import { crmRoutes } from './modules/crm/crm.routes.js';
 // WebSocket
 import { setupWebSocket } from './modules/notifications/websocket.js';
 
+// Security
+import { registerSecurityMiddleware } from './modules/security/index.js';
+
 const app = Fastify({
   logger: {
     level: config.logLevel,
@@ -39,19 +42,78 @@ const app = Fastify({
 
 async function bootstrap() {
   try {
-    // Security
+    // Security Headers (Helmet with enhanced CSP)
     await app.register(helmet, {
-      contentSecurityPolicy: false
+      contentSecurityPolicy: config.isProd ? {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https:"],
+          connectSrc: ["'self'", "wss:", "https:"],
+          fontSrc: ["'self'", "https:", "data:"],
+          objectSrc: ["'none'"],
+          mediaSrc: ["'self'"],
+          frameSrc: ["'none'"],
+        },
+      } : false,
+      crossOriginEmbedderPolicy: false,
+      xssFilter: true,
+      noSniff: true,
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      hsts: config.isProd ? {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+      } : false,
     });
 
+    // CORS Configuration
     await app.register(cors, {
       origin: config.corsOrigins,
-      credentials: true
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-CSRF-Token',
+        'X-Captcha-Token',
+        'X-Request-ID',
+      ],
+      exposedHeaders: [
+        'X-RateLimit-Limit',
+        'X-RateLimit-Remaining',
+        'X-RateLimit-Reset',
+        'Retry-After',
+      ],
     });
 
+    // Basic rate limit (will be enhanced by security middleware)
     await app.register(rateLimit, {
       max: 100,
-      timeWindow: '1 minute'
+      timeWindow: '1 minute',
+      skipOnError: true,
+      keyGenerator: (request) => {
+        // Use X-Forwarded-For for proxied requests
+        const forwardedFor = request.headers['x-forwarded-for'];
+        if (forwardedFor) {
+          const ips = Array.isArray(forwardedFor)
+            ? forwardedFor[0]
+            : forwardedFor.split(',')[0];
+          return ips.trim();
+        }
+        return request.ip;
+      },
+    });
+
+    // Register comprehensive security middleware
+    await registerSecurityMiddleware(app, {
+      enableRateLimit: true,
+      enableBruteForceProtection: true,
+      enableThreatDetection: true,
+      enableDirectoryProtection: true,
+      enableInputValidation: true,
+      enableCaptcha: false, // Enable when CAPTCHA keys are configured
     });
 
     // JWT Auth
