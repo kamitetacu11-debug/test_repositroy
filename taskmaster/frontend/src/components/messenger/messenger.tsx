@@ -409,34 +409,47 @@ const MessageContent = ({ content, theme }: { content: string; theme: any }) => 
               className="rounded-xl overflow-hidden bg-black/40 border border-glass-border/30 hover:border-glass-border/50 transition-colors"
             >
               {/* File card header */}
-              <div className="flex items-center justify-between px-4 py-3 bg-black/30">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: `${langColor}20` }}
-                  >
-                    <FileText className="w-5 h-5" style={{ color: langColor }} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">
-                        {part.language?.charAt(0).toUpperCase() + (part.language?.slice(1) || 'Code')} код
-                      </span>
-                      <span
-                        className="text-xs px-2 py-0.5 rounded-full"
-                        style={{
-                          backgroundColor: `${langColor}20`,
-                          color: langColor,
-                        }}
-                      >
-                        {part.language?.toUpperCase() || 'CODE'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Document · {lineCount} строк
-                    </p>
-                  </div>
+              <div className="flex items-center gap-3 px-4 py-3 bg-black/30">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: `${langColor}20` }}
+                >
+                  <FileText className="w-5 h-5" style={{ color: langColor }} />
                 </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-sm">
+                      {part.language?.charAt(0).toUpperCase() + (part.language?.slice(1) || 'Code')} код
+                    </span>
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full"
+                      style={{
+                        backgroundColor: `${langColor}20`,
+                        color: langColor,
+                      }}
+                    >
+                      {part.language?.toUpperCase() || 'CODE'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Document · {lineCount} строк
+                  </p>
+                </div>
+              </div>
+              {/* Code preview (first 10 lines) */}
+              <div className="border-t border-glass-border/20">
+                <pre className="p-3 overflow-x-auto text-sm max-h-32 overflow-y-hidden relative">
+                  <code className="font-mono text-gray-200 whitespace-pre">
+                    {part.content.split('\n').slice(0, 10).join('\n')}
+                  </code>
+                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+                </pre>
+              </div>
+              {/* Action buttons - moved to bottom */}
+              <div className="flex items-center justify-between px-3 py-2 border-t border-glass-border/20 bg-black/20">
+                <span className="text-xs text-gray-500">
+                  + ещё {lineCount - 10} строк
+                </span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => openCodeInNewTab(part.content, part.language || 'code')}
@@ -458,18 +471,6 @@ const MessageContent = ({ content, theme }: { content: string; theme: any }) => 
                     <Download className="w-4 h-4" />
                     Скачать
                   </button>
-                </div>
-              </div>
-              {/* Code preview (first 10 lines) */}
-              <div className="border-t border-glass-border/20">
-                <pre className="p-3 overflow-x-auto text-sm max-h-32 overflow-y-hidden relative">
-                  <code className="font-mono text-gray-200 whitespace-pre">
-                    {part.content.split('\n').slice(0, 10).join('\n')}
-                  </code>
-                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
-                </pre>
-                <div className="px-3 py-2 text-xs text-gray-500 text-center border-t border-glass-border/20 bg-black/20">
-                  + ещё {lineCount - 10} строк · нажмите "Посмотреть" для полного кода
                 </div>
               </div>
             </div>
@@ -563,6 +564,7 @@ export function Messenger() {
     onConfirm: () => void;
   } | null>(null);
   const [showMembersModal, setShowMembersModal] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -1118,7 +1120,7 @@ export function Messenger() {
                                         src={att.url}
                                         alt={att.name}
                                         className="max-w-[200px] max-h-[200px] object-cover rounded-lg cursor-pointer hover:opacity-90 transition"
-                                        onClick={() => window.open(att.url, '_blank')}
+                                        onClick={() => setLightboxImage({ url: att.url, name: att.name })}
                                       />
                                     ) : att.type === 'video' ? (
                                       <video
@@ -1863,6 +1865,78 @@ export function Messenger() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Image Lightbox Modal */}
+        <AnimatePresence>
+          {lightboxImage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50"
+              onClick={() => setLightboxImage(null)}
+            >
+              {/* Control buttons */}
+              <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(lightboxImage.url, '_blank');
+                  }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors"
+                  title="Открыть в новой вкладке"
+                >
+                  <Maximize2 className="w-5 h-5 text-white" />
+                </button>
+                <button
+                  onClick={() => setLightboxImage(null)}
+                  className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors"
+                  title="Закрыть"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+
+              {/* Image */}
+              <motion.img
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                src={lightboxImage.url}
+                alt={lightboxImage.name}
+                className="max-w-[90%] max-h-[90%] object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+
+              {/* Image name */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-black/50 text-white text-sm">
+                {lightboxImage.name}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Persistent Expand/Close Controls */}
+        <div className="absolute top-3 right-3 flex items-center gap-1 z-10">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-glass-light/50 hover:bg-glass-light transition-colors border border-glass-border/30"
+            title={isExpanded ? 'Свернуть' : 'Развернуть'}
+          >
+            {isExpanded ? (
+              <Minimize2 className="w-4 h-4" style={{ color: theme.colors.primary }} />
+            ) : (
+              <Maximize2 className="w-4 h-4" style={{ color: theme.colors.primary }} />
+            )}
+          </button>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-glass-light/50 hover:bg-glass-light transition-colors border border-glass-border/30"
+            title="Закрыть"
+          >
+            <X className="w-4 h-4" style={{ color: theme.colors.secondary }} />
+          </button>
+        </div>
       </motion.div>
     </AnimatePresence>
   );
