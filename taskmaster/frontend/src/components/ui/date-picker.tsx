@@ -85,8 +85,12 @@ export function DatePicker({
   };
 
   const handleDateSelect = (day: number) => {
-    const newDate = new Date(currentYear, currentMonth, day);
-    const isoDate = newDate.toISOString().split('T')[0];
+    // Format date manually to avoid timezone issues
+    // Using toISOString() can shift the date by -1 day in positive UTC timezones
+    const year = currentYear;
+    const month = (currentMonth + 1).toString().padStart(2, '0');
+    const dayStr = day.toString().padStart(2, '0');
+    const isoDate = `${year}-${month}-${dayStr}`;
     onChange?.(isoDate);
     setIsOpen(false);
   };
@@ -119,7 +123,11 @@ export function DatePicker({
 
   const handleToday = () => {
     const today = new Date();
-    const isoDate = today.toISOString().split('T')[0];
+    // Format date manually to avoid timezone issues
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    const isoDate = `${year}-${month}-${day}`;
     onChange?.(isoDate);
     setIsOpen(false);
   };

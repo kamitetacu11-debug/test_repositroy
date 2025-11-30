@@ -211,7 +211,14 @@ export default function TeamsPage() {
       points: 0,
       rank: 'NOVICE',
       tasksCompleted: 0,
-      joinedDate: new Date().toISOString().split('T')[0],
+      // Format date manually to avoid timezone issues with toISOString()
+      joinedDate: (() => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const day = today.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      })(),
     };
 
     setTeams(teams.map(t =>
