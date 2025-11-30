@@ -6,7 +6,7 @@ import {
   X,
   Send,
   Paperclip,
-  Image,
+  Image as ImageIcon,
   Video,
   FileText,
   Search,
@@ -167,10 +167,15 @@ export function Messenger() {
   const activeChat = chats.find((c) => c.id === activeChatId);
   const chatMessages = activeChatId ? getChatMessages(activeChatId) : [];
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change or chat changes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
+    if (activeChatId) {
+      // Use setTimeout to ensure DOM is ready after chat switch
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+      }, 100);
+    }
+  }, [chatMessages, activeChatId]);
 
   // Close chat menu when clicking outside
   useEffect(() => {
@@ -330,7 +335,7 @@ export function Messenger() {
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (IMAGE_TYPES.some(t => mimeType.startsWith('image/'))) return <Image className="w-5 h-5" />;
+    if (IMAGE_TYPES.some(t => mimeType.startsWith('image/'))) return <ImageIcon className="w-5 h-5" />;
     if (VIDEO_TYPES.some(t => mimeType.startsWith('video/'))) return <Video className="w-5 h-5" />;
     return <File className="w-5 h-5" />;
   };
@@ -1196,7 +1201,7 @@ export function Messenger() {
                 {/* File upload section */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-center gap-2 text-sm">
-                    <Image className="w-4 h-4" style={{ color: theme.colors.secondary }} />
+                    <ImageIcon className="w-4 h-4" style={{ color: theme.colors.secondary }} />
                     <span>Фото, видео и файлы</span>
                   </div>
 
