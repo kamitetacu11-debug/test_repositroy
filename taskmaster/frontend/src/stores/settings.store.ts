@@ -5,6 +5,93 @@ export type Theme = 'cosmic-dark' | 'ocean-blue' | 'forest-green' | 'sunset-oran
 
 export type Language = 'en' | 'ru' | 'zh';
 
+export interface TimezoneConfig {
+  id: string;
+  name: string;
+  offset: string;
+  region: string;
+}
+
+// Comprehensive timezone list from America to Australia including Russia, China, etc.
+export const timezones: TimezoneConfig[] = [
+  // Auto-detect option
+  { id: 'auto', name: 'Auto-detect', offset: '', region: 'auto' },
+
+  // Americas
+  { id: 'America/Adak', name: 'Hawaii-Aleutian (Adak)', offset: 'UTC-10:00', region: 'Americas' },
+  { id: 'America/Anchorage', name: 'Alaska', offset: 'UTC-9:00', region: 'Americas' },
+  { id: 'America/Los_Angeles', name: 'Pacific Time (Los Angeles)', offset: 'UTC-8:00', region: 'Americas' },
+  { id: 'America/Denver', name: 'Mountain Time (Denver)', offset: 'UTC-7:00', region: 'Americas' },
+  { id: 'America/Phoenix', name: 'Arizona (Phoenix)', offset: 'UTC-7:00', region: 'Americas' },
+  { id: 'America/Chicago', name: 'Central Time (Chicago)', offset: 'UTC-6:00', region: 'Americas' },
+  { id: 'America/New_York', name: 'Eastern Time (New York)', offset: 'UTC-5:00', region: 'Americas' },
+  { id: 'America/Toronto', name: 'Eastern Time (Toronto)', offset: 'UTC-5:00', region: 'Americas' },
+  { id: 'America/Sao_Paulo', name: 'Brasília (São Paulo)', offset: 'UTC-3:00', region: 'Americas' },
+  { id: 'America/Buenos_Aires', name: 'Argentina (Buenos Aires)', offset: 'UTC-3:00', region: 'Americas' },
+
+  // Europe
+  { id: 'Atlantic/Reykjavik', name: 'Iceland (Reykjavík)', offset: 'UTC+0:00', region: 'Europe' },
+  { id: 'Europe/London', name: 'UK (London)', offset: 'UTC+0:00', region: 'Europe' },
+  { id: 'Europe/Paris', name: 'Central Europe (Paris)', offset: 'UTC+1:00', region: 'Europe' },
+  { id: 'Europe/Berlin', name: 'Central Europe (Berlin)', offset: 'UTC+1:00', region: 'Europe' },
+  { id: 'Europe/Helsinki', name: 'Eastern Europe (Helsinki)', offset: 'UTC+2:00', region: 'Europe' },
+  { id: 'Europe/Istanbul', name: 'Turkey (Istanbul)', offset: 'UTC+3:00', region: 'Europe' },
+
+  // Russia (all timezones)
+  { id: 'Europe/Kaliningrad', name: 'Калининград (UTC+2)', offset: 'UTC+2:00', region: 'Russia' },
+  { id: 'Europe/Moscow', name: 'Москва (UTC+3)', offset: 'UTC+3:00', region: 'Russia' },
+  { id: 'Europe/Samara', name: 'Самара (UTC+4)', offset: 'UTC+4:00', region: 'Russia' },
+  { id: 'Asia/Yekaterinburg', name: 'Екатеринбург (UTC+5)', offset: 'UTC+5:00', region: 'Russia' },
+  { id: 'Asia/Omsk', name: 'Омск (UTC+6)', offset: 'UTC+6:00', region: 'Russia' },
+  { id: 'Asia/Krasnoyarsk', name: 'Красноярск (UTC+7)', offset: 'UTC+7:00', region: 'Russia' },
+  { id: 'Asia/Irkutsk', name: 'Иркутск (UTC+8)', offset: 'UTC+8:00', region: 'Russia' },
+  { id: 'Asia/Yakutsk', name: 'Якутск (UTC+9)', offset: 'UTC+9:00', region: 'Russia' },
+  { id: 'Asia/Vladivostok', name: 'Владивосток (UTC+10)', offset: 'UTC+10:00', region: 'Russia' },
+  { id: 'Asia/Magadan', name: 'Магадан (UTC+11)', offset: 'UTC+11:00', region: 'Russia' },
+  { id: 'Asia/Kamchatka', name: 'Камчатка (UTC+12)', offset: 'UTC+12:00', region: 'Russia' },
+
+  // Middle East & Central Asia
+  { id: 'Asia/Dubai', name: 'UAE (Dubai)', offset: 'UTC+4:00', region: 'Asia' },
+  { id: 'Asia/Karachi', name: 'Pakistan (Karachi)', offset: 'UTC+5:00', region: 'Asia' },
+  { id: 'Asia/Kolkata', name: 'India (Kolkata)', offset: 'UTC+5:30', region: 'Asia' },
+  { id: 'Asia/Dhaka', name: 'Bangladesh (Dhaka)', offset: 'UTC+6:00', region: 'Asia' },
+  { id: 'Asia/Bangkok', name: 'Thailand (Bangkok)', offset: 'UTC+7:00', region: 'Asia' },
+
+  // East Asia
+  { id: 'Asia/Singapore', name: 'Singapore', offset: 'UTC+8:00', region: 'Asia' },
+  { id: 'Asia/Hong_Kong', name: 'Hong Kong', offset: 'UTC+8:00', region: 'Asia' },
+  { id: 'Asia/Shanghai', name: 'China (Shanghai)', offset: 'UTC+8:00', region: 'Asia' },
+  { id: 'Asia/Taipei', name: 'Taiwan (Taipei)', offset: 'UTC+8:00', region: 'Asia' },
+  { id: 'Asia/Seoul', name: 'South Korea (Seoul)', offset: 'UTC+9:00', region: 'Asia' },
+  { id: 'Asia/Tokyo', name: 'Japan (Tokyo)', offset: 'UTC+9:00', region: 'Asia' },
+
+  // Australia & Pacific
+  { id: 'Australia/Perth', name: 'Western Australia (Perth)', offset: 'UTC+8:00', region: 'Australia' },
+  { id: 'Australia/Darwin', name: 'Northern Territory (Darwin)', offset: 'UTC+9:30', region: 'Australia' },
+  { id: 'Australia/Adelaide', name: 'South Australia (Adelaide)', offset: 'UTC+9:30', region: 'Australia' },
+  { id: 'Australia/Brisbane', name: 'Queensland (Brisbane)', offset: 'UTC+10:00', region: 'Australia' },
+  { id: 'Australia/Sydney', name: 'New South Wales (Sydney)', offset: 'UTC+10:00', region: 'Australia' },
+  { id: 'Australia/Melbourne', name: 'Victoria (Melbourne)', offset: 'UTC+10:00', region: 'Australia' },
+  { id: 'Pacific/Auckland', name: 'New Zealand (Auckland)', offset: 'UTC+12:00', region: 'Australia' },
+];
+
+// Helper to detect user's timezone
+export const detectTimezone = (): string => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return 'Europe/Moscow';
+  }
+};
+
+// Get effective timezone (resolves 'auto' to actual timezone)
+export const getEffectiveTimezone = (timezone: string): string => {
+  if (timezone === 'auto') {
+    return detectTimezone();
+  }
+  return timezone;
+};
+
 export interface LanguageConfig {
   id: Language;
   name: string;
@@ -180,6 +267,7 @@ export const themes: ThemeConfig[] = [
 interface SettingsState {
   theme: Theme;
   language: Language;
+  timezone: string;
   compactMode: boolean;
   animations: boolean;
   glassOpacity: number; // 0-100
@@ -187,12 +275,15 @@ interface SettingsState {
 
   setTheme: (theme: Theme) => void;
   setLanguage: (language: Language) => void;
+  setTimezone: (timezone: string) => void;
   setCompactMode: (enabled: boolean) => void;
   setAnimations: (enabled: boolean) => void;
   setGlassOpacity: (opacity: number) => void;
   setStarBrightness: (brightness: number) => void;
   getCurrentTheme: () => ThemeConfig;
   getCurrentLanguage: () => LanguageConfig;
+  getCurrentTimezone: () => TimezoneConfig | undefined;
+  getEffectiveTimezone: () => string;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -200,6 +291,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set, get) => ({
       theme: 'cosmic-dark',
       language: 'en',
+      timezone: 'auto',
       compactMode: false,
       animations: true,
       glassOpacity: 50,
@@ -207,6 +299,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       setTheme: (theme) => set({ theme }),
       setLanguage: (language) => set({ language }),
+      setTimezone: (timezone) => set({ timezone }),
       setCompactMode: (enabled) => set({ compactMode: enabled }),
       setAnimations: (enabled) => set({ animations: enabled }),
       setGlassOpacity: (opacity) => set({ glassOpacity: opacity }),
@@ -220,6 +313,16 @@ export const useSettingsStore = create<SettingsState>()(
       getCurrentLanguage: () => {
         const currentLang = get().language;
         return languages.find(l => l.id === currentLang) || languages[0];
+      },
+
+      getCurrentTimezone: () => {
+        const currentTz = get().timezone;
+        return timezones.find(t => t.id === currentTz);
+      },
+
+      getEffectiveTimezone: () => {
+        const tz = get().timezone;
+        return getEffectiveTimezone(tz);
       },
     }),
     {

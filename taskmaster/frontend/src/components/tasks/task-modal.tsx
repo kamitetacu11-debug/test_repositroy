@@ -27,7 +27,25 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
 import { getPriorityColor, getStatusColor } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useSettingsStore } from '@/stores/settings.store';
+import { useSettingsStore, getEffectiveTimezone } from '@/stores/settings.store';
+
+// Helper to format date for display (date only, no time)
+const formatDateForDisplay = (dateString: string, locale: string, timezone: string): string => {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    const effectiveTz = getEffectiveTimezone(timezone);
+    return date.toLocaleDateString(locale === 'ru' ? 'ru-RU' : locale === 'zh' ? 'zh-CN' : 'en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: effectiveTz,
+    });
+  } catch {
+    // Fallback to simple date format
+    return dateString.split('T')[0];
+  }
+};
 
 export interface Task {
   id: string;
@@ -76,7 +94,7 @@ export function TaskModal({
   onStatusChange,
 }: TaskModalProps) {
   const t = useTranslation();
-  const { language } = useSettingsStore();
+  const { language, timezone } = useSettingsStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [newComment, setNewComment] = useState('');
@@ -309,7 +327,7 @@ export function TaskModal({
               ) : (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-glass-light">
                   <Calendar className="w-4 h-4 text-cosmic-purple" />
-                  <span>{currentTask.dueDate}</span>
+                  <span>{formatDateForDisplay(currentTask.dueDate, language, timezone)}</span>
                 </div>
               )}
             </div>

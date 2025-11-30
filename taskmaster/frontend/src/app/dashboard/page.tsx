@@ -25,8 +25,9 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { TaskModal, Task } from '@/components/tasks/task-modal';
 import { CreateTaskModal } from '@/components/tasks/create-task-modal';
 import { useToast } from '@/components/ui/toast';
-import { formatNumber, getRankColor } from '@/lib/utils';
+import { formatNumber, getRankColor, formatShortDateWithTimezone } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useSettingsStore } from '@/stores/settings.store';
 
 // Mock data for demo
 const mockStats = {
@@ -63,6 +64,7 @@ export default function DashboardPage() {
   const { user, fetchUser } = useAuthStore();
   const { addToast } = useToast();
   const t = useTranslation();
+  const { language, timezone } = useSettingsStore();
 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -343,7 +345,7 @@ export default function DashboardPage() {
                             <p className="font-medium group-hover:text-cosmic-purple transition">{task.title}</p>
                             <div className="flex items-center gap-2 text-sm text-gray-400 mt-1">
                               <Clock className="w-4 h-4" />
-                              <span>Due {task.dueDate}</span>
+                              <span>{formatShortDateWithTimezone(task.dueDate, language, timezone)}</span>
                               <span className="text-cosmic-purple">+{task.points} pts</span>
                             </div>
                           </div>

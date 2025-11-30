@@ -48,7 +48,8 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useTasksStore, Task } from '@/stores/tasks.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/components/ui/toast';
-import { cn } from '@/lib/utils';
+import { cn, formatShortDateWithTimezone } from '@/lib/utils';
+import { useSettingsStore } from '@/stores/settings.store';
 
 interface DayTasks {
   [key: string]: Task[];
@@ -74,6 +75,7 @@ export default function CalendarPage() {
   const { token } = useAuthStore();
   const t = useTranslation();
   const { addToast } = useToast();
+  const { language, timezone } = useSettingsStore();
 
   // Use shared tasks store for sync with Tasks page
   const {
@@ -612,7 +614,7 @@ export default function CalendarPage() {
                       <span className="text-sm font-medium truncate flex-1">{task.title}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 ml-5">
-                      <span>{new Date(task.dueDate!).toLocaleDateString()}</span>
+                      <span>{formatShortDateWithTimezone(task.dueDate, language, timezone)}</span>
                       {task.assignee && (
                         <span className="flex items-center gap-1">
                           <User className="w-3 h-3" />
@@ -664,7 +666,7 @@ export default function CalendarPage() {
                       <span className="text-sm font-medium truncate flex-1">{task.title}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 ml-5">
-                      <span>{new Date(task.dueDate!).toLocaleDateString()}</span>
+                      <span>{formatShortDateWithTimezone(task.dueDate, language, timezone)}</span>
                       {task.assignee && (
                         <span className="flex items-center gap-1">
                           <User className="w-3 h-3" />
@@ -1114,9 +1116,7 @@ export default function CalendarPage() {
               <div>
                 <p className="text-sm text-muted-foreground">{t.calendar.dueDate}</p>
                 <p className="font-medium mt-1">
-                  {selectedTask.dueDate
-                    ? new Date(selectedTask.dueDate).toLocaleDateString()
-                    : '-'}
+                  {formatShortDateWithTimezone(selectedTask.dueDate, language, timezone)}
                 </p>
               </div>
               <div>

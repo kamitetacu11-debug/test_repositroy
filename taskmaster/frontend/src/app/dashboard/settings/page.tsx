@@ -13,13 +13,14 @@ import {
   Check,
   Star,
   Globe,
+  Clock,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth.store';
-import { useSettingsStore, themes, Theme, languages, Language } from '@/stores/settings.store';
+import { useSettingsStore, themes, Theme, languages, Language, timezones, detectTimezone } from '@/stores/settings.store';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -28,12 +29,14 @@ export default function SettingsPage() {
   const {
     theme,
     language,
+    timezone,
     compactMode,
     animations,
     glassOpacity,
     starBrightness,
     setTheme,
     setLanguage,
+    setTimezone,
     setCompactMode,
     setAnimations,
     setGlassOpacity,
@@ -404,6 +407,62 @@ export default function SettingsPage() {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Timezone Selection */}
+                  <div className="p-4 rounded-xl bg-glass-light space-y-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Clock className="w-5 h-5 text-cosmic-cyan" />
+                      <div>
+                        <p className="font-medium">{t.settings.appearance.timezone}</p>
+                        <p className="text-sm text-gray-400">{t.settings.appearance.timezoneDesc}</p>
+                      </div>
+                    </div>
+                    <select
+                      value={timezone}
+                      onChange={(e) => setTimezone(e.target.value)}
+                      className="w-full p-3 rounded-xl bg-glass-medium border border-glass-border text-white focus:outline-none focus:ring-2 focus:ring-cosmic-purple"
+                    >
+                      {/* Group timezones by region */}
+                      <option value="auto">
+                        {t.settings.appearance.autoDetect} ({t.settings.appearance.detected}: {detectTimezone()})
+                      </option>
+                      <optgroup label="Americas">
+                        {timezones.filter(tz => tz.region === 'Americas').map((tz) => (
+                          <option key={tz.id} value={tz.id}>
+                            {tz.name} ({tz.offset})
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Europe">
+                        {timezones.filter(tz => tz.region === 'Europe').map((tz) => (
+                          <option key={tz.id} value={tz.id}>
+                            {tz.name} ({tz.offset})
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Russia">
+                        {timezones.filter(tz => tz.region === 'Russia').map((tz) => (
+                          <option key={tz.id} value={tz.id}>
+                            {tz.name} ({tz.offset})
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Asia">
+                        {timezones.filter(tz => tz.region === 'Asia').map((tz) => (
+                          <option key={tz.id} value={tz.id}>
+                            {tz.name} ({tz.offset})
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Australia & Pacific">
+                        {timezones.filter(tz => tz.region === 'Australia').map((tz) => (
+                          <option key={tz.id} value={tz.id}>
+                            {tz.name} ({tz.offset})
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
                   </div>
 
                   {/* Animations Toggle */}

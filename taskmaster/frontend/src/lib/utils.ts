@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { getEffectiveTimezone } from '@/stores/settings.store';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -11,6 +12,50 @@ export function formatDate(date: Date | string): string {
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(date));
+}
+
+// Format date for display with timezone support (date only, no time)
+export function formatDateWithTimezone(
+  dateString: string | null | undefined,
+  language: string = 'en',
+  timezone: string = 'auto'
+): string {
+  if (!dateString) return '—';
+  try {
+    const date = new Date(dateString);
+    const effectiveTz = getEffectiveTimezone(timezone);
+    const locale = language === 'ru' ? 'ru-RU' : language === 'zh' ? 'zh-CN' : 'en-US';
+    return date.toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: effectiveTz,
+    });
+  } catch {
+    // Fallback to simple date format
+    return dateString.split('T')[0];
+  }
+}
+
+// Short date format with timezone
+export function formatShortDateWithTimezone(
+  dateString: string | null | undefined,
+  language: string = 'en',
+  timezone: string = 'auto'
+): string {
+  if (!dateString) return '—';
+  try {
+    const date = new Date(dateString);
+    const effectiveTz = getEffectiveTimezone(timezone);
+    const locale = language === 'ru' ? 'ru-RU' : language === 'zh' ? 'zh-CN' : 'en-US';
+    return date.toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+      timeZone: effectiveTz,
+    });
+  } catch {
+    return dateString.split('T')[0];
+  }
 }
 
 export function formatRelativeTime(date: Date | string): string {

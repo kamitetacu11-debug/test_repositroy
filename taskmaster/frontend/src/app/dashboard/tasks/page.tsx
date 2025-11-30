@@ -27,10 +27,11 @@ import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/dropdow
 import { TaskModal, Task as LegacyTask } from '@/components/tasks/task-modal';
 import { CreateTaskModal } from '@/components/tasks/create-task-modal';
 import { useToast } from '@/components/ui/toast';
-import { getPriorityColor, getStatusColor } from '@/lib/utils';
+import { getPriorityColor, getStatusColor, formatShortDateWithTimezone } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useTasksStore, Task, toLegacyTask, fromLegacyTask } from '@/stores/tasks.store';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore } from '@/stores/settings.store';
 
 const statusOptions = ['ALL', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'];
 const priorityOptions = ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -50,6 +51,7 @@ export default function TasksPage() {
     addTask,
   } = useTasksStore();
   const { token } = useAuthStore();
+  const { language, timezone } = useSettingsStore();
 
   // Local state
   const [search, setSearch] = useState('');
@@ -386,7 +388,7 @@ export default function TasksPage() {
                       <div className="hidden md:flex items-center gap-6 text-sm text-gray-400">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          {task.dueDate ? new Date(task.dueDate).toLocaleDateString('ru-RU') : '—'}
+                          {formatShortDateWithTimezone(task.dueDate, language, timezone)}
                         </div>
                         <div className="w-24 truncate">{task.assignee || '—'}</div>
                         <div className="text-cosmic-purple font-medium">+{task.points} pts</div>
