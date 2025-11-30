@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Sparkles,
@@ -24,6 +25,7 @@ import { useToast } from '@/components/ui/toast';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AIInsightsPage() {
+  const router = useRouter();
   const { addToast } = useToast();
   const t = useTranslation();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -474,6 +476,7 @@ export default function AIInsightsPage() {
                 title: t.ai.openingTask,
                 message: t.ai.redirectingToTask,
               });
+              router.push(`/dashboard/tasks/${selectedAnomaly.taskId}`);
             }}>
               {t.ai.viewTask}
             </Button>
