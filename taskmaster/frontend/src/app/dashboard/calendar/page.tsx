@@ -45,133 +45,16 @@ import {
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Modal, ModalFooter } from '@/components/ui/modal';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTasksStore, Task } from '@/stores/tasks.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
-
-const CALENDAR_TASKS_KEY = 'taskmaster_calendar_tasks';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string | null;
-  status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-  dueDate: string | null;
-  basePoints: number;
-  assignee: {
-    id: string;
-    firstName: string;
-    lastName: string;
-  } | null;
-  creator: {
-    id: string;
-    firstName: string;
-    lastName: string;
-  } | null;
-}
 
 interface DayTasks {
   [key: string]: Task[];
 }
 
 type ViewMode = 'month' | 'week';
-
-// Demo tasks for when no real data is available
-const generateDemoTasks = (): Task[] => {
-  const today = new Date();
-  const tasks: Task[] = [
-    {
-      id: 'demo-1',
-      title: 'Design dashboard UI',
-      description: 'Create wireframes and high-fidelity mockups for the main dashboard',
-      status: 'IN_PROGRESS',
-      priority: 'HIGH',
-      dueDate: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-      basePoints: 40,
-      assignee: { id: '1', firstName: 'John', lastName: 'Doe' },
-      creator: { id: '4', firstName: 'Alex', lastName: 'Manager' },
-    },
-    {
-      id: 'demo-2',
-      title: 'Implement user authentication',
-      description: 'Add JWT-based authentication with refresh tokens',
-      status: 'COMPLETED',
-      priority: 'HIGH',
-      dueDate: new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      basePoints: 50,
-      assignee: { id: '2', firstName: 'Jane', lastName: 'Smith' },
-      creator: { id: '4', firstName: 'Alex', lastName: 'Manager' },
-    },
-    {
-      id: 'demo-3',
-      title: 'Setup CI/CD pipeline',
-      description: 'Configure GitHub Actions for automated testing and deployment',
-      status: 'TODO',
-      priority: 'MEDIUM',
-      dueDate: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      basePoints: 30,
-      assignee: { id: '2', firstName: 'Jane', lastName: 'Smith' },
-      creator: { id: '1', firstName: 'John', lastName: 'Doe' },
-    },
-    {
-      id: 'demo-4',
-      title: 'Write API documentation',
-      description: 'Document all REST endpoints with OpenAPI/Swagger',
-      status: 'TODO',
-      priority: 'LOW',
-      dueDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      basePoints: 20,
-      assignee: { id: '3', firstName: 'Bob', lastName: 'Johnson' },
-      creator: { id: '2', firstName: 'Jane', lastName: 'Smith' },
-    },
-    {
-      id: 'demo-5',
-      title: 'Implement leaderboard feature',
-      description: 'Create real-time leaderboard with Redis sorted sets',
-      status: 'TODO',
-      priority: 'HIGH',
-      dueDate: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      basePoints: 60,
-      assignee: null,
-      creator: { id: '4', firstName: 'Alex', lastName: 'Manager' },
-    },
-    {
-      id: 'demo-6',
-      title: 'Code review',
-      description: 'Review PR #423 for frontend changes',
-      status: 'IN_REVIEW',
-      priority: 'MEDIUM',
-      dueDate: new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-      basePoints: 15,
-      assignee: { id: '1', firstName: 'John', lastName: 'Doe' },
-      creator: { id: '2', firstName: 'Jane', lastName: 'Smith' },
-    },
-    {
-      id: 'demo-7',
-      title: 'Database optimization',
-      description: 'Optimize slow queries and add indexes',
-      status: 'IN_PROGRESS',
-      priority: 'CRITICAL',
-      dueDate: new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      basePoints: 45,
-      assignee: { id: '2', firstName: 'Jane', lastName: 'Smith' },
-      creator: { id: '4', firstName: 'Alex', lastName: 'Manager' },
-    },
-    {
-      id: 'demo-8',
-      title: 'Mobile app testing',
-      description: 'Test all features on iOS and Android devices',
-      status: 'TODO',
-      priority: 'MEDIUM',
-      dueDate: new Date(today.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-      basePoints: 35,
-      assignee: { id: '3', firstName: 'Bob', lastName: 'Johnson' },
-      creator: { id: '1', firstName: 'John', lastName: 'Doe' },
-    },
-  ];
-  return tasks;
-};
 
 interface TaskFormData {
   title: string;
@@ -191,10 +74,22 @@ export default function CalendarPage() {
   const { token } = useAuthStore();
   const t = useTranslation();
   const { addToast } = useToast();
+
+  // Use shared tasks store for sync with Tasks page
+  const {
+    tasks,
+    isLoading: loading,
+    isHydrated,
+    fetchTasks: fetchTasksFromStore,
+    updateTask: updateTaskInStore,
+    updateTaskApi,
+    deleteTask: deleteTaskFromStore,
+    deleteTaskApi,
+    createTask: createTaskInStore,
+    getTasksByDate,
+  } = useTasksStore();
+
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isHydrated, setIsHydrated] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
@@ -223,74 +118,17 @@ export default function CalendarPage() {
     t.leaderboard.thursday, t.leaderboard.friday, t.leaderboard.saturday
   ];
 
-  // Hydration effect - load from localStorage first
+  // Fetch tasks on mount if not hydrated
   useEffect(() => {
-    setIsHydrated(true);
-    const savedTasks = localStorage.getItem(CALENDAR_TASKS_KEY);
-    if (savedTasks) {
-      try {
-        const parsed = JSON.parse(savedTasks);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setTasks(parsed);
-          setLoading(false);
-          return;
-        }
-      } catch (e) {
-        console.error('Failed to parse saved tasks:', e);
-      }
+    if (token && !isHydrated) {
+      fetchTasksFromStore(token);
     }
-    fetchTasks();
-  }, []);
+  }, [token, isHydrated, fetchTasksFromStore]);
 
-  // Save tasks to localStorage whenever they change
-  useEffect(() => {
-    if (isHydrated && tasks.length > 0) {
-      localStorage.setItem(CALENDAR_TASKS_KEY, JSON.stringify(tasks));
-    }
-  }, [tasks, isHydrated]);
-
-  const fetchTasks = async () => {
-    try {
-      setLoading(true);
-
-      const response = await fetch('/api/v1/tasks', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const apiTasks = data.data || [];
-        // Use demo data if no tasks returned
-        const tasksToUse = apiTasks.length > 0 ? apiTasks : generateDemoTasks();
-        setTasks(tasksToUse);
-      } else {
-        // Use demo data on error
-        setTasks(generateDemoTasks());
-      }
-    } catch (error) {
-      console.error('Failed to fetch tasks:', error);
-      // Use demo data on error
-      setTasks(generateDemoTasks());
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getTasksByDate = useCallback((): DayTasks => {
-    const tasksByDate: DayTasks = {};
-    tasks.forEach(task => {
-      if (task.dueDate) {
-        const dateKey = task.dueDate.split('T')[0];
-        if (!tasksByDate[dateKey]) {
-          tasksByDate[dateKey] = [];
-        }
-        tasksByDate[dateKey].push(task);
-      }
-    });
-    return tasksByDate;
-  }, [tasks]);
+  // Use store's getTasksByDate for calendar display
+  const getTasksByDateLocal = useCallback((): DayTasks => {
+    return getTasksByDate();
+  }, [getTasksByDate]);
 
   const getDaysInMonth = () => {
     const year = currentDate.getFullYear();
@@ -425,12 +263,10 @@ export default function CalendarPage() {
 
     if (!draggedTask) return;
 
-    // Update local state immediately for better UX
-    setTasks(prev => prev.map(t =>
-      t.id === draggedTask.id
-        ? { ...t, dueDate: `${dateKey}T23:59:59.000Z` }
-        : t
-    ));
+    const newDueDate = `${dateKey}T23:59:59.000Z`;
+
+    // Update in store (syncs with Tasks page)
+    updateTaskInStore(draggedTask.id, { dueDate: newDueDate });
 
     addToast({
       type: 'success',
@@ -438,22 +274,9 @@ export default function CalendarPage() {
       message: `${draggedTask.title} ${t.calendar.movedToDate || 'moved to'} ${dateKey}`,
     });
 
-    // Try to update on server (skip for demo tasks)
-    if (!draggedTask.id.startsWith('demo-')) {
-      try {
-        await fetch(`/api/v1/tasks/${draggedTask.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            dueDate: `${dateKey}T23:59:59.000Z`,
-          }),
-        });
-      } catch (error) {
-        console.error('Failed to update task date:', error);
-      }
+    // Sync to API
+    if (token && !draggedTask.id.startsWith('demo-') && !draggedTask.id.startsWith('local-')) {
+      await updateTaskApi(draggedTask.id, { dueDate: newDueDate }, token);
     }
 
     setDraggedTask(null);
@@ -494,11 +317,8 @@ export default function CalendarPage() {
       newDueDate = `${formatDateKeyFromDate(tomorrow)}T23:59:59.000Z`;
     }
 
-    setTasks(prev => prev.map(t =>
-      t.id === draggedTask.id
-        ? { ...t, dueDate: newDueDate, status: newStatus }
-        : t
-    ));
+    // Update in store (syncs with Tasks page)
+    updateTaskInStore(draggedTask.id, { dueDate: newDueDate, status: newStatus });
 
     const sectionNames: Record<string, string> = {
       completed: t.calendar.completed,
@@ -513,23 +333,9 @@ export default function CalendarPage() {
       message: `${draggedTask.title} → ${sectionNames[section]}`,
     });
 
-    // Try to update on server
-    if (!draggedTask.id.startsWith('demo-')) {
-      try {
-        await fetch(`/api/v1/tasks/${draggedTask.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            dueDate: newDueDate,
-            status: newStatus,
-          }),
-        });
-      } catch (error) {
-        console.error('Failed to update task:', error);
-      }
+    // Sync to API
+    if (token && !draggedTask.id.startsWith('demo-') && !draggedTask.id.startsWith('local-')) {
+      await updateTaskApi(draggedTask.id, { dueDate: newDueDate, status: newStatus }, token);
     }
 
     setDraggedTask(null);
@@ -548,9 +354,8 @@ export default function CalendarPage() {
 
     setSubmitting(true);
 
-    // For demo, just add to local state
-    const newTask: Task = {
-      id: `demo-${Date.now()}`,
+    // Create task via store (syncs with Tasks page)
+    const newTaskData: Omit<Task, 'id'> = {
       title: taskForm.title,
       description: taskForm.description || null,
       status: 'TODO',
@@ -558,37 +363,15 @@ export default function CalendarPage() {
       dueDate: taskForm.dueDate ? `${taskForm.dueDate}T23:59:59.000Z` : null,
       basePoints: 25,
       assignee: null,
-      creator: { id: 'current-user', firstName: 'You', lastName: '' },
     };
 
-    // Try to create on server
-    try {
-      const response = await fetch('/api/v1/tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title: taskForm.title,
-          description: taskForm.description || null,
-          priority: taskForm.priority,
-          dueDate: taskForm.dueDate ? `${taskForm.dueDate}T23:59:59.000Z` : null,
-          basePoints: 25,
-        }),
-      });
+    await createTaskInStore(newTaskData, token || '');
 
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(prev => [...prev, data.data || newTask]);
-      } else {
-        // Add demo task on error
-        setTasks(prev => [...prev, newTask]);
-      }
-    } catch (error) {
-      // Add demo task on error
-      setTasks(prev => [...prev, newTask]);
-    }
+    addToast({
+      type: 'success',
+      title: t.calendar.taskCreated || 'Task created',
+      message: `"${taskForm.title}" ${t.calendar.addedToCalendar || 'added to calendar'}`,
+    });
 
     setSubmitting(false);
     setShowCreateDialog(false);
@@ -601,21 +384,11 @@ export default function CalendarPage() {
     setDeleting(true);
     const taskTitle = selectedTask.title;
 
-    // Remove from local state
-    setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
-
-    // Try to delete on server (skip for demo tasks)
-    if (!selectedTask.id.startsWith('demo-')) {
-      try {
-        await fetch(`/api/v1/tasks/${selectedTask.id}`, {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      } catch (error) {
-        console.error('Failed to delete task:', error);
-      }
+    // Delete via store (syncs with Tasks page)
+    if (token && !selectedTask.id.startsWith('demo-') && !selectedTask.id.startsWith('local-')) {
+      await deleteTaskApi(selectedTask.id, token);
+    } else {
+      deleteTaskFromStore(selectedTask.id);
     }
 
     addToast({
@@ -635,29 +408,12 @@ export default function CalendarPage() {
 
     const taskTitle = selectedTask.title;
 
-    // Update local state - remove dueDate
-    setTasks(prev => prev.map(t =>
-      t.id === selectedTask.id
-        ? { ...t, dueDate: null }
-        : t
-    ));
+    // Update via store (syncs with Tasks page)
+    updateTaskInStore(selectedTask.id, { dueDate: null });
 
-    // Try to update on server (skip for demo tasks)
-    if (!selectedTask.id.startsWith('demo-')) {
-      try {
-        await fetch(`/api/v1/tasks/${selectedTask.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            dueDate: null,
-          }),
-        });
-      } catch (error) {
-        console.error('Failed to remove task from calendar:', error);
-      }
+    // Sync to API
+    if (token && !selectedTask.id.startsWith('demo-') && !selectedTask.id.startsWith('local-')) {
+      await updateTaskApi(selectedTask.id, { dueDate: null }, token);
     }
 
     addToast({
@@ -675,29 +431,12 @@ export default function CalendarPage() {
 
     const taskTitle = selectedTask.title;
 
-    // Update local state - mark as completed
-    setTasks(prev => prev.map(t =>
-      t.id === selectedTask.id
-        ? { ...t, status: 'COMPLETED' as const }
-        : t
-    ));
+    // Update via store (syncs with Tasks page)
+    updateTaskInStore(selectedTask.id, { status: 'COMPLETED' });
 
-    // Try to update on server
-    if (!selectedTask.id.startsWith('demo-')) {
-      try {
-        await fetch(`/api/v1/tasks/${selectedTask.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            status: 'COMPLETED',
-          }),
-        });
-      } catch (error) {
-        console.error('Failed to mark task as completed:', error);
-      }
+    // Sync to API
+    if (token && !selectedTask.id.startsWith('demo-') && !selectedTask.id.startsWith('local-')) {
+      await updateTaskApi(selectedTask.id, { status: 'COMPLETED' }, token);
     }
 
     addToast({
@@ -749,7 +488,7 @@ export default function CalendarPage() {
     }
   };
 
-  const tasksByDate = getTasksByDate();
+  const tasksByDate = getTasksByDateLocal();
   const days = getDaysInMonth();
   const weekDays = getWeekDays();
 

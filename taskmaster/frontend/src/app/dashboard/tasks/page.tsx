@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -17,45 +17,63 @@ import {
   UserPlus,
   Trash2,
   ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/dropdown';
-import { TaskModal, Task } from '@/components/tasks/task-modal';
+import { TaskModal, Task as LegacyTask } from '@/components/tasks/task-modal';
 import { CreateTaskModal } from '@/components/tasks/create-task-modal';
 import { useToast } from '@/components/ui/toast';
 import { getPriorityColor, getStatusColor } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
-
-const initialTasks: Task[] = [
-  { id: '1', title: 'Design dashboard UI', description: 'Create wireframes and mockups for the new dashboard interface. Include responsive design considerations and dark mode support.', status: 'IN_PROGRESS', priority: 'HIGH', dueDate: '2024-12-02', points: 40, assignee: 'John Doe', assigneeId: 'USR-001' },
-  { id: '2', title: 'Implement API endpoints', description: 'Build REST API endpoints for the tasks module including CRUD operations, filtering, and pagination.', status: 'TODO', priority: 'CRITICAL', dueDate: '2024-12-01', points: 50, assignee: 'Jane Smith', assigneeId: 'USR-002' },
-  { id: '3', title: 'Write unit tests', description: 'Achieve 80% test coverage for the authentication module. Include edge cases and error handling tests.', status: 'TODO', priority: 'MEDIUM', dueDate: '2024-12-03', points: 30, assignee: 'Bob Johnson', assigneeId: 'USR-003' },
-  { id: '4', title: 'Review pull requests', description: 'Review and provide feedback on pending pull requests from the team.', status: 'IN_PROGRESS', priority: 'HIGH', dueDate: '2024-12-01', points: 20, assignee: 'John Doe', assigneeId: 'USR-001' },
-  { id: '5', title: 'Setup CI/CD pipeline', description: 'Configure GitHub Actions workflow for automated testing and deployment.', status: 'COMPLETED', priority: 'HIGH', dueDate: '2024-11-28', points: 60, assignee: 'Jane Smith', assigneeId: 'USR-002' },
-  { id: '6', title: 'Database optimization', description: 'Analyze and optimize slow database queries. Add proper indexing and query caching.', status: 'TODO', priority: 'LOW', dueDate: '2024-12-10', points: 35, assignee: 'Bob Johnson', assigneeId: 'USR-003' },
-];
+import { useTasksStore, Task, toLegacyTask, fromLegacyTask } from '@/stores/tasks.store';
+import { useAuthStore } from '@/stores/auth.store';
 
 const statusOptions = ['ALL', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'];
 const priorityOptions = ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  // Store state
+  const {
+    tasks,
+    isLoading,
+    fetchTasks,
+    createTask,
+    updateTask,
+    updateTaskApi,
+    deleteTask,
+    deleteTaskApi,
+    addTask,
+  } = useTasksStore();
+  const { token } = useAuthStore();
+
+  // Local state
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
 
   // Modal states
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<LegacyTask | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { addToast } = useToast();
   const t = useTranslation();
 
-  const filteredTasks = tasks.filter(task => {
+  // Fetch tasks on mount
+  useEffect(() => {
+    if (token) {
+      fetchTasks(token);
+    }
+  }, [token, fetchTasks]);
+
+  // Convert store tasks to legacy format for display
+  const legacyTasks: LegacyTask[] = tasks.map(toLegacyTask);
+
+  const filteredTasks = legacyTasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase()) ||
                           task.description.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || task.status === statusFilter;
@@ -72,78 +90,138 @@ export default function TasksPage() {
     }
   };
 
-  const handleTaskClick = (task: Task) => {
+  const handleTaskClick = (task: LegacyTask) => {
     setSelectedTask(task);
     setIsTaskModalOpen(true);
   };
 
-  const handleCreateTask = (newTask: Omit<Task, 'id'>) => {
-    const task: Task = {
-      ...newTask,
-      id: Date.now().toString(),
+  const handleCreateTask = async (newTask: Omit<LegacyTask, 'id'>) => {
+    // Convert to store format
+    const storeTask: Omit<Task, 'id'> = {
+      title: newTask.title,
+      description: newTask.description,
+      status: newTask.status,
+      priority: newTask.priority,
+      dueDate: newTask.dueDate || null,
+      basePoints: newTask.points,
+      assignee: newTask.assignee ? {
+        id: newTask.assigneeId || 'unknown',
+        firstName: newTask.assignee.split(' ')[0] || '',
+        lastName: newTask.assignee.split(' ')[1] || '',
+      } : null,
+      assigneeId: newTask.assigneeId,
     };
-    setTasks([task, ...tasks]);
-    addToast({
-      type: 'success',
-      title: 'Task Created',
-      message: `"${task.title}" has been created successfully.`,
-    });
+
+    const created = await createTask(storeTask, token || '');
+
+    if (created) {
+      addToast({
+        type: 'success',
+        title: 'Задача создана',
+        message: `"${newTask.title}" успешно создана.`,
+      });
+    }
   };
 
-  const handleSaveTask = (updatedTask: Task) => {
-    setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+  const handleSaveTask = async (updatedTask: LegacyTask) => {
+    // Update in store
+    const updates = fromLegacyTask(updatedTask);
+    updateTask(updatedTask.id, updates);
+
+    // Sync to API
+    if (token) {
+      await updateTaskApi(updatedTask.id, updates, token);
+    }
+
     setSelectedTask(updatedTask);
     addToast({
       type: 'success',
-      title: 'Task Updated',
-      message: 'Task has been updated successfully.',
+      title: 'Задача обновлена',
+      message: 'Задача успешно обновлена.',
     });
   };
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
-    setTasks(tasks.filter(t => t.id !== taskId));
-    addToast({
-      type: 'success',
-      title: 'Task Deleted',
-      message: `"${task?.title}" has been deleted.`,
-    });
-  };
 
-  const handleStatusChange = (taskId: string, newStatus: Task['status']) => {
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      setSelectedTask({ ...task, status: newStatus });
+    if (token) {
+      await deleteTaskApi(taskId, token);
+    } else {
+      deleteTask(taskId);
     }
 
-    const statusMessages: Record<Task['status'], string> = {
-      'TODO': 'moved to To Do',
-      'IN_PROGRESS': 'started',
-      'IN_REVIEW': 'submitted for review',
-      'COMPLETED': 'marked as complete',
+    setIsTaskModalOpen(false);
+    setSelectedTask(null);
+
+    addToast({
+      type: 'success',
+      title: 'Задача удалена',
+      message: `"${task?.title}" удалена.`,
+    });
+  };
+
+  const handleStatusChange = async (taskId: string, newStatus: LegacyTask['status']) => {
+    // Update locally
+    updateTask(taskId, { status: newStatus });
+
+    // Sync to API
+    if (token) {
+      await updateTaskApi(taskId, { status: newStatus }, token);
+    }
+
+    const task = tasks.find(t => t.id === taskId);
+    if (task && selectedTask) {
+      setSelectedTask({ ...selectedTask, status: newStatus });
+    }
+
+    const statusMessages: Record<LegacyTask['status'], string> = {
+      'TODO': 'перемещена в To Do',
+      'IN_PROGRESS': 'начата',
+      'IN_REVIEW': 'отправлена на проверку',
+      'COMPLETED': 'отмечена как выполненная',
     };
 
     addToast({
       type: newStatus === 'COMPLETED' ? 'success' : 'info',
-      title: 'Status Updated',
-      message: `Task ${statusMessages[newStatus]}.`,
+      title: 'Статус обновлён',
+      message: `Задача ${statusMessages[newStatus]}.`,
     });
   };
 
-  const handleDuplicateTask = (task: Task) => {
-    const duplicatedTask: Task = {
-      ...task,
-      id: Date.now().toString(),
-      title: `${task.title} (Copy)`,
+  const handleDuplicateTask = async (task: LegacyTask) => {
+    const duplicatedTask: Omit<Task, 'id'> = {
+      title: `${task.title} (Копия)`,
+      description: task.description,
       status: 'TODO',
+      priority: task.priority,
+      dueDate: task.dueDate || null,
+      basePoints: task.points,
+      assignee: task.assignee ? {
+        id: task.assigneeId || 'unknown',
+        firstName: task.assignee.split(' ')[0] || '',
+        lastName: task.assignee.split(' ')[1] || '',
+      } : null,
+      assigneeId: task.assigneeId,
     };
-    setTasks([duplicatedTask, ...tasks]);
+
+    await createTask(duplicatedTask, token || '');
+
     addToast({
       type: 'success',
-      title: 'Task Duplicated',
-      message: `"${task.title}" has been duplicated.`,
+      title: 'Задача скопирована',
+      message: `"${task.title}" продублирована.`,
     });
+  };
+
+  const handleRefresh = () => {
+    if (token) {
+      fetchTasks(token);
+      addToast({
+        type: 'info',
+        title: 'Обновление',
+        message: 'Список задач обновлён.',
+      });
+    }
   };
 
   const taskStats = {
@@ -166,13 +244,24 @@ export default function TasksPage() {
             <h1 className="text-3xl font-bold">{t.tasks.title}</h1>
             <p className="text-gray-400 mt-1">{t.tasks.subtitle}</p>
           </div>
-          <Button
-            className="bg-cosmic-purple hover:bg-cosmic-purple/80"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Plus className="mr-2 w-4 h-4" />
-            {t.tasks.newTask}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isLoading}
+              title="Обновить"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button
+              className="bg-cosmic-purple hover:bg-cosmic-purple/80"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus className="mr-2 w-4 h-4" />
+              {t.tasks.newTask}
+            </Button>
+          </div>
         </motion.div>
 
         {/* Filters */}
@@ -244,7 +333,12 @@ export default function TasksPage() {
           <Card className="glass">
             <CardContent className="p-0">
               <div className="divide-y divide-glass-border">
-                {filteredTasks.length === 0 ? (
+                {isLoading && tasks.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
+                    <p className="text-gray-400">Загрузка задач...</p>
+                  </div>
+                ) : filteredTasks.length === 0 ? (
                   <div className="p-8 text-center">
                     <div className="w-16 h-16 rounded-full bg-glass-light flex items-center justify-center mx-auto mb-4">
                       <Search className="w-8 h-8 text-gray-400" />
@@ -291,9 +385,9 @@ export default function TasksPage() {
                       <div className="hidden md:flex items-center gap-6 text-sm text-gray-400">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          {task.dueDate}
+                          {task.dueDate ? new Date(task.dueDate).toLocaleDateString('ru-RU') : '—'}
                         </div>
-                        <div className="w-24 truncate">{task.assignee}</div>
+                        <div className="w-24 truncate">{task.assignee || '—'}</div>
                         <div className="text-cosmic-purple font-medium">+{task.points} pts</div>
                       </div>
 
