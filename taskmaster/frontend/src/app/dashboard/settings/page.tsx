@@ -41,8 +41,10 @@ export default function SettingsPage() {
     setAnimations,
     setGlassOpacity,
     setStarBrightness,
+    getCurrentTheme,
   } = useSettingsStore();
   const t = useTranslation();
+  const currentTheme = getCurrentTheme();
 
   const [activeTab, setActiveTab] = useState('profile');
   const [isUploading, setIsUploading] = useState(false);
@@ -421,7 +423,14 @@ export default function SettingsPage() {
                     <select
                       value={timezone}
                       onChange={(e) => setTimezone(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-glass-medium border border-glass-border text-white focus:outline-none focus:ring-2 focus:ring-cosmic-purple"
+                      className="w-full p-3 rounded-xl border border-glass-border text-white focus:outline-none focus:ring-2 focus:ring-cosmic-purple"
+                      style={{
+                        backgroundColor: currentTheme.colors.background,
+                        // Apply CSS variables for dropdown options
+                        ['--theme-background' as string]: currentTheme.colors.background,
+                        ['--theme-primary' as string]: currentTheme.colors.primary,
+                        ['--theme-secondary' as string]: currentTheme.colors.secondary,
+                      }}
                     >
                       {/* Group timezones by region */}
                       <option value="auto">

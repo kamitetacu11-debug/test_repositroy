@@ -390,3 +390,42 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Custom Select Dropdown Styling for Dark Theme */
+select {
+  color-scheme: dark;
+  background-color: var(--theme-background, #0a0a1a);
+}
+
+select option {
+  background-color: var(--theme-background, #0a0a1a);
+  color: white;
+  padding: 12px;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background: linear-gradient(135deg, var(--theme-primary, #7c3aed) 0%, var(--theme-secondary, #3b82f6) 100%);
+  color: white;
+}
+
+select optgroup {
+  background-color: var(--theme-background, #0a0a1a);
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  padding: 8px;
+}
+
+/* Firefox specific select styling */
+@-moz-document url-prefix() {
+  select {
+    background-color: var(--theme-background, #0a0a1a);
+    color: white;
+  }
+
+  select option {
+    background-color: var(--theme-background, #0a0a1a);
+    color: white;
+  }
+}
