@@ -109,7 +109,11 @@ export default function SecurityDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'ips' | 'accounts'>('overview');
+
+  // Check if user has admin role
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
   // Dashboard data
   const [dashboard, setDashboard] = useState<SecurityDashboard | null>(null);
@@ -124,6 +128,13 @@ export default function SecurityDashboardPage() {
 
   // Fetch dashboard data
   const fetchDashboard = useCallback(async (showRefresh = false) => {
+    // Check admin access first
+    if (!isAdmin) {
+      setAccessDenied(true);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       if (showRefresh) setIsRefreshing(true);
       else setIsLoading(true);
@@ -132,8 +143,17 @@ export default function SecurityDashboardPage() {
       setDashboard(response.data.data);
       setEvents(response.data.data.recentEvents || []);
       setError(null);
-    } catch (err) {
+      setAccessDenied(false);
+    } catch (err: any) {
       console.error('Failed to fetch security dashboard:', err);
+
+      // Handle 403 Forbidden - user doesn't have admin access
+      if (err?.response?.status === 403) {
+        setAccessDenied(true);
+        setIsLoading(false);
+        setIsRefreshing(false);
+        return;
+      }
       setError('Failed to load security dashboard');
       // Use mock data for development
       setDashboard({
@@ -200,7 +220,7 @@ export default function SecurityDashboardPage() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   // Fetch blocked IPs
   const fetchBlockedIps = useCallback(async () => {
@@ -347,6 +367,25 @@ export default function SecurityDashboardPage() {
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
           <Loader2 className="w-8 h-8 animate-spin text-cosmic-purple" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show access denied page for non-admin users
+  if (accessDenied || !isAdmin) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-96">
+          <ShieldOff className="w-16 h-16 text-status-error mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+          <p className="text-gray-400 text-center max-w-md">
+            You don&apos;t have permission to access the Security Dashboard.
+            This page is only available to administrators.
+          </p>
+          <p className="text-sm text-gray-500 mt-4">
+            Current role: <span className="font-mono">{user?.role || 'Unknown'}</span>
+          </p>
         </div>
       </DashboardLayout>
     );
