@@ -1,4 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
+import fp from 'fastify-plugin';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../../config/database.js';
@@ -387,7 +388,8 @@ declare module 'fastify' {
 
 import { FastifyRequest, FastifyReply } from 'fastify';
 
-export const authPlugin: FastifyPluginAsync = async (app) => {
+// Wrap with fastify-plugin to break encapsulation and make decorator available globally
+export const authPlugin = fp(async (app) => {
   app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       await request.jwtVerify();
@@ -398,4 +400,4 @@ export const authPlugin: FastifyPluginAsync = async (app) => {
       });
     }
   });
-};
+}, { name: 'auth-plugin' });
