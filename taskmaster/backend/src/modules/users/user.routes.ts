@@ -6,7 +6,27 @@ import { cache } from '../../config/redis.js';
 const updateUserSchema = z.object({
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
-  avatar: z.string().url().optional(),
+  // Allow both URL and base64 data URLs for avatar
+  avatar: z.string().refine(
+    (val) => {
+      // Allow URL format
+      if (val.startsWith('http://') || val.startsWith('https://')) return true;
+      // Allow base64 data URLs (image/png, image/jpeg, etc.)
+      if (val.startsWith('data:image/')) return true;
+      return false;
+    },
+    { message: 'Avatar must be a valid URL or base64 image data' }
+  ).optional(),
+});
+
+const updatePreferencesSchema = z.object({
+  theme: z.string().optional(),
+  language: z.string().optional(),
+  timezone: z.string().optional(),
+  compactMode: z.boolean().optional(),
+  animations: z.boolean().optional(),
+  glassOpacity: z.number().min(0).max(100).optional(),
+  starBrightness: z.number().min(0).max(100).optional(),
 });
 
 export const userRoutes: FastifyPluginAsync = async (app) => {
@@ -296,5 +316,100 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
       success: true,
       data: activities,
     };
+  });
+
+  // Get user preferences
+  app.get('/:id/preferences', {
+    schema: {
+      tags: ['Users'],
+      summary: 'Get user preferences',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+    },
+    preHandler: [app.authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { userId } = request.user as { userId: string };
+
+    // Users can only get their own preferences
+    if (userId !== id) {
+      return reply.status(403).send({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Access denied' },
+      });
+    }
+
+    const preferences = await prisma.userPreferences.findUnique({
+      where: { userId: id },
+    });
+
+    // Return default preferences if not found
+    if (!preferences) {
+      return {
+        success: true,
+        data: {
+          theme: 'cosmic-dark',
+          language: 'en',
+          timezone: 'auto',
+          compactMode: false,
+          animations: true,
+          glassOpacity: 30,
+          starBrightness: 70,
+        },
+      };
+    }
+
+    return { success: true, data: preferences };
+  });
+
+  // Update user preferences
+  app.patch('/:id/preferences', {
+    schema: {
+      tags: ['Users'],
+      summary: 'Update user preferences',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+    },
+    preHandler: [app.authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { userId } = request.user as { userId: string };
+
+    // Users can only update their own preferences
+    if (userId !== id) {
+      return reply.status(403).send({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Access denied' },
+      });
+    }
+
+    const body = updatePreferencesSchema.parse(request.body);
+
+    // Upsert preferences (create if not exists, update if exists)
+    const preferences = await prisma.userPreferences.upsert({
+      where: { userId: id },
+      create: {
+        userId: id,
+        ...body,
+      },
+      update: body,
+    });
+
+    // Invalidate user cache
+    await cache.del(`user:${id}`);
+
+    return { success: true, data: preferences };
   });
 };

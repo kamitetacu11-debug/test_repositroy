@@ -8,12 +8,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-cosmic-purple text-white hover:bg-cosmic-purple/90 shadow-glow-purple/20 hover:shadow-glow-purple',
+        default: 'bg-[var(--theme-primary)] text-white hover:opacity-90 shadow-[0_0_15px_var(--theme-glow1)]',
         destructive: 'bg-status-error text-white hover:bg-status-error/90',
-        outline: 'border border-glass-border bg-transparent hover:bg-glass-light',
-        secondary: 'bg-glass-light text-white hover:bg-glass-medium',
-        ghost: 'hover:bg-glass-light',
-        link: 'text-cosmic-purple underline-offset-4 hover:underline',
+        outline: 'border border-glass-border bg-glass-light/30 backdrop-blur-sm text-foreground hover:bg-glass-light/50 hover:border-[var(--theme-primary)]/50',
+        secondary: 'bg-glass-light/40 backdrop-blur-sm text-foreground hover:bg-glass-light/60',
+        ghost: 'hover:bg-glass-light/50 text-foreground',
+        link: 'text-[var(--theme-primary)] underline-offset-4 hover:underline',
         glass: 'glass hover:bg-glass-medium',
       },
       size: {

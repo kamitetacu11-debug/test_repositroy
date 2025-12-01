@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authApi } from '@/lib/api';
+import { authApi, usersApi } from '@/lib/api';
+import { useSettingsStore } from './settings.store';
 
 interface User {
   id: string;
@@ -20,12 +21,15 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  _hasHydrated: boolean;
 
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<void>;
   logout: () => void;
   fetchUser: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
+  updateAvatar: (avatarData: string) => Promise<void>;
+  setHasHydrated: (state: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -35,8 +39,13 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isLoading: false,
       isAuthenticated: false,
+      _hasHydrated: false,
 
-      login: async (email, password) => {
+      setHasHydrated: (state) => {
+        set({ _hasHydrated: state });
+      },
+
+      login: async (email, password, rememberMe = false) => {
         set({ isLoading: true });
         try {
           const response = await authApi.login(email, password);
@@ -44,12 +53,24 @@ export const useAuthStore = create<AuthState>()(
 
           localStorage.setItem('token', token);
 
+          // Save remember me preference
+          if (rememberMe) {
+            localStorage.setItem('rememberMe', 'true');
+            localStorage.setItem('rememberedEmail', email);
+          } else {
+            localStorage.removeItem('rememberMe');
+            localStorage.removeItem('rememberedEmail');
+          }
+
           set({
             user,
             token,
             isAuthenticated: true,
             isLoading: false,
           });
+
+          // Load user preferences from server
+          useSettingsStore.getState().loadFromServer(user.id);
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -70,6 +91,9 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+
+          // Set user ID in settings store for new user
+          useSettingsStore.getState().setUserId(user.id);
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -78,11 +102,18 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('rememberMe');
         set({
           user: null,
           token: null,
           isAuthenticated: false,
         });
+        // Clear user ID from settings store
+        useSettingsStore.getState().setUserId(null);
+        // Redirect to login page
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth/login';
+        }
       },
 
       fetchUser: async () => {
@@ -92,11 +123,17 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const response = await authApi.me();
+          const serverUser = response.data.data;
+
+          // Use server data as source of truth for cross-browser sync
           set({
-            user: response.data.data,
+            user: serverUser,
             isAuthenticated: true,
             isLoading: false,
           });
+
+          // Load user preferences from server
+          useSettingsStore.getState().loadFromServer(serverUser.id);
         } catch {
           set({
             user: null,
@@ -105,6 +142,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
           localStorage.removeItem('token');
+          // Clear user ID from settings store
+          useSettingsStore.getState().setUserId(null);
         }
       },
 
@@ -114,10 +153,59 @@ export const useAuthStore = create<AuthState>()(
           set({ user: { ...currentUser, ...data } });
         }
       },
+
+      updateAvatar: async (avatarData: string) => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+
+        // Update local state immediately for instant feedback
+        set({ user: { ...currentUser, avatar: avatarData } });
+
+        // Sync with server - avatar must be persisted for cross-browser access
+        try {
+          await usersApi.update(currentUser.id, { avatar: avatarData });
+          console.log('Avatar saved to server successfully');
+        } catch (error) {
+          console.error('Failed to save avatar to server:', error);
+          // Revert local state if server save failed
+          set({ user: { ...currentUser, avatar: currentUser.avatar } });
+          throw error; // Re-throw so UI can show error
+        }
+      },
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ token: state.token }),
+      partialize: (state) => ({
+        token: state.token,
+        user: state.user ? { ...state.user } : null,
+        isAuthenticated: state.isAuthenticated,
+      }),
+      onRehydrateStorage: () => (state, error) => {
+        // Always set hydrated to true, even on error
+        if (error) {
+          console.error('Auth hydration error:', error);
+          useAuthStore.setState({ _hasHydrated: true });
+          return;
+        }
+
+        // Called after hydration is complete
+        if (state) {
+          state.setHasHydrated(true);
+
+          // If we have a token but not authenticated, set authenticated
+          if (state.token && state.user && !state.isAuthenticated) {
+            useAuthStore.setState({ isAuthenticated: true });
+          }
+        } else {
+          // State is null/undefined - still mark as hydrated
+          useAuthStore.setState({ _hasHydrated: true });
+        }
+      },
     }
   )
 );
+
+// Hook to wait for hydration
+export const useAuthHydration = () => {
+  return useAuthStore((state) => state._hasHydrated);
+};

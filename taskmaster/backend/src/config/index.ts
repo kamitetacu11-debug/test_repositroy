@@ -12,6 +12,17 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   S3_BUCKET: z.string().optional(),
   S3_REGION: z.string().default('us-east-1'),
+  // Security settings
+  CAPTCHA_PROVIDER: z.enum(['recaptcha', 'hcaptcha', 'turnstile', 'disabled']).default('disabled'),
+  CAPTCHA_SITE_KEY: z.string().optional(),
+  CAPTCHA_SECRET_KEY: z.string().optional(),
+  CAPTCHA_SCORE_THRESHOLD: z.string().default('0.5'),
+  // Rate limiting
+  RATE_LIMIT_MAX: z.string().default('100'),
+  RATE_LIMIT_WINDOW_MS: z.string().default('60000'),
+  // Brute force protection
+  BRUTE_FORCE_MAX_ATTEMPTS: z.string().default('5'),
+  BRUTE_FORCE_LOCKOUT_MINUTES: z.string().default('15'),
 });
 
 const env = envSchema.parse(process.env);
@@ -31,6 +42,23 @@ export const config = {
   s3: {
     bucket: env.S3_BUCKET,
     region: env.S3_REGION,
+  },
+  // Security configuration
+  security: {
+    captcha: {
+      provider: env.CAPTCHA_PROVIDER as 'recaptcha' | 'hcaptcha' | 'turnstile' | 'disabled',
+      siteKey: env.CAPTCHA_SITE_KEY || '',
+      secretKey: env.CAPTCHA_SECRET_KEY || '',
+      scoreThreshold: parseFloat(env.CAPTCHA_SCORE_THRESHOLD),
+    },
+    rateLimit: {
+      max: parseInt(env.RATE_LIMIT_MAX, 10),
+      windowMs: parseInt(env.RATE_LIMIT_WINDOW_MS, 10),
+    },
+    bruteForce: {
+      maxAttempts: parseInt(env.BRUTE_FORCE_MAX_ATTEMPTS, 10),
+      lockoutMinutes: parseInt(env.BRUTE_FORCE_LOCKOUT_MINUTES, 10),
+    },
   },
 };
 

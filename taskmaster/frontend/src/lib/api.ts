@@ -51,6 +51,17 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
 };
 
+// User preferences interface
+export interface UserPreferences {
+  theme: string;
+  language: string;
+  timezone: string;
+  compactMode: boolean;
+  animations: boolean;
+  glassOpacity: number;
+  starBrightness: number;
+}
+
 // Users API
 export const usersApi = {
   list: (params?: { page?: number; limit?: number; teamId?: string; search?: string }) =>
@@ -65,6 +76,12 @@ export const usersApi = {
 
   getActivity: (id: string, limit?: number) =>
     api.get(`/users/${id}/activity`, { params: { limit } }),
+
+  // User preferences
+  getPreferences: (id: string) => api.get(`/users/${id}/preferences`),
+
+  updatePreferences: (id: string, data: Partial<UserPreferences>) =>
+    api.patch(`/users/${id}/preferences`, data),
 };
 
 // Tasks API
@@ -196,6 +213,59 @@ export const notificationsApi = {
   markAllAsRead: () => api.patch('/notifications/read-all'),
 
   delete: (id: string) => api.delete(`/notifications/${id}`),
+};
+
+// Consent API
+export const consentApi = {
+  saveConsent: (visitorId: string, preferences: {
+    necessary: boolean;
+    functional: boolean;
+    analytics: boolean;
+    marketing: boolean;
+  }) => api.post('/consent/cookies', { visitorId, preferences }),
+
+  getConsent: (visitorId: string) =>
+    api.get(`/consent/cookies/${visitorId}`),
+
+  deleteConsent: (visitorId: string) =>
+    api.delete(`/consent/cookies/${visitorId}`),
+};
+
+// Security API
+export const securityApi = {
+  getDashboard: () => api.get('/security/dashboard'),
+
+  getEvents: (params?: { limit?: number; type?: string; severity?: string }) =>
+    api.get('/security/events', { params }),
+
+  getIpReputation: (ip: string) => api.get(`/security/ip/${ip}`),
+
+  blockIp: (ip: string, reason?: string, duration?: number) =>
+    api.post('/security/ip/block', { ip, reason, duration }),
+
+  unblockIp: (ip: string) => api.delete(`/security/ip/block/${ip}`),
+
+  whitelistIp: (ip: string, reason?: string) =>
+    api.post('/security/ip/whitelist', { ip, reason }),
+
+  removeWhitelist: (ip: string) => api.delete(`/security/ip/whitelist/${ip}`),
+
+  getBlockedIps: () => api.get('/security/ip/blocked'),
+
+  getWhitelistedIps: () => api.get('/security/ip/whitelisted'),
+
+  getLockedAccounts: () => api.get('/security/accounts/locked'),
+
+  unlockAccount: (email: string) =>
+    api.post('/security/accounts/unlock', { email }),
+
+  setProtectionLevel: (level: number) =>
+    api.post('/security/protection-level', { level }),
+
+  setCaptchaMode: (enabled: boolean, global?: boolean) =>
+    api.post('/security/captcha', { enabled, global }),
+
+  getMetrics: () => api.get('/security/metrics'),
 };
 
 export default api;

@@ -1,0 +1,499 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Plus,
+  Search,
+  Clock,
+  CheckCircle2,
+  Circle,
+  AlertCircle,
+  MoreVertical,
+  Calendar,
+  Eye,
+  Edit3,
+  Copy,
+  UserPlus,
+  Trash2,
+  ArrowRight,
+  RefreshCw,
+} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
+import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/dropdown';
+import { TaskModal, Task as LegacyTask } from '@/components/tasks/task-modal';
+import { CreateTaskModal } from '@/components/tasks/create-task-modal';
+import { useToast } from '@/components/ui/toast';
+import { getPriorityColor, getStatusColor, formatShortDateWithTimezone } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useTasksStore, Task, toLegacyTask, fromLegacyTask } from '@/stores/tasks.store';
+import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore } from '@/stores/settings.store';
+
+const statusOptions = ['ALL', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'];
+const priorityOptions = ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+
+export default function TasksPage() {
+  // Store state
+  const {
+    tasks,
+    isLoading,
+    isHydrated,
+    fetchTasks,
+    createTask,
+    updateTask,
+    updateTaskApi,
+    deleteTask,
+    deleteTaskApi,
+    addTask,
+  } = useTasksStore();
+  const { token } = useAuthStore();
+  const { language, timezone } = useSettingsStore();
+
+  // Local state
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [priorityFilter, setPriorityFilter] = useState('ALL');
+
+  // Modal states
+  const [selectedTask, setSelectedTask] = useState<LegacyTask | null>(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const { addToast } = useToast();
+  const t = useTranslation();
+
+  // Fetch tasks on mount - fetchTasks handles cache logic internally
+  useEffect(() => {
+    if (token) {
+      fetchTasks(token);
+    }
+  }, [token, fetchTasks]);
+
+  // Convert store tasks to legacy format for display
+  const legacyTasks: LegacyTask[] = tasks.map(toLegacyTask);
+
+  const filteredTasks = legacyTasks.filter(task => {
+    const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase()) ||
+                          task.description.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === 'ALL' || task.status === statusFilter;
+    const matchesPriority = priorityFilter === 'ALL' || task.priority === priorityFilter;
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'COMPLETED': return <CheckCircle2 className="w-5 h-5 text-status-success" />;
+      case 'IN_PROGRESS': return <Clock className="w-5 h-5 text-cosmic-blue" />;
+      case 'IN_REVIEW': return <AlertCircle className="w-5 h-5 text-status-warning" />;
+      default: return <Circle className="w-5 h-5 text-gray-400" />;
+    }
+  };
+
+  const handleTaskClick = (task: LegacyTask) => {
+    setSelectedTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleCreateTask = async (newTask: Omit<LegacyTask, 'id'>) => {
+    // Convert to store format
+    const storeTask: Omit<Task, 'id'> = {
+      title: newTask.title,
+      description: newTask.description,
+      status: newTask.status,
+      priority: newTask.priority,
+      dueDate: newTask.dueDate || null,
+      basePoints: newTask.points,
+      assignee: newTask.assignee ? {
+        id: newTask.assigneeId || 'unknown',
+        firstName: newTask.assignee.split(' ')[0] || '',
+        lastName: newTask.assignee.split(' ')[1] || '',
+      } : null,
+      assigneeId: newTask.assigneeId,
+    };
+
+    const created = await createTask(storeTask, token || '');
+
+    if (created) {
+      addToast({
+        type: 'success',
+        title: 'Задача создана',
+        message: `"${newTask.title}" успешно создана.`,
+      });
+    }
+  };
+
+  const handleSaveTask = async (updatedTask: LegacyTask) => {
+    // Update in store
+    const updates = fromLegacyTask(updatedTask);
+    updateTask(updatedTask.id, updates);
+
+    // Sync to API
+    if (token) {
+      await updateTaskApi(updatedTask.id, updates, token);
+    }
+
+    setSelectedTask(updatedTask);
+    addToast({
+      type: 'success',
+      title: 'Задача обновлена',
+      message: 'Задача успешно обновлена.',
+    });
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+
+    if (token) {
+      await deleteTaskApi(taskId, token);
+    } else {
+      deleteTask(taskId);
+    }
+
+    setIsTaskModalOpen(false);
+    setSelectedTask(null);
+
+    addToast({
+      type: 'success',
+      title: 'Задача удалена',
+      message: `"${task?.title}" удалена.`,
+    });
+  };
+
+  const handleStatusChange = async (taskId: string, newStatus: LegacyTask['status']) => {
+    // Update locally
+    updateTask(taskId, { status: newStatus });
+
+    // Sync to API
+    if (token) {
+      await updateTaskApi(taskId, { status: newStatus }, token);
+    }
+
+    const task = tasks.find(t => t.id === taskId);
+    if (task && selectedTask) {
+      setSelectedTask({ ...selectedTask, status: newStatus });
+    }
+
+    const statusMessages: Record<LegacyTask['status'], string> = {
+      'TODO': 'перемещена в To Do',
+      'IN_PROGRESS': 'начата',
+      'IN_REVIEW': 'отправлена на проверку',
+      'COMPLETED': 'отмечена как выполненная',
+    };
+
+    addToast({
+      type: newStatus === 'COMPLETED' ? 'success' : 'info',
+      title: 'Статус обновлён',
+      message: `Задача ${statusMessages[newStatus]}.`,
+    });
+  };
+
+  const handleDuplicateTask = async (task: LegacyTask) => {
+    const duplicatedTask: Omit<Task, 'id'> = {
+      title: `${task.title} (Копия)`,
+      description: task.description,
+      status: 'TODO',
+      priority: task.priority,
+      dueDate: task.dueDate || null,
+      basePoints: task.points,
+      assignee: task.assignee ? {
+        id: task.assigneeId || 'unknown',
+        firstName: task.assignee.split(' ')[0] || '',
+        lastName: task.assignee.split(' ')[1] || '',
+      } : null,
+      assigneeId: task.assigneeId,
+    };
+
+    await createTask(duplicatedTask, token || '');
+
+    addToast({
+      type: 'success',
+      title: 'Задача скопирована',
+      message: `"${task.title}" продублирована.`,
+    });
+  };
+
+  const handleRefresh = () => {
+    if (token) {
+      fetchTasks(token);
+      addToast({
+        type: 'info',
+        title: 'Обновление',
+        message: 'Список задач обновлён.',
+      });
+    }
+  };
+
+  const taskStats = {
+    total: tasks.length,
+    todo: tasks.filter(t => t.status === 'TODO').length,
+    inProgress: tasks.filter(t => t.status === 'IN_PROGRESS').length,
+    completed: tasks.filter(t => t.status === 'COMPLETED').length,
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+        >
+          <div>
+            <h1 className="text-3xl font-bold">{t.tasks.title}</h1>
+            <p className="text-gray-400 mt-1">{t.tasks.subtitle}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isLoading}
+              title="Обновить"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button
+              className="bg-cosmic-purple hover:bg-cosmic-purple/80"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus className="mr-2 w-4 h-4" />
+              {t.tasks.newTask}
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Filters */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex flex-col sm:flex-row gap-4"
+        >
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Input
+              placeholder={t.tasks.searchTasks}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 rounded-xl bg-glass-light border border-glass-border text-white cursor-pointer"
+            >
+              {statusOptions.map(opt => (
+                <option key={opt} value={opt} className="bg-cosmic-dark">{opt.replace('_', ' ')}</option>
+              ))}
+            </select>
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="px-4 py-2 rounded-xl bg-glass-light border border-glass-border text-white cursor-pointer"
+            >
+              {priorityOptions.map(opt => (
+                <option key={opt} value={opt} className="bg-cosmic-dark">{opt}</option>
+              ))}
+            </select>
+          </div>
+        </motion.div>
+
+        {/* Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+          {[
+            { label: t.tasks.total, value: taskStats.total, color: 'text-white' },
+            { label: t.tasks.toDo, value: taskStats.todo, color: 'text-gray-400' },
+            { label: t.tasks.inProgress, value: taskStats.inProgress, color: 'text-cosmic-blue' },
+            { label: t.tasks.completed, value: taskStats.completed, color: 'text-status-success' },
+          ].map((stat, i) => (
+            <Card key={i} className="glass">
+              <CardContent className="pt-4 pb-4 text-center">
+                <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className="text-gray-400 text-sm">{stat.label}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </motion.div>
+
+        {/* Task List */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="glass">
+            <CardContent className="p-0">
+              <div className="divide-y divide-glass-border">
+                {isLoading && tasks.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
+                    <p className="text-gray-400">Загрузка задач...</p>
+                  </div>
+                ) : filteredTasks.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <div className="w-16 h-16 rounded-full bg-glass-light flex items-center justify-center mx-auto mb-4">
+                      <Search className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-400">{t.tasks.noTasks}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {t.tasks.tryAdjusting}
+                    </p>
+                  </div>
+                ) : (
+                  <AnimatePresence mode="popLayout">
+                  {filteredTasks.map((task, i) => (
+                    <motion.div
+                      key={task.id}
+                      layout
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{
+                        opacity: 0,
+                        x: -100,
+                        scale: 0.8,
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        transition: { duration: 0.3 }
+                      }}
+                      transition={{ delay: 0.4 + i * 0.05 }}
+                      className="flex items-center gap-4 p-4 hover:bg-glass-light transition cursor-pointer group"
+                      onClick={() => handleTaskClick(task)}
+                    >
+                      {getStatusIcon(task.status)}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium truncate">{task.title}</h3>
+                          <span
+                            className="px-2 py-0.5 rounded-full text-xs font-medium"
+                            style={{ backgroundColor: `${getPriorityColor(task.priority)}20`, color: getPriorityColor(task.priority) }}
+                          >
+                            {task.priority}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-400 truncate">{task.description}</p>
+                      </div>
+
+                      <div className="hidden md:flex items-center gap-6 text-sm text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {formatShortDateWithTimezone(task.dueDate, language, timezone)}
+                        </div>
+                        <div className="w-24 truncate">{task.assignee || '—'}</div>
+                        <div className="text-cosmic-purple font-medium">+{task.points} pts</div>
+                      </div>
+
+                      {/* Context Menu */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Dropdown
+                          trigger={
+                            <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          }
+                        >
+                          <DropdownItem
+                            icon={<Eye className="w-4 h-4" />}
+                            onClick={() => handleTaskClick(task)}
+                          >
+                            {t.tasks.viewDetails}
+                          </DropdownItem>
+                          <DropdownItem
+                            icon={<Edit3 className="w-4 h-4" />}
+                            onClick={() => {
+                              setSelectedTask(task);
+                              setIsTaskModalOpen(true);
+                            }}
+                          >
+                            {t.tasks.editTask}
+                          </DropdownItem>
+                          <DropdownItem
+                            icon={<Copy className="w-4 h-4" />}
+                            onClick={() => handleDuplicateTask(task)}
+                          >
+                            {t.tasks.duplicate}
+                          </DropdownItem>
+                          <DropdownItem
+                            icon={<UserPlus className="w-4 h-4" />}
+                            onClick={() => {
+                              setSelectedTask(task);
+                              setIsTaskModalOpen(true);
+                            }}
+                          >
+                            {t.tasks.reassign}
+                          </DropdownItem>
+
+                          <DropdownDivider />
+
+                          {task.status !== 'COMPLETED' && (
+                            <DropdownItem
+                              icon={<CheckCircle2 className="w-4 h-4" />}
+                              onClick={() => handleStatusChange(task.id, 'COMPLETED')}
+                            >
+                              {t.tasks.markComplete}
+                            </DropdownItem>
+                          )}
+
+                          {task.status === 'TODO' && (
+                            <DropdownItem
+                              icon={<ArrowRight className="w-4 h-4" />}
+                              onClick={() => handleStatusChange(task.id, 'IN_PROGRESS')}
+                            >
+                              {t.tasks.startWorking}
+                            </DropdownItem>
+                          )}
+
+                          <DropdownDivider />
+
+                          <DropdownItem
+                            icon={<Trash2 className="w-4 h-4" />}
+                            variant="danger"
+                            onClick={() => handleDeleteTask(task.id)}
+                          >
+                            {t.tasks.delete}
+                          </DropdownItem>
+                        </Dropdown>
+                      </div>
+                    </motion.div>
+                  ))}
+                  </AnimatePresence>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* Task Detail Modal */}
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => {
+          setIsTaskModalOpen(false);
+          setSelectedTask(null);
+        }}
+        task={selectedTask}
+        onSave={handleSaveTask}
+        onDelete={handleDeleteTask}
+        onStatusChange={handleStatusChange}
+      />
+
+      {/* Create Task Modal */}
+      <CreateTaskModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreate={handleCreateTask}
+      />
+    </DashboardLayout>
+  );
+}
