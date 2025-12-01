@@ -13,7 +13,7 @@ import { redis } from './config/redis.js';
 import { logger } from './config/logger.js';
 
 // Routes
-import { authRoutes } from './modules/users/auth.routes.js';
+import { authRoutes, authPlugin } from './modules/users/auth.routes.js';
 import { userRoutes } from './modules/users/user.routes.js';
 import { taskRoutes } from './modules/tasks/task.routes.js';
 import { teamRoutes } from './modules/teams/team.routes.js';
@@ -128,17 +128,8 @@ async function bootstrap() {
       sign: { expiresIn: '7d' }
     });
 
-    // Auth decorator
-    app.decorate('authenticate', async (request: any, reply: any) => {
-      try {
-        await request.jwtVerify();
-      } catch {
-        reply.status(401).send({
-          success: false,
-          error: { code: 'UNAUTHORIZED', message: 'Invalid or expired token' }
-        });
-      }
-    });
+    // Auth decorator (must be registered before routes that use app.authenticate)
+    await app.register(authPlugin);
 
     // WebSocket
     await app.register(websocket);
